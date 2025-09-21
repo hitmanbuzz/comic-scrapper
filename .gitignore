@@ -1,0 +1,39 @@
+# Binaries
+comicrawl
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go build
+/dist/
+
+# Dependency directories
+/vendor/
+
+# Go workspace file
+/go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Config files with secrets (template only)
+config.yaml
+
+# Test data and temporary files
+/tmp/
+/test-data/
