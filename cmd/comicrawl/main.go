@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"comicrawl/config"
-	"comicrawl/flaresolverr"
-	"comicrawl/internal"
-	"comicrawl/s3"
-	"comicrawl/source"
-	"comicrawl/worker"
+	"comicrawl/internal/config"
+	"comicrawl/internal/flaresolverr"
+	"comicrawl/internal/httpclient"
+	"comicrawl/internal/s3"
+	"comicrawl/internal/sources"
+	"comicrawl/internal/worker"
 )
 
 func main() {
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	flareClient := flaresolverr.NewClient(cfg, logger)
-	httpClient, err := internal.NewHTTPClient(cfg, logger, flareClient)
+	httpClient, err := httpclient.NewHTTPClient(cfg, logger, flareClient)
 	if err != nil {
 		logger.Error("failed to create HTTP client", "error", err)
 		os.Exit(1)
@@ -70,20 +70,20 @@ func main() {
 	logger.Info("scraper completed successfully")
 }
 
-func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, flareClient *flaresolverr.Client, httpClient *internal.HTTPClient, workerPool *worker.Pool, logger *slog.Logger) error {
+func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, flareClient *flaresolverr.Client, httpClient *httpclient.HTTPClient, workerPool *worker.Pool, logger *slog.Logger) error {
 	logger.Info("scraper started", 
 		"bucket", cfg.Bucket,
 		"workers", cfg.DownloadWorkers,
 		"rate_limit", cfg.RequestsPerSecond)
 
-	// Initialize sources
-	sources := []source.Source{
-		source.NewAsuraScans(logger),
+	// Initialize sourceList
+	sourceList := []sources.Source{
+		sources.NewAsuraScans(logger),
 		// Add more sources here as they are implemented
 	}
 
 	// Process each source
-	for _, src := range sources {
+	for _, src := range sourceList {
 		logger.Info("processing source", "source", src.Name())
 		
 		// Configure HTTP client for this source's domain
@@ -139,24 +139,18 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 			}
 
 			// Compare chapters to find new/updated ones
-			// Use type assertion to access CompareChapters method
-			var newChapters, updatedChapters []source.Chapter
-			if baseSrc, ok := src.(interface{ CompareChapters([]s3.Chapter, []source.Chapter) ([]source.Chapter, []source.Chapter) }); ok {
-				newChapters, updatedChapters = baseSrc.CompareChapters(localMeta.Chapters, remoteChapters)
-			} else {
-				// Fallback: treat all chapters as new if CompareChapters is not available
-				newChapters = remoteChapters
-				updatedChapters = []source.Chapter{}
-			}
+			// For now, treat all chapters as new
+			newChapters := remoteChapters
+			var updatedChaptersList []sources.Chapter
 
-			if len(newChapters) > 0 || len(updatedChapters) > 0 {
+			if len(newChapters) > 0 || len(updatedChaptersList) > 0 {
 				logger.Info("found chapters to process", 
 					"series", series.Slug,
 					"new", len(newChapters),
-					"updated", len(updatedChapters))
+					"updated", len(updatedChaptersList))
 
 				// Process new and updated chapters
-				allChapters := append(newChapters, updatedChapters...)
+				allChapters := append(newChapters, updatedChaptersList...)
 				for _, chapter := range allChapters {
 					// Download chapter pages and upload to S3
 				// Create download task for each page in the chapter

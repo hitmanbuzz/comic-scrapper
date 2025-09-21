@@ -1,4 +1,4 @@
-package source
+package sources
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"comicrawl/s3"
+	"comicrawl/internal/s3"
 )
 
 type Chapter struct {

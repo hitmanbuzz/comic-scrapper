@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"time"
 
-	"comicrawl/config"
+	"comicrawl/internal/config"
 )
 
 type Client struct {

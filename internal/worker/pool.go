@@ -9,14 +9,14 @@ import (
 	"path"
 	"sync"
 
-	"comicrawl/s3"
-	"comicrawl/source"
+	"comicrawl/internal/s3"
+	"comicrawl/internal/sources"
 )
 
 type DownloadTask struct {
 	SeriesSlug    string
 	Chapter       s3.Chapter
-	Page          source.Page
+	Page          sources.Page
 	HTTPClient    *http.Client
 	S3Client      *s3.Client
 	Logger        *slog.Logger
@@ -110,7 +110,7 @@ func (p *Pool) Wait() {
 	p.wg.Wait()
 }
 
-func (p *Pool) ProcessChapterPages(seriesSlug string, chapter s3.Chapter, pages []source.Page, httpClient *http.Client, s3Client *s3.Client, logger *slog.Logger) error {
+func (p *Pool) ProcessChapterPages(seriesSlug string, chapter s3.Chapter, pages []sources.Page, httpClient *http.Client, s3Client *s3.Client, logger *slog.Logger) error {
 	p.logger.Info("processing chapter pages", 
 		"series", seriesSlug,
 		"chapter", chapter.Number,

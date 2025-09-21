@@ -1,4 +1,4 @@
-package internal
+package httpclient
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"golang.org/x/time/rate"
-	"comicrawl/config"
-	"comicrawl/flaresolverr"
+	"comicrawl/internal/config"
+	"comicrawl/internal/flaresolverr"
 )
 
 type HTTPClient struct {
