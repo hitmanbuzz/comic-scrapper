@@ -4,24 +4,25 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"path"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/aws/session"
+	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"github.com/aws/aws-sdk-go/service/s3"
+
 	"comicrawl/internal/config"
 )
 
 type Client struct {
-	client *s3.Client
+	client *s3.S3
 	bucket string
 	logger *slog.Logger
 }
@@ -45,17 +46,37 @@ type SeriesMetadata struct {
 }
 
 func NewClient(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*Client, error) {
-	awsConfig, err := loadAWSConfig(ctx, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	awsConfig := &aws.Config{
+		Region: aws.String(cfg.Region),
+		Credentials: credentials.NewStaticCredentials(
+			cfg.AccessKey,
+			cfg.SecretKey,
+			"", // token
+		),
+		S3ForcePathStyle: aws.Bool(true),
 	}
 
-	s3Client := s3.NewFromConfig(awsConfig, func(o *s3.Options) {
-		if cfg.Endpoint != "" {
-			o.BaseEndpoint = aws.String(cfg.Endpoint)
-			// Force path-style for Minio compatibility
-			o.UsePathStyle = true
-		}
+	if cfg.Endpoint != "" {
+		awsConfig.Endpoint = aws.String(cfg.Endpoint)
+	}
+
+	// Create session
+	sess, err := session.NewSession(awsConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	// Create S3 client
+	s3Client := s3.New(sess)
+
+	s3Client.Handlers.Sign.SwapNamed(request.NamedHandler{
+		Name: "v4.SignRequestHandler",
+		Fn: func(r *request.Request) {
+			signer := v4.NewSigner(r.Config.Credentials)
+			signer.DisableRequestBodyOverwrite = true
+			signer.UnsignedPayload = true
+			signer.Sign(r.HTTPRequest, nil, r.ClientInfo.ServiceName, *r.Config.Region, r.Time)
+		},
 	})
 
 	return &Client{
@@ -65,30 +86,13 @@ func NewClient(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*C
 	}, nil
 }
 
-func loadAWSConfig(ctx context.Context, cfg *config.Config) (aws.Config, error) {
-	var opts []func(*awsconfig.LoadOptions) error
-
-	// Only set credentials if they are provided
-	if cfg.AccessKey != "" && cfg.SecretKey != "" {
-		opts = append(opts, awsconfig.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(cfg.AccessKey, cfg.SecretKey, ""),
-		))
-	}
-
-	if cfg.Region != "" {
-		opts = append(opts, awsconfig.WithRegion(cfg.Region))
-	}
-
-	return awsconfig.LoadDefaultConfig(ctx, opts...)
-}
-
 func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, filename string, data io.Reader) error {
 	key := path.Join(seriesSlug, chapterNumber, filename)
 	
-	_, err := c.client.PutObject(ctx, &s3.PutObjectInput{
+	_, err := c.client.PutObjectWithContext(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
-		Body:   data,
+		Body:   aws.ReadSeekCloser(data),
 	})
 	
 	if err != nil {
@@ -100,15 +104,17 @@ func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, fil
 }
 
 func (c *Client) DownloadJSON(ctx context.Context, key string, v interface{}) (bool, error) {
-	result, err := c.client.GetObject(ctx, &s3.GetObjectInput{
+	result, err := c.client.GetObjectWithContext(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
 	})
 	
 	if err != nil {
-		var noSuchKey *types.NoSuchKey
-		if errorAs(err, &noSuchKey) {
-			return false, nil // File doesn't exist
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchKey:
+				return false, nil // File doesn't exist
+			}
 		}
 		return false, fmt.Errorf("failed to download JSON %s: %w", key, err)
 	}
@@ -127,10 +133,10 @@ func (c *Client) UploadJSON(ctx context.Context, key string, v interface{}) erro
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	_, err = c.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(c.bucket),
-		Key:    aws.String(key),
-		Body:   bytes.NewReader(data),
+	_, err = c.client.PutObjectWithContext(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(c.bucket),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(data),
 		ContentType: aws.String("application/json"),
 	})
 	
@@ -185,15 +191,4 @@ func (c *Client) LoadChapters(ctx context.Context, seriesSlug string) ([]Chapter
 func (c *Client) SaveChapters(ctx context.Context, seriesSlug string, chapters []Chapter) error {
 	key := path.Join(seriesSlug, "chapters.json")
 	return c.UploadJSON(ctx, key, chapters)
-}
-
-func errorAs(err error, target interface{}) bool {
-	// Helper function for type assertion
-	if err == nil {
-		return false
-	}
-	if _, ok := err.(interface{ As(interface{}) bool }); ok {
-		return errors.As(err, target)
-	}
-	return false
 }
