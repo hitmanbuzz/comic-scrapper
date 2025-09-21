@@ -30,21 +30,21 @@ type SessionResponse struct {
 }
 
 type Solution struct {
-	URL       string     `json:"url"`
-	Status    int        `json:"status"`
-	Cookies   []Cookie   `json:"cookies"`
-	UserAgent string     `json:"userAgent"`
-	Headers   http.Header `json:"headers"`
+	URL       string            `json:"url"`
+	Status    int               `json:"status"`
+	Cookies   []Cookie          `json:"cookies"`
+	UserAgent string            `json:"userAgent"`
+	Headers   map[string]string `json:"headers"`
 }
 
 type Cookie struct {
-	Name     string    `json:"name"`
-	Value    string    `json:"value"`
-	Domain   string    `json:"domain"`
-	Path     string    `json:"path"`
-	Expires  time.Time `json:"expires"`
-	Secure   bool      `json:"secure"`
-	HTTPOnly bool      `json:"httpOnly"`
+	Name     string  `json:"name"`
+	Value    string  `json:"value"`
+	Domain   string  `json:"domain"`
+	Path     string  `json:"path"`
+	Expires  float64 `json:"expires"` // FlareSolverr returns timestamp as number
+	Secure   bool    `json:"secure"`
+	HTTPOnly bool    `json:"httpOnly"`
 }
 
 type Request struct {
@@ -144,12 +144,18 @@ func (c *Client) getUserAgent() string {
 func (s *Solution) CreateCookieJar() []*http.Cookie {
 	var cookies []*http.Cookie
 	for _, cookie := range s.Cookies {
+		// Convert timestamp to time.Time
+		var expires time.Time
+		if cookie.Expires > 0 {
+			expires = time.Unix(int64(cookie.Expires), 0)
+		}
+		
 		cookies = append(cookies, &http.Cookie{
 			Name:     cookie.Name,
 			Value:    cookie.Value,
 			Domain:   cookie.Domain,
 			Path:     cookie.Path,
-			Expires:  cookie.Expires,
+			Expires:  expires,
 			Secure:   cookie.Secure,
 			HttpOnly: cookie.HTTPOnly,
 		})
