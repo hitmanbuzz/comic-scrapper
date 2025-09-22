@@ -89,17 +89,55 @@ func NewClient(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*C
 func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, filename string, data io.Reader) error {
 	key := path.Join(seriesSlug, chapterNumber, filename)
 	
-	_, err := c.client.PutObjectWithContext(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(c.bucket),
-		Key:    aws.String(key),
-		Body:   aws.ReadSeekCloser(data),
-	})
+	var body io.ReadSeekCloser
+	var contentLength *int64
 	
+	// Check if the reader is already a seeker
+	if seeker, ok := data.(io.ReadSeeker); ok {
+		// Get the size by seeking to the end
+		size, err := seeker.Seek(0, io.SeekEnd)
+		if err != nil {
+			return fmt.Errorf("failed to seek to end: %w", err)
+		}
+		contentLength = &size
+		
+		// Reset to beginning
+		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
+			return fmt.Errorf("failed to reset reader position: %w", err)
+		}
+		
+		// Convert to ReadSeekCloser
+		if closer, ok := seeker.(io.ReadSeekCloser); ok {
+			body = closer
+		} else {
+			body = aws.ReadSeekCloser(seeker)
+		}
+	} else {
+		// If not a seeker, we need to read all data into memory first
+		// This ensures we know the content length
+		buf, err := io.ReadAll(data)
+		if err != nil {
+			return fmt.Errorf("failed to read data: %w", err)
+		}
+		
+		size := int64(len(buf))
+		contentLength = &size
+		body = aws.ReadSeekCloser(bytes.NewReader(buf))
+	}
+	
+	input := &s3.PutObjectInput{
+		Bucket:        aws.String(c.bucket),
+		Key:           aws.String(key),
+		Body:          body,
+		ContentLength: contentLength, // Always set content length
+	}
+	
+	_, err := c.client.PutObjectWithContext(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to upload image %s: %w", key, err)
 	}
 
-	c.logger.Debug("uploaded image", "key", key)
+	c.logger.Debug("uploaded image", "key", key, "size", *contentLength)
 	return nil
 }
 
