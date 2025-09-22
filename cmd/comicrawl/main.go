@@ -87,7 +87,7 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 		logger.Info("processing source", "source", src.Name())
 		
 		// Configure HTTP client for this source's domain
-		if err := httpClient.ConfigureForDomain(ctx, src.BaseURL(), flareClient); err != nil {
+		if err := httpClient.ConfigureForDomain(ctx, src.BaseURL(), flareClient, cfg.HTTPProxy); err != nil {
 			logger.Warn("failed to configure HTTP client for source domain", 
 				"source", src.Name(),
 				"domain", src.BaseURL(),

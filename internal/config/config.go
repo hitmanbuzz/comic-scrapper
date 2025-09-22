@@ -16,6 +16,7 @@ type Config struct {
 	Endpoint          string        `yaml:"endpoint"`
 	FlareSolverrURL   string        `yaml:"flaresolverr_url"`
 	UserAgent         string        `yaml:"user_agent"`
+	HTTPProxy         string        `yaml:"http_proxy"`
 	RequestsPerSecond int           `yaml:"requests_per_second"`
 	DownloadWorkers   int           `yaml:"download_workers"`
 	ScrapeOnly        string        `yaml:"scrape_only"`

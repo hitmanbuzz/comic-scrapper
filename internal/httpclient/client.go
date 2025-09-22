@@ -10,9 +10,10 @@ import (
 	"net/url"
 	"time"
 
-	"golang.org/x/time/rate"
 	"comicrawl/internal/config"
 	"comicrawl/internal/flaresolverr"
+
+	"golang.org/x/time/rate"
 )
 
 type HTTPClient struct {
@@ -28,17 +29,29 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *flareso
 		return nil, fmt.Errorf("failed to create cookie jar: %w", err)
 	}
 
-	httpClient := &http.Client{
-		Timeout: cfg.RequestTimeout,
-		Jar:     jar,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: false,
-			},
-			MaxIdleConns:        100,
-			MaxIdleConnsPerHost: 10,
-			IdleConnTimeout:     90 * time.Second,
+	// Create transport with optional proxy
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: false,
 		},
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     90 * time.Second,
+	}
+
+	// Set proxy if configured
+	if cfg.HTTPProxy != "" {
+		proxyURL, err := url.Parse(cfg.HTTPProxy)
+		if err != nil {
+			return nil, fmt.Errorf("invalid proxy URL: %w", err)
+		}
+		transport.Proxy = http.ProxyURL(proxyURL)
+	}
+
+	httpClient := &http.Client{
+		Timeout:   cfg.RequestTimeout,
+		Jar:       jar,
+		Transport: transport,
 	}
 
 	limiter := rate.NewLimiter(rate.Limit(cfg.RequestsPerSecond), 1)
@@ -116,12 +129,12 @@ func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flareClient *flaresolverr.Client) error {
+func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flareClient *flaresolverr.Client, proxyURL string) error {
 	if flareClient == nil {
 		return nil // No FlareSolverr configured
 	}
 
-	solution, err := flareClient.GetSession(ctx, domain)
+	solution, err := flareClient.GetSession(ctx, domain, proxyURL)
 	if err != nil {
 		return fmt.Errorf("failed to get FlareSolverr session for %s: %w", domain, err)
 	}
@@ -144,7 +157,8 @@ func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flar
 	h.logger.Info("configured HTTP client for domain", 
 		"domain", domain, 
 		"cookies", len(solution.Cookies),
-		"userAgent", solution.UserAgent)
+		"userAgent", solution.UserAgent,
+		"proxy", proxyURL)
 
 	return nil
 }

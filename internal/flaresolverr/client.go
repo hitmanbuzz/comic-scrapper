@@ -48,10 +48,11 @@ type Cookie struct {
 }
 
 type Request struct {
-	Cmd      string `json:"cmd"`
-	URL      string `json:"url"`
-	UserAgent string `json:"userAgent,omitempty"`
-	MaxTimeout int   `json:"maxTimeout,omitempty"`
+	Cmd        string            `json:"cmd"`
+	URL        string            `json:"url"`
+	UserAgent  string            `json:"userAgent,omitempty"`
+	MaxTimeout int               `json:"maxTimeout,omitempty"`
+	Proxy      map[string]string `json:"proxy,omitempty"`
 }
 
 func NewClient(cfg *config.Config, logger *slog.Logger) *Client {
@@ -64,7 +65,7 @@ func NewClient(cfg *config.Config, logger *slog.Logger) *Client {
 	}
 }
 
-func (c *Client) GetSession(ctx context.Context, targetURL string) (*Solution, error) {
+func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL string) (*Solution, error) {
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid target URL: %w", err)
@@ -74,13 +75,19 @@ func (c *Client) GetSession(ctx context.Context, targetURL string) (*Solution, e
 	domain := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
 
 	request := Request{
-		Cmd:      "request.get",
-		URL:      domain,
-		UserAgent: c.getUserAgent(),
+		Cmd:        "request.get",
+		URL:        domain,
 		MaxTimeout: 60000, // 60 seconds
 	}
 
-	c.logger.Debug("requesting FlareSolverr session", "url", domain)
+	// Add proxy configuration if provided
+	if proxyURL != "" {
+		request.Proxy = map[string]string{
+			"url": proxyURL,
+		}
+	}
+
+	c.logger.Debug("requesting FlareSolverr session", "url", domain, "proxy", proxyURL)
 	
 	resp, err := c.doRequest(ctx, request)
 	if err != nil {
@@ -94,7 +101,7 @@ func (c *Client) GetSession(ctx context.Context, targetURL string) (*Solution, e
 	c.logger.Info("obtained FlareSolverr session", 
 		"url", domain, 
 		"cookies", len(resp.Solution.Cookies),
-		"userAgent", resp.Solution.UserAgent)
+		"proxy", proxyURL)
 
 	return &resp.Solution, nil
 }
