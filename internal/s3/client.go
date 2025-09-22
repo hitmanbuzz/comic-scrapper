@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"path"
 	"time"
 
@@ -54,6 +55,21 @@ func NewClient(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*C
 			"", // token
 		),
 		S3ForcePathStyle: aws.Bool(true),
+		MaxRetries:       aws.Int(cfg.MaxRetries),
+		HTTPClient: &http.Client{
+			Timeout: cfg.RequestTimeout,
+			Transport: &http.Transport{
+				MaxIdleConns:        300,
+				MaxIdleConnsPerHost: 300,
+				MaxConnsPerHost:     300,
+				IdleConnTimeout:       75 * time.Second,
+        TLSHandshakeTimeout:   10 * time.Second,
+        ResponseHeaderTimeout: 30 * time.Second,
+        ExpectContinueTimeout: 1 * time.Second,
+        DisableKeepAlives:     false,
+        DisableCompression:    false,
+			},
+		},
 	}
 
 	if cfg.Endpoint != "" {

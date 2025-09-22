@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"path"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"comicrawl/internal/s3"
 	"comicrawl/internal/sources"
@@ -32,7 +34,7 @@ type Pool struct {
 func NewPool(workerCount int, logger *slog.Logger) *Pool {
 	return &Pool{
 		workerCount: workerCount,
-		taskChan:    make(chan DownloadTask, workerCount*2),
+		taskChan:    make(chan DownloadTask, workerCount*20), // Much larger buffer
 		logger:      logger,
 	}
 }
@@ -56,49 +58,126 @@ func (p *Pool) worker(id int) {
 	p.logger.Debug("worker stopped", "worker_id", id)
 }
 
+// GetQueueSize returns the current number of queued tasks
+func (p *Pool) GetQueueSize() int {
+	return len(p.taskChan)
+}
+
+// GetWorkerCount returns the number of workers
+func (p *Pool) GetWorkerCount() int {
+	return p.workerCount
+}
+
+// GetTaskChanCapacity returns the capacity of the task channel
+func (p *Pool) GetTaskChanCapacity() int {
+	return cap(p.taskChan)
+}
+
+var totalProcessedPages int64
+
 func (p *Pool) processTask(task DownloadTask) {
-	ctx := context.Background()
-	
-	p.logger.Debug("processing download task", 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	startTime := time.Now()
+
+	p.logger.Debug("processing download task",
 		"series", task.SeriesSlug,
 		"chapter", task.Chapter.Number,
 		"page", task.Page.Number,
-		"url", task.Page.URL)
+		"url", task.Page.URL,
+		"queue_size", len(p.taskChan))
 
-	// Download image
-	resp, err := task.HTTPClient.Get(task.Page.URL)
+	// Download image with retries
+	var resp *http.Response
+	var err error
+
+	for attempt := 1; attempt <= 3; attempt++ {
+		req, reqErr := http.NewRequestWithContext(ctx, "GET", task.Page.URL, nil)
+		if reqErr != nil {
+			p.logger.Error("failed to create request",
+				"error", reqErr,
+				"url", task.Page.URL)
+			return
+		}
+
+		// Add headers to avoid being blocked
+		req.Header.Set("Referer", task.Chapter.SourceURL)
+		req.Header.Set("Accept", "image/webp,image/apng,image/*,*/*;q=0.8")
+
+		resp, err = task.HTTPClient.Do(req)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			break
+		}
+
+		if resp != nil {
+			resp.Body.Close()
+		}
+
+		if attempt < 3 {
+			waitTime := time.Duration(attempt) * 500 * time.Millisecond
+			p.logger.Debug("retrying download",
+				"attempt", attempt,
+				"wait", waitTime,
+				"url", task.Page.URL,
+				"error", err)
+			time.Sleep(waitTime)
+		}
+	}
+
 	if err != nil {
-		p.logger.Error("failed to download image", 
+		p.logger.Error("failed to download image after retries",
 			"error", err,
 			"url", task.Page.URL)
 		return
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		p.logger.Error("unexpected status code", 
+		resp.Body.Close()
+		p.logger.Error("unexpected status code",
 			"status", resp.StatusCode,
 			"url", task.Page.URL)
 		return
 	}
 
+	// Get content length for monitoring
+	contentLength := resp.ContentLength
+	if contentLength < 0 {
+		contentLength = 0
+	}
+
 	// Determine filename based on page number
 	filename := fmt.Sprintf("%03d%s", task.Page.Number, getFileExtension(task.Page.URL))
-	
-	// Upload directly to S3
+
+	// Upload directly to S3 with streaming
+	uploadStart := time.Now()
 	if err := task.S3Client.UploadImage(ctx, task.SeriesSlug, task.Chapter.Number, filename, resp.Body); err != nil {
-		p.logger.Error("failed to upload image to S3", 
+		resp.Body.Close()
+		p.logger.Error("failed to upload image to S3",
 			"error", err,
 			"series", task.SeriesSlug,
 			"chapter", task.Chapter.Number,
 			"filename", filename)
 		return
 	}
+	resp.Body.Close()
 
-	p.logger.Info("successfully processed page", 
+	uploadDuration := time.Since(uploadStart)
+	totalDuration := time.Since(startTime)
+
+	// Increment processed pages counter
+	pageCount := atomic.AddInt64(&totalProcessedPages, 1)
+
+	p.logger.Info("successfully processed page",
 		"series", task.SeriesSlug,
 		"chapter", task.Chapter.Number,
-		"page", task.Page.Number)
+		"page", task.Page.Number,
+		"size_bytes", contentLength,
+		"download_ms", totalDuration.Milliseconds()-uploadDuration.Milliseconds(),
+		"upload_ms", uploadDuration.Milliseconds(),
+		"total_ms", totalDuration.Milliseconds(),
+		"queue_remaining", len(p.taskChan),
+		"total_pages_processed", pageCount)
 }
 
 func (p *Pool) AddTask(task DownloadTask) {

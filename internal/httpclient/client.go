@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strings"
 	"time"
 
 	"comicrawl/internal/config"
@@ -34,9 +35,15 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *flareso
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: false,
 		},
-		MaxIdleConns:        100,
-		MaxIdleConnsPerHost: 10,
-		IdleConnTimeout:     90 * time.Second,
+		MaxIdleConns:          1000,    // 10x increase for high concurrency
+		MaxIdleConnsPerHost:   200,     // Match/exceed worker count
+		MaxConnsPerHost:       300,     // Total connections per host
+		IdleConnTimeout:       30 * time.Second,  // Faster cleanup
+		DisableKeepAlives:     false,   // Ensure connection reuse
+		DisableCompression:    false,   // Keep compression for metadata
+		WriteBufferSize:       32768,   // 32KB write buffer
+		ReadBufferSize:        32768,   // 32KB read buffer
+		ForceAttemptHTTP2:     true,    // Use HTTP/2 if available
 	}
 
 	// Set proxy if configured
@@ -70,9 +77,11 @@ func (h *HTTPClient) Client() *http.Client {
 }
 
 func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
-	// Apply rate limiting
-	if err := h.limiter.Wait(req.Context()); err != nil {
-		return nil, fmt.Errorf("rate limiter error: %w", err)
+	// Apply rate limiting only for non-image requests
+	if !isImageDownload(req.URL.String()) {
+		if err := h.limiter.Wait(req.Context()); err != nil {
+			return nil, fmt.Errorf("rate limiter error: %w", err)
+		}
 	}
 
 	// Set user agent
@@ -161,4 +170,21 @@ func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flar
 		"proxy", proxyURL)
 
 	return nil
+}
+
+// isImageDownload checks if the URL is for an image download
+func isImageDownload(url string) bool {
+	// Common image extensions
+	imageExts := []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+	for _, ext := range imageExts {
+		if strings.HasSuffix(strings.ToLower(url), ext) {
+			return true
+		}
+	}
+	// Also check for common image URL patterns
+	return strings.Contains(url, "/images/") ||
+		   strings.Contains(url, "/img/") ||
+		   strings.Contains(url, "image") ||
+		   strings.Contains(url, ".jpg?") ||
+		   strings.Contains(url, ".png?")
 }

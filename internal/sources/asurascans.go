@@ -9,12 +9,10 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
-// AsuraScans implements the Asura Scans source
 type AsuraScans struct {
 	*BaseSource
 }
@@ -28,7 +26,6 @@ func NewAsuraScans(logger *slog.Logger) *AsuraScans {
 func (a *AsuraScans) ListSeries(ctx context.Context, client *http.Client) ([]Series, error) {
 	a.logger.Info("fetching series list from AsuraScans")
 	
-	// AsuraScans uses paginated series listing
 	var allSeries []Series
 	page := 1
 	
@@ -56,17 +53,14 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *http.Client) ([]Ser
 			return nil, fmt.Errorf("failed to parse HTML: %w", err)
 		}
 
-		// Extract series from current page
 		pageSeries := a.parseSeriesPage(doc)
 		allSeries = append(allSeries, pageSeries...)
 		
-		// Check for next page
 		if !a.hasNextPage(doc) {
 			break
 		}
 		
 		page++
-		time.Sleep(1 * time.Second) // Rate limiting
 	}
 
 	a.logger.Info("fetched series from AsuraScans", "count", len(allSeries))
@@ -76,20 +70,17 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *http.Client) ([]Ser
 func (a *AsuraScans) parseSeriesPage(doc *goquery.Document) []Series {
 	var series []Series
 	
-	// Selector: div.grid > a[href]
 	doc.Find("div.grid > a[href]").Each(func(i int, s *goquery.Selection) {
 		url, exists := s.Attr("href")
 		if !exists {
 			return
 		}
 		
-		// Extract title: div.block > span.block
 		title := s.Find("div.block > span.block").First().Text()
 		if title == "" {
 			title = s.Find("span.block").First().Text()
 		}
 		
-		// Extract slug from URL
 		slug, err := a.ExtractSlugFromURL(url)
 		if err != nil {
 			a.logger.Warn("failed to extract slug from URL", "url", url, "error", err)
@@ -108,7 +99,6 @@ func (a *AsuraScans) parseSeriesPage(doc *goquery.Document) []Series {
 }
 
 func (a *AsuraScans) hasNextPage(doc *goquery.Document) bool {
-	// Selector: div.flex > a.flex.bg-themecolor:contains(Next)
 	return doc.Find("div.flex > a.flex.bg-themecolor:contains(Next)").Length() > 0
 }
 
@@ -144,8 +134,6 @@ func (a *AsuraScans) FetchChapters(ctx context.Context, client *http.Client, ser
 func (a *AsuraScans) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]Chapter, error) {
 	var chapters []Chapter
 	
-	// Selector for chapters (excluding premium chapters)
-	// div.scrollbar-thumb-themecolor > div.group:not(:has(svg))
 	doc.Find("div.scrollbar-thumb-themecolor > div.group:not(:has(svg))").Each(func(i int, s *goquery.Selection) {
 		link := s.Find("a")
 		url, exists := link.Attr("href")
@@ -153,11 +141,9 @@ func (a *AsuraScans) parseChaptersPage(doc *goquery.Document, seriesSlug string)
 			return
 		}
 		
-		// Extract chapter number from h3
 		chapterText := s.Find("h3").First().Text()
 		chapterNumber := a.extractChapterNumber(chapterText)
 		
-		// Extract chapter title from spans inside h3
 		var titleParts []string
 		s.Find("h3 > span").Each(func(j int, span *goquery.Selection) {
 			if text := span.Text(); text != "" {
@@ -206,19 +192,16 @@ func (a *AsuraScans) FetchPages(ctx context.Context, client *http.Client, chapte
 }
 
 func (a *AsuraScans) parsePages(doc *goquery.Document) ([]Page, error) {
-    // Find all script tags containing the Next.js data
     var scriptContent strings.Builder
     doc.Find("script").Each(func(i int, s *goquery.Selection) {
         content := s.Text()
         if strings.Contains(content, "self.__next_f.push") {
-            // Extract the content between quotes (similar to Kotlin implementation)
             start := strings.Index(content, "\"")
             end := strings.LastIndex(content, "\"")
             if start >= 0 && end > start {
                 fragment := content[start+1 : end]
                 scriptContent.WriteString(fragment)
             } else {
-                // Fallback: use the entire content if quotes not found
                 scriptContent.WriteString(content)
             }
         }
@@ -226,7 +209,6 @@ func (a *AsuraScans) parsePages(doc *goquery.Document) ([]Page, error) {
     
     combinedContent := scriptContent.String()
     
-    // Use regex to find the pages array in the JSON structure
     re := regexp.MustCompile(`\\"pages\\":(\[.*?\])`)
     matches := re.FindStringSubmatch(combinedContent)
     
@@ -234,11 +216,9 @@ func (a *AsuraScans) parsePages(doc *goquery.Document) ([]Page, error) {
         return nil, fmt.Errorf("pages array not found in script content")
     }
     
-    // Unescape the JSON string (remove backslashes)
     pagesJSON := strings.ReplaceAll(matches[1], `\\`, `\`)
     pagesJSON = strings.ReplaceAll(pagesJSON, `\"`, `"`)
     
-    // Parse the JSON array
     var pageData []struct {
         Order int    `json:"order"`
         URL   string `json:"url"`
@@ -267,7 +247,6 @@ func (a *AsuraScans) parsePages(doc *goquery.Document) ([]Page, error) {
 }
 
 func (a *AsuraScans) extractChapterNumber(text string) string {
-	// Extract chapter number using various patterns
 	patterns := []*regexp.Regexp{
 		regexp.MustCompile(`(?i)chapter[\s:]*(\d+(?:\.\d+)?)`),
 		regexp.MustCompile(`(\d+(?:\.\d+)?)`),
@@ -293,25 +272,10 @@ func (a *AsuraScans) ensureAbsoluteURL(url string) string {
 	if strings.HasPrefix(url, "/") {
 		return a.BaseURL() + url
 	}
-	
-	// For AsuraScans, relative URLs are relative to the series page
-	// href attributes like "the-greatest-estate-developer-04fa5642/chapter/209"
-	// should become "/series/the-greatest-estate-developer-04fa5642/chapter/209/"
+
 	if strings.Contains(url, "/chapter/") {
 		return a.BaseURL() + "/series/" + strings.TrimSuffix(url, "/") + "/"
 	}
 	
 	return a.BaseURL() + "/" + url
-}
-
-// Helper function for safe substring extraction
-func safeSubstring(s string, start, length int) string {
-	if start >= len(s) {
-		return ""
-	}
-	end := start + length
-	if end > len(s) {
-		end = len(s)
-	}
-	return s[start:end]
 }

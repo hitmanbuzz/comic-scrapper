@@ -142,11 +142,6 @@ func (c *Client) doRequest(ctx context.Context, req Request) (*SessionResponse, 
 	return &sessionResp, nil
 }
 
-func (c *Client) getUserAgent() string {
-	// Default user agent if not configured
-	return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-}
-
 // CreateCookieJar creates a cookie jar from the FlareSolverr cookies
 func (s *Solution) CreateCookieJar() []*http.Cookie {
 	var cookies []*http.Cookie

@@ -17,12 +17,12 @@ type Config struct {
 	FlareSolverrURL   string        `yaml:"flaresolverr_url"`
 	UserAgent         string        `yaml:"user_agent"`
 	HTTPProxy         string        `yaml:"http_proxy"`
-	RequestsPerSecond int           `yaml:"requests_per_second"`
-	DownloadWorkers   int           `yaml:"download_workers"`
+	RequestsPerSecond float64       `yaml:"requests_per_second" default:"100"`
+	DownloadWorkers   int           `yaml:"download_workers" default:"200"`
+	RequestTimeout    time.Duration `yaml:"request_timeout" default:"30s"`
+	MaxRetries        int           `yaml:"max_retries" default:"3"`
 	ScrapeOnly        string        `yaml:"scrape_only"`
 	LogLevel          string        `yaml:"log_level"`
-	RequestTimeout    time.Duration `yaml:"request_timeout"`
-	MaxRetries        int           `yaml:"max_retries"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {
@@ -42,10 +42,10 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	// Set defaults
 	if cfg.RequestsPerSecond == 0 {
-		cfg.RequestsPerSecond = 5
+		cfg.RequestsPerSecond = 100
 	}
 	if cfg.DownloadWorkers == 0 {
-		cfg.DownloadWorkers = 32
+		cfg.DownloadWorkers = 200
 	}
 	if cfg.RequestTimeout == 0 {
 		cfg.RequestTimeout = 30 * time.Second
