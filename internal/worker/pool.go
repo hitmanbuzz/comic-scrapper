@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"comicrawl/internal/aria2c"
+	"comicrawl/internal/disk"
 	"comicrawl/internal/sources"
 )
 
@@ -90,6 +92,8 @@ func (p *Pool) processTask(task DownloadTask) {
 		UploadedAt time.Time
 		SourceURL  string
 	}:
+		chapterNumber = ch.Number
+	case disk.Chapter:
 		chapterNumber = ch.Number
 	default:
 		p.logger.Error("invalid chapter type in task")
@@ -244,6 +248,36 @@ func (p *Pool) Wait() {
 	p.wg.Wait()
 }
 
+// Close implements the downloader interface
+func (p *Pool) Close() error {
+	p.Wait()
+	return nil
+}
+
+// AddDownload implements the downloader interface for compatibility
+func (p *Pool) AddDownload(request aria2c.DownloadRequest) {
+	task := DownloadTask{
+		SeriesSlug:    request.SeriesSlug,
+		Chapter:       request.Chapter,
+		Page:          request.Page,
+		HTTPClient:    &http.Client{}, // Placeholder - will be overridden by worker
+		StorageClient: request.StorageClient,
+		Logger:        p.logger,
+	}
+	p.AddTask(task)
+}
+
+// DownloadBatch implements the downloader interface for compatibility
+func (p *Pool) DownloadBatch(ctx context.Context, requests []aria2c.DownloadRequest) error {
+	// Convert aria2c download requests to worker pool tasks
+	for _, req := range requests {
+		p.AddDownload(req)
+	}
+	
+	p.Wait()
+	return nil
+}
+
 func (p *Pool) ProcessChapterPages(seriesSlug string, chapter interface{}, pages []sources.Page, httpClient *http.Client, storageClient interface{}, logger *slog.Logger) error {
 	// Extract chapter number from the interface{}
 	var chapterNumber string
@@ -255,6 +289,8 @@ func (p *Pool) ProcessChapterPages(seriesSlug string, chapter interface{}, pages
 		UploadedAt time.Time
 		SourceURL  string
 	}:
+		chapterNumber = ch.Number
+	case disk.Chapter:
 		chapterNumber = ch.Number
 	default:
 		p.logger.Error("invalid chapter type in ProcessChapterPages")

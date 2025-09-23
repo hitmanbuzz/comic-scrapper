@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"comicrawl/internal/aria2c"
 	"comicrawl/internal/config"
 	"comicrawl/internal/disk"
 	"comicrawl/internal/flaresolverr"
@@ -19,6 +20,12 @@ import (
 	"comicrawl/internal/sources"
 	"comicrawl/internal/worker"
 )
+
+// Downloader interface for streaming downloads
+type Downloader interface {
+	AddDownload(request aria2c.DownloadRequest)
+	Close() error
+}
 
 func main() {
 	// Parse command line arguments
@@ -58,27 +65,47 @@ func main() {
 		os.Exit(1)
 	}
 
-	flareClient := flaresolverr.NewClient(cfg, logger)
+	// Only create FlareSolverr client if configured
+	var flareClient *flaresolverr.Client
+	if cfg.FlareSolverrURL != "" {
+		flareClient = flaresolverr.NewClient(cfg, logger)
+		logger.Info("FlareSolverr client initialized", "url", cfg.FlareSolverrURL)
+	} else {
+		logger.Info("FlareSolverr disabled - proceeding without Cloudflare bypass")
+	}
+	
 	httpClient, err := httpclient.NewHTTPClient(cfg, logger, flareClient)
 	if err != nil {
 		logger.Error("failed to create HTTP client", "error", err)
 		os.Exit(1)
 	}
 
-	// Create worker pool with increased capacity
-	downloadWorkers := cfg.DownloadWorkers
-	if downloadWorkers < 100 {
-		downloadWorkers = 200 // Minimum 200 workers for optimal performance
+	// Create downloader based on configuration
+	var downloader Downloader
+	
+	if cfg.UseAria2c {
+		logger.Info("using aria2c for streaming downloads", "aria2c_url", cfg.Aria2cURL)
+		aria2cDownloader, err := aria2c.NewDownloader(cfg.Aria2cURL, logger)
+		if err != nil {
+			logger.Error("failed to create aria2c downloader, falling back to regular pool", "error", err)
+			workerPool := worker.NewPool(cfg.DownloadWorkers, logger)
+			workerPool.Start()
+			downloader = workerPool
+			defer workerPool.Close()
+		} else {
+			downloader = aria2cDownloader
+			defer aria2cDownloader.Close()
+		}
+	} else {
+		logger.Info("using regular worker pool for downloads")
+		workerPool := worker.NewPool(cfg.DownloadWorkers, logger)
+		workerPool.Start()
+			downloader = workerPool
+			defer workerPool.Close()
 	}
-	workerPool := worker.NewPool(downloadWorkers, logger)
-	workerPool.Start()
-	defer workerPool.Wait()
-
-	// Start performance monitoring
-	startPerformanceMonitoring(ctx, workerPool, logger)
 
 	// Run the scraper
-	if err := runScraper(ctx, cfg, storageClient, flareClient, httpClient, workerPool, logger); err != nil {
+	if err := runScraper(ctx, cfg, storageClient, flareClient, httpClient, downloader, logger); err != nil {
 		logger.Error("scraper failed", "error", err)
 		os.Exit(1)
 	}
@@ -86,38 +113,13 @@ func main() {
 	logger.Info("scraper completed successfully")
 }
 
-// startPerformanceMonitoring starts a goroutine that logs performance metrics
-func startPerformanceMonitoring(ctx context.Context, workerPool *worker.Pool, logger *slog.Logger) {
-	go func() {
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				queueSize := workerPool.GetQueueSize()
-				workerCount := workerPool.GetWorkerCount()
-				taskChanCapacity := workerPool.GetTaskChanCapacity()
-
-				logger.Info("performance metrics",
-					"queue_size", queueSize,
-					"workers", workerCount,
-					"queue_utilization_pct", float64(queueSize)/float64(taskChanCapacity)*100)
-			}
-		}
-	}()
-}
-
-func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Client, flareClient *flaresolverr.Client, httpClient *httpclient.HTTPClient, workerPool *worker.Pool, logger *slog.Logger) error {
+func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Client, flareClient *flaresolverr.Client, httpClient *httpclient.HTTPClient, downloader Downloader, logger *slog.Logger) error {
 	startTime := time.Now()
 	var totalChapters, totalPages int64
 
-	logger.Info("starting optimized scraper",
+	logger.Info("starting streaming scraper",
 		"bucket", cfg.Bucket,
-		"workers", cfg.DownloadWorkers,
-		"rate_limit", cfg.RequestsPerSecond)
+		"use_aria2c", cfg.UseAria2c)
 
 	// Collect metadata updates for batch processing at the end
 	type metadataUpdate struct {
@@ -132,7 +134,9 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 		sources.NewAsuraScans(logger),
 	}
 
-	// Process all series and queue downloads first (no blocking S3 operations)
+	var wg sync.WaitGroup
+	
+	// Process all sources and series concurrently
 	for _, src := range sourceList {
 		logger.Info("processing source", "source", src.Name())
 
@@ -158,30 +162,29 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 			"source", src.Name(),
 			"count", len(seriesList))
 
-		// Process multiple series in parallel
-		var seriesWg sync.WaitGroup
-		seriesSem := make(chan struct{}, 8) // Limit concurrent series processing
+		// Log first few series for debugging
+		if len(seriesList) > 0 {
+			logger.Debug("sample series slugs", 
+				"first_5", seriesList[:min(5, len(seriesList))])
+		}
 
+		// Process each series
 		for _, series := range seriesList {
 			if !shouldProcessSeries(series.Slug, cfg.ScrapeOnly) {
-				logger.Debug("skipping series", "series", series.Slug)
+				logger.Debug("skipping series", "series", series.Slug, "scrape_only", cfg.ScrapeOnly)
 				continue
 			}
 
-			seriesWg.Add(1)
+			wg.Add(1)
 			go func(s sources.Series) {
-				defer seriesWg.Done()
-
-				// Acquire series semaphore
-				seriesSem <- struct{}{}
-				defer func() { <-seriesSem }()
+				defer wg.Done()
 
 				logger.Info("processing series",
 					"source", src.Name(),
 					"series", s.Slug,
 					"title", s.Title)
 
-				// Load existing metadata (quick operation, kept synchronous)
+				// Load existing metadata
 				localMeta, err := storageClient.LoadSeriesMetadata(ctx, s.Slug)
 				if err != nil {
 					logger.Warn("failed to load series metadata from storage",
@@ -208,22 +211,22 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 					"series", s.Slug,
 					"chapters", len(remoteChapters))
 
-				// Track totals for performance monitoring
+				// Track totals
 				atomic.AddInt64(&totalChapters, int64(len(remoteChapters)))
 				for _, ch := range remoteChapters {
 					atomic.AddInt64(&totalPages, int64(len(ch.Pages)))
 				}
 
-				// Process all chapters in parallel (this is the key optimization)
-				if err := processSeriesChaptersParallel(ctx, src, httpClient, s,
-					remoteChapters, workerPool, storageClient, logger); err != nil {
-					logger.Error("failed to process chapters in parallel",
+				// Process chapters and stream downloads immediately
+				err = processSeriesChapters(ctx, src, httpClient, s, remoteChapters, downloader, storageClient, logger)
+				if err != nil {
+					logger.Error("failed to process chapters",
 						"series", s.Slug,
 						"error", err)
 					return
 				}
 
-				// Prepare metadata update (but don't execute yet - that's the bottleneck)
+				// Prepare metadata update
 				localMeta.Title = s.Title
 				localMeta.Description = s.Description
 				localMeta.Author = s.Author
@@ -247,12 +250,12 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 						Number:     chap.Number,
 						Title:      chap.Title,
 						Pages:      len(chap.Pages),
-						UploadedAt: uploadedAt, // Will be updated by workers after download
+						UploadedAt: uploadedAt,
 						SourceURL:  chap.URL,
 					}
 				}
 
-				// Add to pending updates (thread-safe)
+				// Add to pending updates
 				updatesMutex.Lock()
 				pendingUpdates = append(pendingUpdates, metadataUpdate{
 					seriesSlug: s.Slug,
@@ -262,22 +265,17 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 
 			}(series)
 		}
-
-		// Wait for all series in this source to be processed
-		seriesWg.Wait()
-		logger.Info("completed processing source", "source", src.Name())
 	}
 
-	logger.Info("all series queued, waiting for downloads to complete",
-		"pending_metadata_updates", len(pendingUpdates))
+	// Wait for all series to be processed (downloads are streaming concurrently)
+	logger.Info("waiting for all series processing to complete")
+	wg.Wait()
 
-	// Wait for all downloads to complete
-	workerPool.Wait()
+	logger.Info("all series processed, downloads are streaming concurrently")
 
-	logger.Info("all downloads completed, updating metadata",
-		"updates_count", len(pendingUpdates))
-
-	// Now batch update all metadata (this is much faster when done at the end)
+	// Update metadata
+	logger.Info("updating metadata", "updates_count", len(pendingUpdates))
+	
 	var metadataErrors int
 	for i, update := range pendingUpdates {
 		if err := storageClient.SaveSeriesMetadata(ctx, update.seriesSlug, update.metadata); err != nil {
@@ -297,12 +295,13 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 	}
 
 	// Performance summary
+	duration := time.Since(startTime)
 	logger.Info("performance summary",
-		"total_time_sec", time.Since(startTime).Seconds(),
+		"total_time_sec", duration.Seconds(),
 		"total_chapters", atomic.LoadInt64(&totalChapters),
 		"total_pages", atomic.LoadInt64(&totalPages),
-		"chapters_per_sec", float64(atomic.LoadInt64(&totalChapters))/time.Since(startTime).Seconds(),
-		"pages_per_sec", float64(atomic.LoadInt64(&totalPages))/time.Since(startTime).Seconds())
+		"chapters_per_sec", float64(atomic.LoadInt64(&totalChapters))/duration.Seconds(),
+		"pages_per_sec", float64(atomic.LoadInt64(&totalPages))/duration.Seconds())
 
 	logger.Info("scraper completed successfully",
 		"metadata_updates", len(pendingUpdates)-metadataErrors,
@@ -311,35 +310,22 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 	return nil
 }
 
-// processSeriesChaptersParallel processes chapters in parallel to maximize download throughput
-func processSeriesChaptersParallel(ctx context.Context, src sources.Source, httpClient *httpclient.HTTPClient,
-	series sources.Series, remoteChapters []sources.Chapter, workerPool *worker.Pool,
-	storageClient *disk.Client, logger *slog.Logger) error {
-
-	// Create semaphore to limit concurrent chapter URL fetches
-	const maxConcurrentChapters = 25
-	sem := make(chan struct{}, maxConcurrentChapters)
+// processSeriesChapters processes chapters and streams downloads immediately
+func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *httpclient.HTTPClient,
+	series sources.Series, remoteChapters []sources.Chapter, downloader Downloader, storageClient *disk.Client, logger *slog.Logger) error {
 
 	var wg sync.WaitGroup
 	var processedCount int64
 	var errorCount int64
 
-	logger.Info("starting parallel chapter processing",
-		"series", series.Slug,
-		"total_chapters", len(remoteChapters),
-		"max_concurrent", maxConcurrentChapters)
-
+	// Process chapters concurrently
 	for _, chapter := range remoteChapters {
 		wg.Add(1)
 		go func(ch sources.Chapter) {
 			defer wg.Done()
 
-			// Acquire semaphore
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
 			logger.Debug("fetching pages for chapter",
-				"series", series.Slug	,
+				"series", series.Slug,
 				"chapter", ch.Number)
 
 			// Fetch page URLs for this chapter
@@ -360,27 +346,26 @@ func processSeriesChaptersParallel(ctx context.Context, src sources.Source, http
 				return
 			}
 
-			// Queue all pages immediately
-				for _, page := range pages {
-					diskChapter := disk.Chapter{
-						Number:    ch.Number,
-						Title:     ch.Title,
-						Pages:     len(pages),
-						SourceURL: ch.URL,
-					}
+			// Create download requests and stream immediately
+			diskChapter := disk.Chapter{
+				Number:    ch.Number,
+				Title:     ch.Title,
+				Pages:     len(pages),
+				SourceURL: ch.URL,
+			}
 
-					workerPool.AddTask(worker.DownloadTask{
-						SeriesSlug:    series.Slug,
-						Chapter:       diskChapter,
-						Page:          page,
-						HTTPClient:    httpClient.Client(),
-						StorageClient: storageClient,
-						Logger:        logger,
-					})
-				}
+			// Stream each page download immediately
+			for _, page := range pages {
+				downloader.AddDownload(aria2c.DownloadRequest{
+					SeriesSlug:    series.Slug,
+					Chapter:       diskChapter,
+					Page:          page,
+					StorageClient: storageClient,
+				})
+			}
 
 			atomic.AddInt64(&processedCount, 1)
-			logger.Info("chapter pages queued",
+			logger.Info("chapter pages queued for download",
 				"series", series.Slug,
 				"chapter", ch.Number,
 				"pages", len(pages),
@@ -395,7 +380,7 @@ func processSeriesChaptersParallel(ctx context.Context, src sources.Source, http
 	finalProcessed := atomic.LoadInt64(&processedCount)
 	finalErrors := atomic.LoadInt64(&errorCount)
 
-	logger.Info("parallel chapter processing completed",
+	logger.Info("chapter processing completed",
 		"series", series.Slug,
 		"processed", finalProcessed,
 		"errors", finalErrors,
@@ -450,4 +435,12 @@ func shouldProcessSeries(seriesSlug, scrapeOnly string) bool {
 		return true
 	}
 	return seriesSlug == scrapeOnly
+}
+
+// Helper function to get minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

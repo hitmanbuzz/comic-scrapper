@@ -1,0 +1,22 @@
+#!/bin/bash
+aria2c \
+  --enable-rpc \
+  --rpc-listen-all \
+  --rpc-allow-origin-all \
+  --max-concurrent-downloads=100 \
+  --max-connection-per-server=16 \
+  --split=16 \
+  --min-split-size=1M \
+  --max-overall-download-limit=0 \
+  --max-download-limit=0 \
+  --connect-timeout=10 \
+  --timeout=30 \
+  --retry-wait=2 \
+  --max-tries=3 \
+  --continue=true \
+  --auto-file-renaming=true \
+  --allow-overwrite=false \
+  --disk-cache=128M \
+  --file-allocation=prealloc \
+  --summary-interval=5 \
+  --log-level=notice

@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Bucket            string        `yaml:"bucket"`
 	FlareSolverrURL   string        `yaml:"flaresolverr_url"`
+	Aria2cURL         string        `yaml:"aria2c_url" default:"http://localhost:6800/jsonrpc"`
 	UserAgent         string        `yaml:"user_agent"`
 	HTTPProxy         string        `yaml:"http_proxy"`
 	RequestsPerSecond float64       `yaml:"requests_per_second" default:"100"`
@@ -20,6 +21,7 @@ type Config struct {
 	ScrapeOnly        string        `yaml:"scrape_only"`
 	LogLevel          string        `yaml:"log_level"`
 	StorageType       string        `yaml:"storage_type" default:"disk"`
+	UseAria2c         bool          `yaml:"use_aria2c" default:"true"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {
