@@ -19,8 +19,8 @@ type Config struct {
 	HTTPProxy         string        `yaml:"http_proxy"`
 	RequestsPerSecond float64       `yaml:"requests_per_second" default:"100"`
 	DownloadWorkers   int           `yaml:"download_workers" default:"200"`
-	RequestTimeout    time.Duration `yaml:"request_timeout" default:"30s"`
-	MaxRetries        int           `yaml:"max_retries" default:"3"`
+	RequestTimeout    time.Duration `yaml:"request_timeout" default:"60s"`
+	MaxRetries        int           `yaml:"max_retries" default:"5"`
 	ScrapeOnly        string        `yaml:"scrape_only"`
 	LogLevel          string        `yaml:"log_level"`
 }

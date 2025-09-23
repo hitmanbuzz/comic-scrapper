@@ -76,7 +76,7 @@ func (p *Pool) GetTaskChanCapacity() int {
 var totalProcessedPages int64
 
 func (p *Pool) processTask(task DownloadTask) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	startTime := time.Now()
@@ -149,12 +149,40 @@ func (p *Pool) processTask(task DownloadTask) {
 	// Determine filename based on page number
 	filename := fmt.Sprintf("%03d%s", task.Page.Number, getFileExtension(task.Page.URL))
 
-	// Upload directly to S3 with streaming
+	// Upload directly to S3 with streaming and retries
 	uploadStart := time.Now()
-	if err := task.S3Client.UploadImage(ctx, task.SeriesSlug, task.Chapter.Number, filename, resp.Body); err != nil {
+	var uploadErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		uploadCtx, uploadCancel := context.WithTimeout(context.Background(), 90*time.Second)
+		uploadErr = task.S3Client.UploadImage(uploadCtx, task.SeriesSlug, task.Chapter.Number, filename, io.NopCloser(resp.Body))
+		uploadCancel()
+		
+		if uploadErr == nil {
+			break
+		}
+		
+		if attempt < 3 {
+			waitTime := time.Duration(attempt) * 2 * time.Second
+			p.logger.Debug("retrying S3 upload",
+				"attempt", attempt,
+				"wait", waitTime,
+				"series", task.SeriesSlug,
+				"chapter", task.Chapter.Number,
+				"filename", filename,
+				"error", uploadErr)
+			time.Sleep(waitTime)
+			
+			// Reset body position for retry
+			if seeker, ok := resp.Body.(io.Seeker); ok {
+				seeker.Seek(0, io.SeekStart)
+			}
+		}
+	}
+	
+	if uploadErr != nil {
 		resp.Body.Close()
-		p.logger.Error("failed to upload image to S3",
-			"error", err,
+		p.logger.Error("failed to upload image to S3 after retries",
+			"error", uploadErr,
 			"series", task.SeriesSlug,
 			"chapter", task.Chapter.Number,
 			"filename", filename)
