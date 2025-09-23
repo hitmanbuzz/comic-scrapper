@@ -10,10 +10,6 @@ import (
 
 type Config struct {
 	Bucket            string        `yaml:"bucket"`
-	Region            string        `yaml:"region"`
-	AccessKey         string        `yaml:"access_key"`
-	SecretKey         string        `yaml:"secret_key"`
-	Endpoint          string        `yaml:"endpoint"`
 	FlareSolverrURL   string        `yaml:"flaresolverr_url"`
 	UserAgent         string        `yaml:"user_agent"`
 	HTTPProxy         string        `yaml:"http_proxy"`
@@ -23,6 +19,7 @@ type Config struct {
 	MaxRetries        int           `yaml:"max_retries" default:"5"`
 	ScrapeOnly        string        `yaml:"scrape_only"`
 	LogLevel          string        `yaml:"log_level"`
+	StorageType       string        `yaml:"storage_type" default:"disk"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {

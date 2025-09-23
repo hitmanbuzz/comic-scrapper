@@ -6,11 +6,8 @@
 Create `config.yaml`:
 
 ```yaml
-bucket: manga
-region: us-east-1
-access_key: ""
-secret_key: ""
-endpoint: http://localhost:9000
+bucket: /tmp/comicrawl  # Base directory for disk storage
+storage_type: disk      # Storage type (disk only)
 flaresolverr_url: http://localhost:8191/v1
 user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 requests_per_second: 5
@@ -38,13 +35,13 @@ go build -o comicrawl
 
 - **Multiple Sources**: Currently supports AsuraScans
 - **Rate Limiting**: Configurable requests per second
-- **S3 Storage**: Stores images and metadata in S3-compatible storage
+- **Disk Storage**: Stores images and metadata in local file system
 - **Parallel Downloads**: Concurrent chapter processing
 - **Metadata Tracking**: Keeps track of downloaded chapters to avoid duplicates
 
 ## Output Structure
 
-Files are stored in S3 with this structure:
+Files are stored on disk with this structure:
 
 ```
 series-slug/

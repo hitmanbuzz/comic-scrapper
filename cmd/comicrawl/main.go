@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"comicrawl/internal/config"
+	"comicrawl/internal/disk"
 	"comicrawl/internal/flaresolverr"
 	"comicrawl/internal/httpclient"
-	"comicrawl/internal/s3"
 	"comicrawl/internal/sources"
 	"comicrawl/internal/worker"
 )
@@ -44,10 +44,17 @@ func main() {
 
 	logger.Info("starting manga scraper", "config", *configPath)
 
-	// Initialize clients
-	s3Client, err := s3.NewClient(ctx, cfg, logger)
-	if err != nil {
-		logger.Error("failed to create S3 client", "error", err)
+	// Initialize storage client
+	var storageClient *disk.Client
+	switch cfg.StorageType {
+	case "disk":
+		storageClient, err = disk.NewClient(ctx, cfg, logger)
+		if err != nil {
+			logger.Error("failed to create disk storage client", "error", err)
+			os.Exit(1)
+		}
+	default:
+		logger.Error("unsupported storage type", "storage_type", cfg.StorageType)
 		os.Exit(1)
 	}
 
@@ -71,7 +78,7 @@ func main() {
 	startPerformanceMonitoring(ctx, workerPool, logger)
 
 	// Run the scraper
-	if err := runScraper(ctx, cfg, s3Client, flareClient, httpClient, workerPool, logger); err != nil {
+	if err := runScraper(ctx, cfg, storageClient, flareClient, httpClient, workerPool, logger); err != nil {
 		logger.Error("scraper failed", "error", err)
 		os.Exit(1)
 	}
@@ -103,7 +110,7 @@ func startPerformanceMonitoring(ctx context.Context, workerPool *worker.Pool, lo
 	}()
 }
 
-func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, flareClient *flaresolverr.Client, httpClient *httpclient.HTTPClient, workerPool *worker.Pool, logger *slog.Logger) error {
+func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Client, flareClient *flaresolverr.Client, httpClient *httpclient.HTTPClient, workerPool *worker.Pool, logger *slog.Logger) error {
 	startTime := time.Now()
 	var totalChapters, totalPages int64
 
@@ -115,7 +122,7 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 	// Collect metadata updates for batch processing at the end
 	type metadataUpdate struct {
 		seriesSlug string
-		metadata   *s3.SeriesMetadata
+		metadata   *disk.SeriesMetadata
 	}
 
 	var pendingUpdates []metadataUpdate
@@ -175,12 +182,12 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 					"title", s.Title)
 
 				// Load existing metadata (quick operation, kept synchronous)
-				localMeta, err := s3Client.LoadSeriesMetadata(ctx, s.Slug)
+				localMeta, err := storageClient.LoadSeriesMetadata(ctx, s.Slug)
 				if err != nil {
-					logger.Warn("failed to load series metadata from S3",
+					logger.Warn("failed to load series metadata from storage",
 						"series", s.Slug,
 						"error", err)
-					localMeta = &s3.SeriesMetadata{}
+					localMeta = &disk.SeriesMetadata{}
 				}
 
 				// Fetch chapters from source
@@ -209,7 +216,7 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 
 				// Process all chapters in parallel (this is the key optimization)
 				if err := processSeriesChaptersParallel(ctx, src, httpClient, s,
-					remoteChapters, workerPool, s3Client, logger); err != nil {
+					remoteChapters, workerPool, storageClient, logger); err != nil {
 					logger.Error("failed to process chapters in parallel",
 						"series", s.Slug,
 						"error", err)
@@ -224,8 +231,8 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 				localMeta.Genres = s.Genres
 				localMeta.UpdatedAt = time.Now()
 
-				// Convert remote chapters to S3 format
-				localMeta.Chapters = make([]s3.Chapter, len(remoteChapters))
+				// Convert remote chapters to disk storage format
+				localMeta.Chapters = make([]disk.Chapter, len(remoteChapters))
 				for i, chap := range remoteChapters {
 					// Preserve existing upload time if chapter exists
 					var uploadedAt time.Time
@@ -236,7 +243,7 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 						}
 					}
 
-					localMeta.Chapters[i] = s3.Chapter{
+					localMeta.Chapters[i] = disk.Chapter{
 						Number:     chap.Number,
 						Title:      chap.Title,
 						Pages:      len(chap.Pages),
@@ -273,7 +280,7 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 	// Now batch update all metadata (this is much faster when done at the end)
 	var metadataErrors int
 	for i, update := range pendingUpdates {
-		if err := s3Client.SaveSeriesMetadata(ctx, update.seriesSlug, update.metadata); err != nil {
+		if err := storageClient.SaveSeriesMetadata(ctx, update.seriesSlug, update.metadata); err != nil {
 			metadataErrors++
 			logger.Error("failed to save series metadata",
 				"series", update.seriesSlug,
@@ -307,7 +314,7 @@ func runScraper(ctx context.Context, cfg *config.Config, s3Client *s3.Client, fl
 // processSeriesChaptersParallel processes chapters in parallel to maximize download throughput
 func processSeriesChaptersParallel(ctx context.Context, src sources.Source, httpClient *httpclient.HTTPClient,
 	series sources.Series, remoteChapters []sources.Chapter, workerPool *worker.Pool,
-	s3Client *s3.Client, logger *slog.Logger) error {
+	storageClient *disk.Client, logger *slog.Logger) error {
 
 	// Create semaphore to limit concurrent chapter URL fetches
 	const maxConcurrentChapters = 25
@@ -332,7 +339,7 @@ func processSeriesChaptersParallel(ctx context.Context, src sources.Source, http
 			defer func() { <-sem }()
 
 			logger.Debug("fetching pages for chapter",
-				"series", series.Slug,
+				"series", series.Slug	,
 				"chapter", ch.Number)
 
 			// Fetch page URLs for this chapter
@@ -354,23 +361,23 @@ func processSeriesChaptersParallel(ctx context.Context, src sources.Source, http
 			}
 
 			// Queue all pages immediately
-			for _, page := range pages {
-				s3Chapter := s3.Chapter{
-					Number:    ch.Number,
-					Title:     ch.Title,
-					Pages:     len(pages),
-					SourceURL: ch.URL,
-				}
+				for _, page := range pages {
+					diskChapter := disk.Chapter{
+						Number:    ch.Number,
+						Title:     ch.Title,
+						Pages:     len(pages),
+						SourceURL: ch.URL,
+					}
 
-				workerPool.AddTask(worker.DownloadTask{
-					SeriesSlug: series.Slug,
-					Chapter:    s3Chapter,
-					Page:       page,
-					HTTPClient: httpClient.Client(),
-					S3Client:   s3Client,
-					Logger:     logger,
-				})
-			}
+					workerPool.AddTask(worker.DownloadTask{
+						SeriesSlug:    series.Slug,
+						Chapter:       diskChapter,
+						Page:          page,
+						HTTPClient:    httpClient.Client(),
+						StorageClient: storageClient,
+						Logger:        logger,
+					})
+				}
 
 			atomic.AddInt64(&processedCount, 1)
 			logger.Info("chapter pages queued",

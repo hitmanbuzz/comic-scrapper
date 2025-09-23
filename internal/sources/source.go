@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"comicrawl/internal/s3"
+	"comicrawl/internal/disk"
 )
 
 type Chapter struct {
@@ -124,8 +124,8 @@ func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
 	return strings.Join(parts, ".")
 }
 
-func (b *BaseSource) CompareChapters(localChapters []s3.Chapter, remoteChapters []Chapter) (newChapters []Chapter, updatedChapters []Chapter) {
-	localMap := make(map[string]s3.Chapter)
+func (b *BaseSource) CompareChapters(localChapters []disk.Chapter, remoteChapters []Chapter) (newChapters []Chapter, updatedChapters []Chapter) {
+	localMap := make(map[string]disk.Chapter)
 	for _, chap := range localChapters {
 		localMap[chap.Number] = chap
 	}

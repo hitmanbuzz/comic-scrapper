@@ -32,7 +32,7 @@ Thumbs.db
 *.log
 
 # Config files with secrets (template only)
-config.yaml
+configs
 
 # Test data and temporary files
 /tmp/

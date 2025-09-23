@@ -11,16 +11,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"comicrawl/internal/s3"
 	"comicrawl/internal/sources"
 )
 
 type DownloadTask struct {
 	SeriesSlug    string
-	Chapter       s3.Chapter
+	Chapter       interface{}
 	Page          sources.Page
 	HTTPClient    *http.Client
-	S3Client      *s3.Client
+	StorageClient interface{}
 	Logger        *slog.Logger
 }
 
@@ -81,9 +80,25 @@ func (p *Pool) processTask(task DownloadTask) {
 
 	startTime := time.Now()
 
+	// Extract chapter number from the interface{}
+	var chapterNumber string
+	switch ch := task.Chapter.(type) {
+	case struct {
+		Number     string
+		Title      string
+		Pages      int
+		UploadedAt time.Time
+		SourceURL  string
+	}:
+		chapterNumber = ch.Number
+	default:
+		p.logger.Error("invalid chapter type in task")
+		return
+	}
+
 	p.logger.Debug("processing download task",
 		"series", task.SeriesSlug,
-		"chapter", task.Chapter.Number,
+		"chapter", chapterNumber,
 		"page", task.Page.Number,
 		"url", task.Page.URL,
 		"queue_size", len(p.taskChan))
@@ -102,7 +117,7 @@ func (p *Pool) processTask(task DownloadTask) {
 		}
 
 		// Add headers to avoid being blocked
-		req.Header.Set("Referer", task.Chapter.SourceURL)
+		req.Header.Set("Referer", task.Page.URL)
 		req.Header.Set("Accept", "image/webp,image/apng,image/*,*/*;q=0.8")
 
 		resp, err = task.HTTPClient.Do(req)
@@ -149,12 +164,19 @@ func (p *Pool) processTask(task DownloadTask) {
 	// Determine filename based on page number
 	filename := fmt.Sprintf("%03d%s", task.Page.Number, getFileExtension(task.Page.URL))
 
-	// Upload directly to S3 with streaming and retries
+	// Upload directly to storage with streaming and retries
 	uploadStart := time.Now()
 	var uploadErr error
 	for attempt := 1; attempt <= 3; attempt++ {
 		uploadCtx, uploadCancel := context.WithTimeout(context.Background(), 90*time.Second)
-		uploadErr = task.S3Client.UploadImage(uploadCtx, task.SeriesSlug, task.Chapter.Number, filename, io.NopCloser(resp.Body))
+		
+		// Type assert the storage client
+		switch client := task.StorageClient.(type) {
+		case interface{ UploadImage(context.Context, string, string, string, io.Reader) error }:
+			uploadErr = client.UploadImage(uploadCtx, task.SeriesSlug, chapterNumber, filename, io.NopCloser(resp.Body))
+		default:
+			uploadErr = fmt.Errorf("invalid storage client type")
+		}
 		uploadCancel()
 		
 		if uploadErr == nil {
@@ -163,11 +185,11 @@ func (p *Pool) processTask(task DownloadTask) {
 		
 		if attempt < 3 {
 			waitTime := time.Duration(attempt) * 2 * time.Second
-			p.logger.Debug("retrying S3 upload",
+			p.logger.Debug("retrying storage upload",
 				"attempt", attempt,
 				"wait", waitTime,
 				"series", task.SeriesSlug,
-				"chapter", task.Chapter.Number,
+				"chapter", chapterNumber,
 				"filename", filename,
 				"error", uploadErr)
 			time.Sleep(waitTime)
@@ -181,10 +203,10 @@ func (p *Pool) processTask(task DownloadTask) {
 	
 	if uploadErr != nil {
 		resp.Body.Close()
-		p.logger.Error("failed to upload image to S3 after retries",
+		p.logger.Error("failed to upload image to storage after retries",
 			"error", uploadErr,
 			"series", task.SeriesSlug,
-			"chapter", task.Chapter.Number,
+			"chapter", chapterNumber,
 			"filename", filename)
 		return
 	}
@@ -197,15 +219,15 @@ func (p *Pool) processTask(task DownloadTask) {
 	pageCount := atomic.AddInt64(&totalProcessedPages, 1)
 
 	p.logger.Info("successfully processed page",
-		"series", task.SeriesSlug,
-		"chapter", task.Chapter.Number,
-		"page", task.Page.Number,
-		"size_bytes", contentLength,
-		"download_ms", totalDuration.Milliseconds()-uploadDuration.Milliseconds(),
-		"upload_ms", uploadDuration.Milliseconds(),
-		"total_ms", totalDuration.Milliseconds(),
-		"queue_remaining", len(p.taskChan),
-		"total_pages_processed", pageCount)
+			"series", task.SeriesSlug,
+			"chapter", chapterNumber,
+			"page", task.Page.Number,
+			"size_bytes", contentLength,
+			"download_ms", totalDuration.Milliseconds()-uploadDuration.Milliseconds(),
+			"upload_ms", uploadDuration.Milliseconds(),
+			"total_ms", totalDuration.Milliseconds(),
+			"queue_remaining", len(p.taskChan),
+			"total_pages_processed", pageCount)
 }
 
 func (p *Pool) AddTask(task DownloadTask) {
@@ -213,31 +235,52 @@ func (p *Pool) AddTask(task DownloadTask) {
 }
 
 func (p *Pool) Wait() {
-	close(p.taskChan)
+	select {
+	case <-p.taskChan:
+		// Channel already closed
+	default:
+		close(p.taskChan)
+	}
 	p.wg.Wait()
 }
 
-func (p *Pool) ProcessChapterPages(seriesSlug string, chapter s3.Chapter, pages []sources.Page, httpClient *http.Client, s3Client *s3.Client, logger *slog.Logger) error {
+func (p *Pool) ProcessChapterPages(seriesSlug string, chapter interface{}, pages []sources.Page, httpClient *http.Client, storageClient interface{}, logger *slog.Logger) error {
+	// Extract chapter number from the interface{}
+	var chapterNumber string
+	switch ch := chapter.(type) {
+	case struct {
+		Number     string
+		Title      string
+		Pages      int
+		UploadedAt time.Time
+		SourceURL  string
+	}:
+		chapterNumber = ch.Number
+	default:
+		p.logger.Error("invalid chapter type in ProcessChapterPages")
+		return fmt.Errorf("invalid chapter type")
+	}
+
 	p.logger.Info("processing chapter pages", 
 		"series", seriesSlug,
-		"chapter", chapter.Number,
+		"chapter", chapterNumber,
 		"pages", len(pages))
 
 	for _, page := range pages {
 		task := DownloadTask{
-			SeriesSlug: seriesSlug,
-			Chapter:    chapter,
-			Page:       page,
-			HTTPClient: httpClient,
-			S3Client:   s3Client,
-			Logger:     logger,
+			SeriesSlug:    seriesSlug,
+			Chapter:       chapter,
+			Page:          page,
+			HTTPClient:    httpClient,
+			StorageClient: storageClient,
+			Logger:        logger,
 		}
 		p.AddTask(task)
 	}
 
 	p.logger.Info("chapter pages queued", 
 		"series", seriesSlug,
-		"chapter", chapter.Number,
+		"chapter", chapterNumber,
 		"pages", len(pages))
 	return nil
 }
