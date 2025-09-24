@@ -274,7 +274,12 @@ func (a *AsuraScans) ensureAbsoluteURL(url string) string {
 	}
 
 	if strings.Contains(url, "/chapter/") {
-		return a.BaseURL() + "/series/" + strings.TrimSuffix(url, "/") + "/"
+		// Normalize series URL by replacing hash with static 'aaaaaaaa'
+		parts := strings.Split(strings.TrimSuffix(url, "/"), "/")
+		if len(parts) >= 3 && len(parts[len(parts)-1]) == 8 {
+			parts[len(parts)-1] = "aaaaaaaa"
+		}
+		return a.BaseURL() + "/series/" + strings.Join(parts, "/") + "/"
 	}
 	
 	return a.BaseURL() + "/" + url

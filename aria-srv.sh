@@ -6,13 +6,13 @@ aria2c \
   --max-concurrent-downloads=100 \
   --max-connection-per-server=16 \
   --split=16 \
-  --min-split-size=1M \
+  --min-split-size=5M \
   --max-overall-download-limit=0 \
   --max-download-limit=0 \
   --connect-timeout=10 \
-  --timeout=30 \
-  --retry-wait=2 \
-  --max-tries=3 \
+  --timeout=60 \
+  --retry-wait=3 \
+  --max-tries=10 \
   --continue=true \
   --auto-file-renaming=true \
   --allow-overwrite=false \

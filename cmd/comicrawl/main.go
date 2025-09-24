@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -434,7 +435,8 @@ func shouldProcessSeries(seriesSlug, scrapeOnly string) bool {
 	if scrapeOnly == "" {
 		return true
 	}
-	return seriesSlug == scrapeOnly
+	// Check if scrapeOnly is contained within seriesSlug (more flexible for future sources)
+	return strings.Contains(seriesSlug, scrapeOnly) || seriesSlug == scrapeOnly
 }
 
 // Helper function to get minimum of two integers
