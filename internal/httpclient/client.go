@@ -18,10 +18,10 @@ import (
 )
 
 type HTTPClient struct {
-	client      *http.Client
-	limiter     *rate.Limiter
-	logger      *slog.Logger
-	userAgent   string
+	client    *http.Client
+	limiter   *rate.Limiter
+	logger    *slog.Logger
+	userAgent string
 }
 
 func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *flaresolverr.Client) (*HTTPClient, error) {
@@ -30,23 +30,21 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *flareso
 		return nil, fmt.Errorf("failed to create cookie jar: %w", err)
 	}
 
-	// Create transport with optional proxy
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: false,
 		},
-		MaxIdleConns:          1000,    // 10x increase for high concurrency
-		MaxIdleConnsPerHost:   200,     // Match/exceed worker count
-		MaxConnsPerHost:       300,     // Total connections per host
-		IdleConnTimeout:       30 * time.Second,  // Faster cleanup
-		DisableKeepAlives:     false,   // Ensure connection reuse
-		DisableCompression:    false,   // Keep compression for metadata
-		WriteBufferSize:       32768,   // 32KB write buffer
-		ReadBufferSize:        32768,   // 32KB read buffer
-		ForceAttemptHTTP2:     true,    // Use HTTP/2 if available
+		MaxIdleConns:        1000,
+		MaxIdleConnsPerHost: 200,
+		MaxConnsPerHost:     300,
+		IdleConnTimeout:     30 * time.Second,
+		DisableKeepAlives:   false,
+		DisableCompression:  false,
+		WriteBufferSize:     32768,
+		ReadBufferSize:      32768,
+		ForceAttemptHTTP2:   true,
 	}
 
-	// Set proxy if configured
 	if cfg.HTTPProxy != "" {
 		proxyURL, err := url.Parse(cfg.HTTPProxy)
 		if err != nil {
@@ -71,52 +69,48 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *flareso
 	}, nil
 }
 
-// Client returns the underlying http.Client for direct use
 func (h *HTTPClient) Client() *http.Client {
 	return h.client
 }
 
 func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
-	// Apply rate limiting only for non-image requests
 	if !isImageDownload(req.URL.String()) {
 		if err := h.limiter.Wait(req.Context()); err != nil {
 			return nil, fmt.Errorf("rate limiter error: %w", err)
 		}
 	}
 
-	// Set user agent
 	if h.userAgent != "" {
 		req.Header.Set("User-Agent", h.userAgent)
 	}
 
-	h.logger.Debug("HTTP request", 
-		"method", req.Method, 
+	h.logger.Debug("HTTP request",
+		"method", req.Method,
 		"url", req.URL.String(),
 		"headers", req.Header)
 
-	// Execute request with retries
 	var resp *http.Response
 	var err error
-	
+
 	for attempt := 1; attempt <= 3; attempt++ {
 		resp, err = h.client.Do(req)
 		if err == nil && resp.StatusCode < 500 {
 			break
 		}
-		
+
 		if err != nil {
-			h.logger.Warn("HTTP request failed", 
-				"attempt", attempt, 
+			h.logger.Warn("HTTP request failed",
+				"attempt", attempt,
 				"error", err,
 				"url", req.URL.String())
 		} else {
 			resp.Body.Close()
-			h.logger.Warn("HTTP request failed with status", 
-				"attempt", attempt, 
+			h.logger.Warn("HTTP request failed with status",
+				"attempt", attempt,
 				"status", resp.StatusCode,
 				"url", req.URL.String())
 		}
-		
+
 		if attempt < 3 {
 			time.Sleep(time.Duration(attempt) * time.Second)
 		}
@@ -131,7 +125,7 @@ func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("HTTP error: %s", resp.Status)
 	}
 
-	h.logger.Debug("HTTP response", 
+	h.logger.Debug("HTTP response",
 		"status", resp.StatusCode,
 		"url", req.URL.String())
 
@@ -163,8 +157,8 @@ func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flar
 		h.userAgent = solution.UserAgent
 	}
 
-	h.logger.Info("configured HTTP client for domain", 
-		"domain", domain, 
+	h.logger.Info("configured HTTP client for domain",
+		"domain", domain,
 		"cookies", len(solution.Cookies),
 		"userAgent", solution.UserAgent,
 		"proxy", proxyURL)
@@ -172,19 +166,16 @@ func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flar
 	return nil
 }
 
-// isImageDownload checks if the URL is for an image download
 func isImageDownload(url string) bool {
-	// Common image extensions
 	imageExts := []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 	for _, ext := range imageExts {
 		if strings.HasSuffix(strings.ToLower(url), ext) {
 			return true
 		}
 	}
-	// Also check for common image URL patterns
 	return strings.Contains(url, "/images/") ||
-		   strings.Contains(url, "/img/") ||
-		   strings.Contains(url, "image") ||
-		   strings.Contains(url, ".jpg?") ||
-		   strings.Contains(url, ".png?")
+		strings.Contains(url, "/img/") ||
+		strings.Contains(url, "image") ||
+		strings.Contains(url, ".jpg?") ||
+		strings.Contains(url, ".png?")
 }

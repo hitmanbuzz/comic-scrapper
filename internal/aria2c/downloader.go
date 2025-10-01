@@ -29,7 +29,7 @@ type DownloadRequest struct {
 	StorageClient interface{}
 }
 
-func NewDownloader(rpcURL string, logger *slog.Logger) (*Downloader, error) {
+func NewDownloader(rpcURL string, workerCount int, logger *slog.Logger) (*Downloader, error) {
 	client, err := NewClient(rpcURL, logger)
 	if err != nil {
 		return nil, err
@@ -41,15 +41,13 @@ func NewDownloader(rpcURL string, logger *slog.Logger) (*Downloader, error) {
 		taskChan: make(chan DownloadRequest, 1000), // Large buffer for streaming
 	}
 
-	// Start worker goroutines for concurrent downloads
-	downloader.Start()
+	downloader.Start(workerCount)
 
 	return downloader, nil
 }
 
-func (d *Downloader) Start() {
-	// Start multiple workers for concurrent aria2c downloads
-	for i := 0; i < 50; i++ { // 50 concurrent aria2c workers
+func (d *Downloader) Start(workerCount int) {
+	for i := 0; i < workerCount; i++ {
 		d.wg.Add(1)
 		go d.worker(i)
 	}
@@ -57,23 +55,23 @@ func (d *Downloader) Start() {
 
 func (d *Downloader) worker(id int) {
 	defer d.wg.Done()
-	
+
 	d.logger.Debug("aria2c worker started", "worker_id", id)
-	
+
 	for task := range d.taskChan {
 		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 		err := d.downloadSingle(ctx, task)
 		cancel()
-		
+
 		if err != nil {
-			d.logger.Error("download failed", 
-				"error", err, 
+			d.logger.Error("download failed",
+				"error", err,
 				"series", task.SeriesSlug,
 				"chapter", d.extractChapterNumber(task.Chapter),
 				"page", task.Page.Number)
 		}
 	}
-	
+
 	d.logger.Debug("aria2c worker stopped", "worker_id", id)
 }
 
@@ -83,19 +81,17 @@ func (d *Downloader) Close() error {
 	return d.client.Close()
 }
 
-// AddDownload adds a single download request to the stream
 func (d *Downloader) AddDownload(request DownloadRequest) {
 	d.taskChan <- request
 }
 
 func (d *Downloader) DownloadBatch(ctx context.Context, requests []DownloadRequest) error {
 	d.logger.Info("ARIA2C STREAMING DOWNLOAD STARTED", "tasks", len(requests))
-	
-	// Stream all requests to workers
+
 	for _, req := range requests {
 		d.AddDownload(req)
 	}
-	
+
 	return nil
 }
 
@@ -103,15 +99,13 @@ func (d *Downloader) downloadSingle(ctx context.Context, req DownloadRequest) er
 	startTime := time.Now()
 
 	chapterNumber := d.extractChapterNumber(req.Chapter)
-	
-	// Create unique filename for aria2c
-	aria2cFilename := fmt.Sprintf("%s_ch%s_p%03d%s", 
-		req.SeriesSlug, 
-		chapterNumber, 
-		req.Page.Number, 
+
+	aria2cFilename := fmt.Sprintf("%s_ch%s_p%03d%s",
+		req.SeriesSlug,
+		chapterNumber,
+		req.Page.Number,
 		getFileExtension(req.Page.URL))
-	
-	// Final filename for storage
+
 	storageFilename := fmt.Sprintf("%03d%s", req.Page.Number, getFileExtension(req.Page.URL))
 
 	d.logger.Debug("queueing aria2c download",
@@ -120,7 +114,6 @@ func (d *Downloader) downloadSingle(ctx context.Context, req DownloadRequest) er
 		"page", req.Page.Number,
 		"url", req.Page.URL)
 
-	// Download and stream directly to storage
 	err := d.client.DownloadAndStream(ctx, DownloadTask{
 		URL:      req.Page.URL,
 		Filename: aria2cFilename,
@@ -130,12 +123,13 @@ func (d *Downloader) downloadSingle(ctx context.Context, req DownloadRequest) er
 			"Accept":     "image/webp,image/apng,image/*,*/*;q=0.8",
 		},
 	}, func(reader io.Reader) error {
-		// Upload to storage
 		switch client := req.StorageClient.(type) {
-		case interface{ UploadImage(context.Context, string, string, string, io.Reader) error }:
+		case interface {
+			UploadImage(context.Context, string, string, string, io.Reader) error
+		}:
 			uploadCtx, cancel := context.WithTimeout(ctx, 90*time.Second)
 			defer cancel()
-			
+
 			return client.UploadImage(uploadCtx, req.SeriesSlug, chapterNumber, storageFilename, io.NopCloser(reader))
 		default:
 			return fmt.Errorf("invalid storage client type")
@@ -177,7 +171,6 @@ func (d *Downloader) extractChapterNumber(chapter interface{}) string {
 	}
 }
 
-// Helper function to get file extension from URL
 func getFileExtension(url string) string {
 	ext := filepath.Ext(url)
 	if ext == "" {

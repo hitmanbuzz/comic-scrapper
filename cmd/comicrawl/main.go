@@ -74,7 +74,7 @@ func main() {
 	} else {
 		logger.Info("FlareSolverr disabled - proceeding without Cloudflare bypass")
 	}
-	
+
 	httpClient, err := httpclient.NewHTTPClient(cfg, logger, flareClient)
 	if err != nil {
 		logger.Error("failed to create HTTP client", "error", err)
@@ -83,10 +83,10 @@ func main() {
 
 	// Create downloader based on configuration
 	var downloader Downloader
-	
+
 	if cfg.UseAria2c {
 		logger.Info("using aria2c for streaming downloads", "aria2c_url", cfg.Aria2cURL)
-		aria2cDownloader, err := aria2c.NewDownloader(cfg.Aria2cURL, logger)
+		aria2cDownloader, err := aria2c.NewDownloader(cfg.Aria2cURL, cfg.DownloadWorkers*2, logger)
 		if err != nil {
 			logger.Error("failed to create aria2c downloader, falling back to regular pool", "error", err)
 			workerPool := worker.NewPool(cfg.DownloadWorkers, logger)
@@ -101,8 +101,8 @@ func main() {
 		logger.Info("using regular worker pool for downloads")
 		workerPool := worker.NewPool(cfg.DownloadWorkers, logger)
 		workerPool.Start()
-			downloader = workerPool
-			defer workerPool.Close()
+		downloader = workerPool
+		defer workerPool.Close()
 	}
 
 	// Run the scraper
@@ -136,7 +136,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 	}
 
 	var wg sync.WaitGroup
-	
+
 	// Process all sources and series concurrently
 	for _, src := range sourceList {
 		logger.Info("processing source", "source", src.Name())
@@ -165,7 +165,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 
 		// Log first few series for debugging
 		if len(seriesList) > 0 {
-			logger.Debug("sample series slugs", 
+			logger.Debug("sample series slugs",
 				"first_5", seriesList[:min(5, len(seriesList))])
 		}
 
@@ -276,20 +276,27 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 
 	// Update metadata
 	logger.Info("updating metadata", "updates_count", len(pendingUpdates))
-	
-	var metadataErrors int
-	for i, update := range pendingUpdates {
-		if err := storageClient.SaveSeriesMetadata(ctx, update.seriesSlug, update.metadata); err != nil {
-			metadataErrors++
-			logger.Error("failed to save series metadata",
-				"series", update.seriesSlug,
-				"error", err)
-		} else {
-			logger.Debug("metadata updated",
-				"series", update.seriesSlug,
-				"progress", fmt.Sprintf("%d/%d", i+1, len(pendingUpdates)))
-		}
+
+	var metadataErrors int64
+	var metadataWg sync.WaitGroup
+
+	for _, update := range pendingUpdates {
+		metadataWg.Add(1)
+		go func(u metadataUpdate) {
+			defer metadataWg.Done()
+			if err := storageClient.SaveSeriesMetadata(ctx, u.seriesSlug, u.metadata); err != nil {
+				atomic.AddInt64(&metadataErrors, 1)
+				logger.Error("failed to save series metadata",
+					"series", u.seriesSlug,
+					"error", err)
+			} else {
+				logger.Debug("metadata updated",
+					"series", u.seriesSlug)
+			}
+		}(update)
 	}
+
+	metadataWg.Wait()
 
 	if metadataErrors > 0 {
 		logger.Warn("metadata update errors", "count", metadataErrors)
@@ -305,7 +312,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 		"pages_per_sec", float64(atomic.LoadInt64(&totalPages))/duration.Seconds())
 
 	logger.Info("scraper completed successfully",
-		"metadata_updates", len(pendingUpdates)-metadataErrors,
+		"metadata_updates", len(pendingUpdates)-int(metadataErrors),
 		"metadata_errors", metadataErrors)
 
 	return nil
@@ -396,7 +403,7 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 
 func setupLogger(level string) *slog.Logger {
 	var logLevel slog.Level
-	
+
 	switch level {
 	case "debug":
 		logLevel = slog.LevelDebug
@@ -423,7 +430,7 @@ func setupSignalHandler(cancel context.CancelFunc, logger *slog.Logger) {
 		sig := <-sigChan
 		logger.Info("received signal, shutting down", "signal", sig)
 		cancel()
-		
+
 		// Give some time for graceful shutdown
 		time.Sleep(2 * time.Second)
 		os.Exit(0)

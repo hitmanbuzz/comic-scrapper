@@ -31,8 +31,6 @@ type DownloadResult struct {
 }
 
 func NewClient(rpcURL string, logger *slog.Logger) (*Client, error) {
-	// Convert HTTP URL to WebSocket URL for arigo
-	// aria2c RPC uses WebSocket, so convert http://localhost:6800/jsonrpc to ws://localhost:6800/jsonrpc
 	wsURL := "ws" + rpcURL[4:]
 	client, err := arigo.Dial(wsURL, "")
 	if err != nil {
@@ -95,17 +93,17 @@ func (c *Client) DownloadBatch(ctx context.Context, tasks []DownloadTask) ([]Dow
 
 func (c *Client) createDownloadOptions(task DownloadTask) arigo.Options {
 	options := arigo.Options{
-		Dir:               c.tempDir,
-		Out:               task.Filename,
+		Dir:                    c.tempDir,
+		Out:                    task.Filename,
 		MaxConnectionPerServer: 16,
-		Split:             16,
-		MinSplitSize:      "1M",
-		MaxTries:          5,
-		RetryWait:         2,
-		Timeout:           30,
-		MaxDownloadLimit:  "0",
-		Referer:           task.URL,
-		UserAgent:         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+		Split:                  16,
+		MinSplitSize:           "1M",
+		MaxTries:               5,
+		RetryWait:              2,
+		Timeout:                30,
+		MaxDownloadLimit:       "0",
+		Referer:                task.URL,
+		UserAgent:              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
 	}
 
 	for key, value := range task.Headers {
@@ -143,7 +141,6 @@ func (c *Client) waitForDownload(ctx context.Context, gid arigo.GID, result *Dow
 
 			switch status.Status {
 			case "complete":
-				// aria2c returns the full path including temp directory
 				filePath := status.Files[0].Path
 				fileInfo, err := os.Stat(filePath)
 				if err != nil {
@@ -166,7 +163,7 @@ func (c *Client) waitForDownload(ctx context.Context, gid arigo.GID, result *Dow
 
 func (c *Client) DownloadAndStream(ctx context.Context, task DownloadTask, uploadFunc func(io.Reader) error) error {
 	options := c.createDownloadOptions(task)
-	
+
 	gid, err := c.arigoClient.AddURI([]string{task.URL}, &options)
 	if err != nil {
 		return fmt.Errorf("failed to add download task: %w", err)

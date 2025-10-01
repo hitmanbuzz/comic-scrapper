@@ -43,7 +43,6 @@ func NewClient(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*C
 		return nil, fmt.Errorf("bucket (base path) is required for disk storage")
 	}
 
-	// Create base directory if it doesn't exist
 	err := os.MkdirAll(basePath, 0755)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base directory %s: %w", basePath, err)
@@ -59,7 +58,7 @@ func NewClient(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*C
 
 func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, filename string, data io.Reader) error {
 	filePath := path.Join(c.basePath, seriesSlug, chapterNumber, filename)
-	
+
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(filePath)
 	err := os.MkdirAll(dir, 0755)
@@ -67,14 +66,12 @@ func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, fil
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
-	// Create file
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
 	}
 	defer file.Close()
 
-	// Copy data to file
 	size, err := io.Copy(file, data)
 	if err != nil {
 		return fmt.Errorf("failed to write to file %s: %w", filePath, err)
@@ -86,11 +83,11 @@ func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, fil
 
 func (c *Client) DownloadJSON(ctx context.Context, key string, v interface{}) (bool, error) {
 	filePath := path.Join(c.basePath, key)
-	
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return false, nil // File doesn't exist
+			return false, nil
 		}
 		return false, fmt.Errorf("failed to open JSON file %s: %w", filePath, err)
 	}
@@ -105,7 +102,7 @@ func (c *Client) DownloadJSON(ctx context.Context, key string, v interface{}) (b
 
 func (c *Client) UploadJSON(ctx context.Context, key string, v interface{}) error {
 	filePath := path.Join(c.basePath, key)
-	
+
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(filePath)
 	err := os.MkdirAll(dir, 0755)
@@ -130,18 +127,18 @@ func (c *Client) UploadJSON(ctx context.Context, key string, v interface{}) erro
 func (c *Client) LoadSeriesMetadata(ctx context.Context, seriesSlug string) (*SeriesMetadata, error) {
 	key := path.Join(seriesSlug, "meta.json")
 	var meta SeriesMetadata
-	
+
 	exists, err := c.DownloadJSON(ctx, key, &meta)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if !exists {
 		return &SeriesMetadata{
 			Chapters: []Chapter{},
 		}, nil
 	}
-	
+
 	return &meta, nil
 }
 
@@ -154,16 +151,16 @@ func (c *Client) SaveSeriesMetadata(ctx context.Context, seriesSlug string, meta
 func (c *Client) LoadChapters(ctx context.Context, seriesSlug string) ([]Chapter, error) {
 	key := path.Join(seriesSlug, "chapters.json")
 	var chapters []Chapter
-	
+
 	exists, err := c.DownloadJSON(ctx, key, &chapters)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if !exists {
 		return []Chapter{}, nil
 	}
-	
+
 	return chapters, nil
 }
 

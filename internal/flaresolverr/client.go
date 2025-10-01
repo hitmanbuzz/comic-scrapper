@@ -21,12 +21,12 @@ type Client struct {
 }
 
 type SessionResponse struct {
-	Status    string `json:"status"`
-	Message   string `json:"message"`
+	Status    string   `json:"status"`
+	Message   string   `json:"message"`
 	Solution  Solution `json:"solution"`
-	StartTime int64   `json:"startTimestamp"`
-	EndTime   int64   `json:"endTimestamp"`
-	Version   string  `json:"version"`
+	StartTime int64    `json:"startTimestamp"`
+	EndTime   int64    `json:"endTimestamp"`
+	Version   string   `json:"version"`
 }
 
 type Solution struct {
@@ -71,7 +71,6 @@ func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL stri
 		return nil, fmt.Errorf("invalid target URL: %w", err)
 	}
 
-	// Use the base domain for session creation
 	domain := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
 
 	request := Request{
@@ -80,7 +79,6 @@ func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL stri
 		MaxTimeout: 60000, // 60 seconds
 	}
 
-	// Add proxy configuration if provided
 	if proxyURL != "" {
 		request.Proxy = map[string]string{
 			"url": proxyURL,
@@ -88,7 +86,7 @@ func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL stri
 	}
 
 	c.logger.Debug("requesting FlareSolverr session", "url", domain, "proxy", proxyURL)
-	
+
 	resp, err := c.doRequest(ctx, request)
 	if err != nil {
 		return nil, err
@@ -98,8 +96,8 @@ func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL stri
 		return nil, fmt.Errorf("flare solverr error: %s", resp.Message)
 	}
 
-	c.logger.Info("obtained FlareSolverr session", 
-		"url", domain, 
+	c.logger.Info("obtained FlareSolverr session",
+		"url", domain,
 		"cookies", len(resp.Solution.Cookies),
 		"proxy", proxyURL)
 
@@ -118,7 +116,7 @@ func (c *Client) doRequest(ctx context.Context, req Request) (*SessionResponse, 
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := c.client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
@@ -142,16 +140,14 @@ func (c *Client) doRequest(ctx context.Context, req Request) (*SessionResponse, 
 	return &sessionResp, nil
 }
 
-// CreateCookieJar creates a cookie jar from the FlareSolverr cookies
 func (s *Solution) CreateCookieJar() []*http.Cookie {
 	var cookies []*http.Cookie
 	for _, cookie := range s.Cookies {
-		// Convert timestamp to time.Time
 		var expires time.Time
 		if cookie.Expires > 0 {
 			expires = time.Unix(int64(cookie.Expires), 0)
 		}
-		
+
 		cookies = append(cookies, &http.Cookie{
 			Name:     cookie.Name,
 			Value:    cookie.Value,
