@@ -31,12 +31,61 @@ type Downloader interface {
 func main() {
 	// Parse command line arguments
 	configPath := flag.String("config", "config.yaml", "Path to config file")
+	
+	// CLI override flags
+	sourcesFlag := flag.String("sources", "", "Comma-separated list of sources to include (e.g., 'asurascans,webtoon')")
+	includeSeriesFlag := flag.String("include-series", "", "Comma-separated list of series to include")
+	excludeSeriesFlag := flag.String("exclude-series", "", "Comma-separated list of series to exclude")
+	limitSeriesFlag := flag.Int("limit-series", 0, "Limit number of series to process (0 = no limit)")
+	limitChaptersFlag := flag.Int("limit-chapters", 0, "Limit number of chapters per series (0 = no limit)")
+	dryRunFlag := flag.Bool("dry-run", false, "Perform a dry run without downloading")
+	
 	flag.Parse()
 
 	// Load configuration
 	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
+		os.Exit(1)
+	}
+	
+	// Apply CLI overrides
+	if *sourcesFlag != "" {
+		cfg.IncludeSources = strings.Split(*sourcesFlag, ",")
+		for i := range cfg.IncludeSources {
+			cfg.IncludeSources[i] = strings.TrimSpace(cfg.IncludeSources[i])
+		}
+	}
+	
+	if *includeSeriesFlag != "" {
+		cfg.IncludeSeries = strings.Split(*includeSeriesFlag, ",")
+		for i := range cfg.IncludeSeries {
+			cfg.IncludeSeries[i] = strings.TrimSpace(cfg.IncludeSeries[i])
+		}
+	}
+	
+	if *excludeSeriesFlag != "" {
+		cfg.ExcludeSeries = strings.Split(*excludeSeriesFlag, ",")
+		for i := range cfg.ExcludeSeries {
+			cfg.ExcludeSeries[i] = strings.TrimSpace(cfg.ExcludeSeries[i])
+		}
+	}
+	
+	if *limitSeriesFlag > 0 {
+		cfg.LimitSeries = *limitSeriesFlag
+	}
+	
+	if *limitChaptersFlag > 0 {
+		cfg.LimitChapters = *limitChaptersFlag
+	}
+	
+	if *dryRunFlag {
+		cfg.DryRun = *dryRunFlag
+	}
+	
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -51,6 +100,29 @@ func main() {
 	setupSignalHandler(cancel, logger)
 
 	logger.Info("starting manga scraper", "config", *configPath)
+
+	// Log configuration
+	logger.Info("configuration",
+		"bucket", cfg.Bucket,
+		"storage_type", cfg.StorageType,
+		"use_aria2c", cfg.UseAria2c,
+		"download_workers", cfg.DownloadWorkers,
+		"requests_per_second", cfg.RequestsPerSecond,
+		"limit_series", cfg.LimitSeries,
+		"limit_chapters", cfg.LimitChapters,
+		"dry_run", cfg.DryRun)
+	
+	if cfg.HasSourceFilters() {
+		logger.Info("source filters",
+			"include_sources", cfg.IncludeSources,
+			"exclude_sources", cfg.ExcludeSources)
+	}
+	
+	if cfg.HasSeriesFilters() {
+		logger.Info("series filters",
+			"include_series", cfg.IncludeSeries,
+			"exclude_series", cfg.ExcludeSeries)
+	}
 
 	// Initialize storage client
 	var storageClient *disk.Client
@@ -134,6 +206,9 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 	sourceList := []sources.Source{
 		sources.NewAsuraScans(logger),
 	}
+	
+	// Filter sources based on configuration
+	sourceList = filterSources(sourceList, cfg)
 
 	var wg sync.WaitGroup
 
@@ -170,11 +245,21 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 		}
 
 		// Process each series
+		seriesCount := 0
 		for _, series := range seriesList {
-			if !shouldProcessSeries(series.Slug, cfg.ScrapeOnly) {
-				logger.Debug("skipping series", "series", series.Slug, "scrape_only", cfg.ScrapeOnly)
+			// Check if we should process this series
+			if !shouldProcessSeries(series.Slug, cfg) {
+				logger.Debug("skipping series", "series", series.Slug)
 				continue
 			}
+			
+			// Check series limit
+			if cfg.LimitSeries > 0 && seriesCount >= cfg.LimitSeries {
+				logger.Info("series limit reached", "limit", cfg.LimitSeries)
+				break
+			}
+			
+			seriesCount++
 
 			wg.Add(1)
 			go func(s sources.Series) {
@@ -207,6 +292,12 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 					logger.Info("no chapters found", "series", s.Slug)
 					return
 				}
+				
+				// Apply chapter limit if configured
+				if cfg.LimitChapters > 0 && len(remoteChapters) > cfg.LimitChapters {
+					logger.Info("limiting chapters", "series", s.Slug, "original", len(remoteChapters), "limited", cfg.LimitChapters)
+					remoteChapters = remoteChapters[:cfg.LimitChapters]
+				}
 
 				logger.Info("found chapters to process",
 					"series", s.Slug,
@@ -218,13 +309,17 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 					atomic.AddInt64(&totalPages, int64(len(ch.Pages)))
 				}
 
-				// Process chapters and stream downloads immediately
-				err = processSeriesChapters(ctx, src, httpClient, s, remoteChapters, downloader, storageClient, logger)
-				if err != nil {
-					logger.Error("failed to process chapters",
-						"series", s.Slug,
-						"error", err)
-					return
+				// Process chapters and stream downloads immediately (unless in dry-run mode)
+				if !cfg.DryRun {
+					err = processSeriesChapters(ctx, src, httpClient, s, remoteChapters, downloader, storageClient, logger)
+					if err != nil {
+						logger.Error("failed to process chapters",
+							"series", s.Slug,
+							"error", err)
+						return
+					}
+				} else {
+					logger.Info("dry-run mode: skipping chapter processing", "series", s.Slug, "chapters", len(remoteChapters))
 				}
 
 				// Prepare metadata update
@@ -274,32 +369,36 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 
 	logger.Info("all series processed, downloads are streaming concurrently")
 
-	// Update metadata
+	// Update metadata (unless in dry-run mode)
 	logger.Info("updating metadata", "updates_count", len(pendingUpdates))
 
 	var metadataErrors int64
-	var metadataWg sync.WaitGroup
+	if cfg.DryRun {
+		logger.Info("dry-run mode: skipping metadata updates")
+	} else {
+		var metadataWg sync.WaitGroup
 
-	for _, update := range pendingUpdates {
-		metadataWg.Add(1)
-		go func(u metadataUpdate) {
-			defer metadataWg.Done()
-			if err := storageClient.SaveSeriesMetadata(ctx, u.seriesSlug, u.metadata); err != nil {
-				atomic.AddInt64(&metadataErrors, 1)
-				logger.Error("failed to save series metadata",
-					"series", u.seriesSlug,
-					"error", err)
-			} else {
-				logger.Debug("metadata updated",
-					"series", u.seriesSlug)
-			}
-		}(update)
-	}
+		for _, update := range pendingUpdates {
+			metadataWg.Add(1)
+			go func(u metadataUpdate) {
+				defer metadataWg.Done()
+				if err := storageClient.SaveSeriesMetadata(ctx, u.seriesSlug, u.metadata); err != nil {
+					atomic.AddInt64(&metadataErrors, 1)
+					logger.Error("failed to save series metadata",
+						"series", u.seriesSlug,
+						"error", err)
+				} else {
+					logger.Debug("metadata updated",
+						"series", u.seriesSlug)
+				}
+			}(update)
+		}
 
-	metadataWg.Wait()
+		metadataWg.Wait()
 
-	if metadataErrors > 0 {
-		logger.Warn("metadata update errors", "count", metadataErrors)
+		if metadataErrors > 0 {
+			logger.Warn("metadata update errors", "count", metadataErrors)
+		}
 	}
 
 	// Performance summary
@@ -437,19 +536,32 @@ func setupSignalHandler(cancel context.CancelFunc, logger *slog.Logger) {
 	}()
 }
 
-// Helper function to check if a series should be processed based on scrape_only config
-func shouldProcessSeries(seriesSlug, scrapeOnly string) bool {
-	if scrapeOnly == "" {
-		return true
-	}
-	// Check if scrapeOnly is contained within seriesSlug (more flexible for future sources)
-	return strings.Contains(seriesSlug, scrapeOnly) || seriesSlug == scrapeOnly
-}
-
 // Helper function to get minimum of two integers
 func min(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
+}
+
+// filterSources filters the source list based on configuration
+func filterSources(sourceList []sources.Source, cfg *config.Config) []sources.Source {
+	// If no source filters, return all sources
+	if !cfg.HasSourceFilters() {
+		return sourceList
+	}
+	
+	var filtered []sources.Source
+	for _, source := range sourceList {
+		if cfg.IsSourceIncluded(source.Name()) {
+			filtered = append(filtered, source)
+		}
+	}
+	
+	return filtered
+}
+
+// shouldProcessSeries checks if a series should be processed based on configuration
+func shouldProcessSeries(seriesSlug string, cfg *config.Config) bool {
+	return cfg.IsSeriesIncluded(seriesSlug)
 }

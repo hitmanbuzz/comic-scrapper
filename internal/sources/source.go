@@ -70,14 +70,23 @@ func (b *BaseSource) BuildURL(path string) string {
 }
 
 func (b *BaseSource) ExtractSlugFromURL(urlStr string) (string, error) {
+	if urlStr == "" {
+		return "", fmt.Errorf("empty URL")
+	}
+	
 	parsed, err := url.Parse(urlStr)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
 	}
 
 	path := strings.Trim(parsed.Path, "/")
+	if path == "" {
+		return "", fmt.Errorf("empty path in URL: %s", urlStr)
+	}
+	
 	segments := strings.Split(path, "/")
 
+	// General case: take the last non-empty segment
 	for i := len(segments) - 1; i >= 0; i-- {
 		if segments[i] != "" {
 			return segments[i], nil
@@ -88,13 +97,16 @@ func (b *BaseSource) ExtractSlugFromURL(urlStr string) (string, error) {
 }
 
 func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
-	re := regexp.MustCompile(`[^0-9.]`)
-	normalized := re.ReplaceAllString(chapterNum, "")
-
-	if normalized == "" {
+	// First extract the number using a more sophisticated regex
+	re := regexp.MustCompile(`(\d+(?:\.\d+)?)`)
+	matches := re.FindStringSubmatch(chapterNum)
+	
+	if len(matches) == 0 {
 		return "0"
 	}
-
+	
+	normalized := matches[1]
+	
 	parts := strings.Split(normalized, ".")
 	if len(parts) > 0 && parts[0] != "" {
 		parts[0] = strings.TrimLeft(parts[0], "0")
