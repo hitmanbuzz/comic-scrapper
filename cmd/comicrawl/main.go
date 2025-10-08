@@ -31,7 +31,7 @@ type Downloader interface {
 func main() {
 	// Parse command line arguments
 	configPath := flag.String("config", "config.yaml", "Path to config file")
-	
+
 	// CLI override flags
 	sourcesFlag := flag.String("sources", "", "Comma-separated list of sources to include (e.g., 'asurascans,webtoon')")
 	includeSeriesFlag := flag.String("include-series", "", "Comma-separated list of series to include")
@@ -39,7 +39,7 @@ func main() {
 	limitSeriesFlag := flag.Int("limit-series", 0, "Limit number of series to process (0 = no limit)")
 	limitChaptersFlag := flag.Int("limit-chapters", 0, "Limit number of chapters per series (0 = no limit)")
 	dryRunFlag := flag.Bool("dry-run", false, "Perform a dry run without downloading")
-	
+
 	flag.Parse()
 
 	// Load configuration
@@ -48,7 +48,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// Apply CLI overrides
 	if *sourcesFlag != "" {
 		cfg.IncludeSources = strings.Split(*sourcesFlag, ",")
@@ -56,33 +56,33 @@ func main() {
 			cfg.IncludeSources[i] = strings.TrimSpace(cfg.IncludeSources[i])
 		}
 	}
-	
+
 	if *includeSeriesFlag != "" {
 		cfg.IncludeSeries = strings.Split(*includeSeriesFlag, ",")
 		for i := range cfg.IncludeSeries {
 			cfg.IncludeSeries[i] = strings.TrimSpace(cfg.IncludeSeries[i])
 		}
 	}
-	
+
 	if *excludeSeriesFlag != "" {
 		cfg.ExcludeSeries = strings.Split(*excludeSeriesFlag, ",")
 		for i := range cfg.ExcludeSeries {
 			cfg.ExcludeSeries[i] = strings.TrimSpace(cfg.ExcludeSeries[i])
 		}
 	}
-	
+
 	if *limitSeriesFlag > 0 {
 		cfg.LimitSeries = *limitSeriesFlag
 	}
-	
+
 	if *limitChaptersFlag > 0 {
 		cfg.LimitChapters = *limitChaptersFlag
 	}
-	
+
 	if *dryRunFlag {
 		cfg.DryRun = *dryRunFlag
 	}
-	
+
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
@@ -111,13 +111,13 @@ func main() {
 		"limit_series", cfg.LimitSeries,
 		"limit_chapters", cfg.LimitChapters,
 		"dry_run", cfg.DryRun)
-	
+
 	if cfg.HasSourceFilters() {
 		logger.Info("source filters",
 			"include_sources", cfg.IncludeSources,
 			"exclude_sources", cfg.ExcludeSources)
 	}
-	
+
 	if cfg.HasSeriesFilters() {
 		logger.Info("series filters",
 			"include_series", cfg.IncludeSeries,
@@ -205,8 +205,9 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 
 	sourceList := []sources.Source{
 		sources.NewAsuraScans(logger),
+		sources.NewWebtoon(logger),
 	}
-	
+
 	// Filter sources based on configuration
 	sourceList = filterSources(sourceList, cfg)
 
@@ -251,14 +252,16 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 			if !shouldProcessSeries(series.Slug, cfg) {
 				logger.Debug("skipping series", "series", series.Slug)
 				continue
+			} else {
+				logger.Debug("processing series", "series", series.Slug)
 			}
-			
+
 			// Check series limit
 			if cfg.LimitSeries > 0 && seriesCount >= cfg.LimitSeries {
 				logger.Info("series limit reached", "limit", cfg.LimitSeries)
 				break
 			}
-			
+
 			seriesCount++
 
 			wg.Add(1)
@@ -292,7 +295,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 					logger.Info("no chapters found", "series", s.Slug)
 					return
 				}
-				
+
 				// Apply chapter limit if configured
 				if cfg.LimitChapters > 0 && len(remoteChapters) > cfg.LimitChapters {
 					logger.Info("limiting chapters", "series", s.Slug, "original", len(remoteChapters), "limited", cfg.LimitChapters)
@@ -550,18 +553,26 @@ func filterSources(sourceList []sources.Source, cfg *config.Config) []sources.So
 	if !cfg.HasSourceFilters() {
 		return sourceList
 	}
-	
+
 	var filtered []sources.Source
 	for _, source := range sourceList {
 		if cfg.IsSourceIncluded(source.Name()) {
 			filtered = append(filtered, source)
 		}
 	}
-	
+
 	return filtered
 }
 
 // shouldProcessSeries checks if a series should be processed based on configuration
 func shouldProcessSeries(seriesSlug string, cfg *config.Config) bool {
-	return cfg.IsSeriesIncluded(seriesSlug)
+	included := cfg.IsSeriesIncluded(seriesSlug)
+
+	// Debug logging for series filtering
+	if cfg.HasSeriesFilters() {
+		// This would be helpful when debugging, but let's not add slog import here
+		// Instead, we can rely on the debug logging we added elsewhere
+	}
+
+	return included
 }

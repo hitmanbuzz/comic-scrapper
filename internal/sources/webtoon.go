@@ -14,6 +14,10 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+// FIXME
+// Webtoon has no decent way to get a list of all series on the platform
+// this means that we are limited to effectively bruteforcing the series list
+// which is relatively easy due to the series ids being sequential but will be ugly
 type Webtoon struct {
 	*BaseSource
 	langCode string
@@ -31,7 +35,7 @@ func (w *Webtoon) ExtractSlugFromURL(urlStr string) (string, error) {
 	if urlStr == "" {
 		return "", fmt.Errorf("empty URL")
 	}
-	
+
 	parsed, err := url.Parse(urlStr)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
@@ -41,7 +45,7 @@ func (w *Webtoon) ExtractSlugFromURL(urlStr string) (string, error) {
 	if path == "" {
 		return "", fmt.Errorf("empty path in URL: %s", urlStr)
 	}
-	
+
 	segments := strings.Split(path, "/")
 
 	// Special handling for Webtoon URLs which have format like /en/fantasy/tower-of-god/list
@@ -68,14 +72,24 @@ func (w *Webtoon) ExtractSlugFromURL(urlStr string) (string, error) {
 	return "", fmt.Errorf("could not extract slug from URL: %s", urlStr)
 }
 
+// BuildURL overrides the base implementation with Webtoon-specific logic
+func (w *Webtoon) BuildURL(path string) string {
+	// For Webtoon, we need to include the language code in the path
+	trimmedPath := strings.TrimLeft(path, "/")
+	if trimmedPath == "" {
+		return fmt.Sprintf("%s/%s", w.baseURL, w.langCode)
+	}
+	return fmt.Sprintf("%s/%s/%s", w.baseURL, w.langCode, trimmedPath)
+}
+
 func (w *Webtoon) ListSeries(ctx context.Context, client *http.Client) ([]Series, error) {
 	w.logger.Info("fetching series list from Webtoon")
 
 	var allSeries []Series
-	
+
 	// Webtoon has different ranking categories
-	rankings := []string{"trending", "popular", "originals", "canvas"}
-	
+	rankings := []string{"trending", "popular", "originals", "canvas", "latest"}
+
 	for _, ranking := range rankings {
 		url := fmt.Sprintf("%s/%s/ranking/%s", w.BaseURL(), w.langCode, ranking)
 		w.logger.Debug("fetching ranking page", "ranking", ranking, "url", url)
@@ -130,13 +144,16 @@ func (w *Webtoon) parseSeriesPage(doc *goquery.Document) []Series {
 			return
 		}
 
+		// Debug logging to see what series are being fetched
+		w.logger.Info("found series", "title", title, "slug", slug, "url", url)
+
 		if title != "" && slug != "" {
 			series = append(series, Series{
 				Slug:        slug,
 				Title:       strings.TrimSpace(title),
-				Description: "", // Will be fetched in FetchChapters
-				Author:      "", // Will be fetched in FetchChapters
-				Status:      "", // Will be fetched in FetchChapters
+				Description: "",         // Will be fetched in FetchChapters
+				Author:      "",         // Will be fetched in FetchChapters
+				Status:      "",         // Will be fetched in FetchChapters
 				Genres:      []string{}, // Will be fetched in FetchChapters
 			})
 		}
@@ -163,7 +180,7 @@ func (w *Webtoon) FetchChapters(ctx context.Context, client *http.Client, series
 	w.logger.Info("fetching chapters", "series", series.Slug)
 
 	// First fetch series details to get the title_no
-	detailsURL := w.BuildURL(series.Slug)
+	detailsURL := w.BuildURL(fmt.Sprintf("%s/list", series.Slug))
 	req, err := http.NewRequestWithContext(ctx, "GET", detailsURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -194,7 +211,7 @@ func (w *Webtoon) FetchChapters(ctx context.Context, client *http.Client, series
 
 	// Determine if it's webtoon or canvas
 	webtoonType := "webtoon"
-	if strings.Contains(series.Slug, "canvas") || strings.Contains(detailsURL, "canvas") {
+	if strings.Contains(series.Slug, "canvas") {
 		webtoonType = "canvas"
 	}
 
@@ -230,25 +247,37 @@ func (w *Webtoon) FetchChapters(ctx context.Context, client *http.Client, series
 	return chapters, nil
 }
 
+// extractTitleNo extracts the title number from the Webtoon series page
 func (w *Webtoon) extractTitleNo(doc *goquery.Document, seriesSlug string) string {
 	// Try to extract from URL parameters in the page
+	var titleNo string
 	doc.Find("a[href*='title_no='], a[href*='titleNo=']").Each(func(i int, s *goquery.Selection) {
+		if titleNo != "" {
+			return // Already found, skip
+		}
+
 		href, _ := s.Attr("href")
 		if href != "" {
 			parsed, err := url.Parse(href)
 			if err == nil {
-				if titleNo := parsed.Query().Get("title_no"); titleNo != "" {
+				if tn := parsed.Query().Get("title_no"); tn != "" {
+					titleNo = tn
 					return
 				}
-				if titleNo := parsed.Query().Get("titleNo"); titleNo != "" {
+				if tn := parsed.Query().Get("titleNo"); tn != "" {
+					titleNo = tn
 					return
 				}
 			}
 		}
 	})
 
+	if titleNo != "" {
+		return titleNo
+	}
+
 	// Try to extract from data attributes
-	titleNo, _ := doc.Find("[data-title-no]").Attr("data-title-no")
+	titleNo, _ = doc.Find("[data-title-no]").Attr("data-title-no")
 	if titleNo != "" {
 		return titleNo
 	}
@@ -282,7 +311,7 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []Chapter {
 	for i := range episodes {
 		episode := &episodes[i]
 		matches := episodeNoRegex.FindStringSubmatch(episode.EpisodeTitle)
-		
+
 		if matches != nil && matches[6] == "" { // Skip mini/bonus episodes
 			episode.ChapterNumber = matches[11]
 			episode.SeasonNumber = 1
@@ -344,7 +373,7 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []Chapter {
 	// Create chapters in reverse order (newest first)
 	for i := len(episodes) - 1; i >= 0; i-- {
 		episode := episodes[i]
-		
+
 		chapterTitle := episode.EpisodeTitle
 		if episode.ChapterNumber != "-1" {
 			chapterTitle = fmt.Sprintf("%s (ch. %s)", chapterTitle, episode.ChapterNumber)
