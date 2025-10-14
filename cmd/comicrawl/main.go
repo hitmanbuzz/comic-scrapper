@@ -28,9 +28,18 @@ type Downloader interface {
 	Close() error
 }
 
+type ScrapeMode string
+
+const (
+	ModeFull        ScrapeMode = "full"        // Download all content (default)
+	ModeIncremental ScrapeMode = "incremental"  // Only new/updated chapters
+	ModeSingle      ScrapeMode = "single"      // Specific series only
+)
+
 func main() {
 	// Parse command line arguments
 	configPath := flag.String("config", "config.yaml", "Path to config file")
+	modeFlag := flag.String("mode", "full", "Scraping mode: full, incremental, or single")
 
 	// CLI override flags
 	sourcesFlag := flag.String("sources", "", "Comma-separated list of sources to include (e.g., 'asurascans,webtoon')")
@@ -83,6 +92,20 @@ func main() {
 		cfg.DryRun = *dryRunFlag
 	}
 
+	// Parse and validate scraping mode
+	var mode ScrapeMode
+	switch *modeFlag {
+	case "full":
+		mode = ModeFull
+	case "incremental":
+		mode = ModeIncremental
+	case "single":
+		mode = ModeSingle
+	default:
+		fmt.Fprintf(os.Stderr, "Invalid mode: %s. Must be 'full', 'incremental', or 'single'\n", *modeFlag)
+		os.Exit(1)
+	}
+
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
@@ -110,7 +133,8 @@ func main() {
 		"requests_per_second", cfg.RequestsPerSecond,
 		"limit_series", cfg.LimitSeries,
 		"limit_chapters", cfg.LimitChapters,
-		"dry_run", cfg.DryRun)
+		"dry_run", cfg.DryRun,
+		"mode", mode)
 
 	if cfg.HasSourceFilters() {
 		logger.Info("source filters",
@@ -177,8 +201,8 @@ func main() {
 		defer workerPool.Close()
 	}
 
-	// Run the scraper
-	if err := runScraper(ctx, cfg, storageClient, flareClient, httpClient, downloader, logger); err != nil {
+	// Run the scraper with the specified mode
+	if err := runScraper(ctx, cfg, storageClient, flareClient, httpClient, downloader, logger, mode); err != nil {
 		logger.Error("scraper failed", "error", err)
 		os.Exit(1)
 	}
@@ -186,13 +210,14 @@ func main() {
 	logger.Info("scraper completed successfully")
 }
 
-func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Client, flareClient *flaresolverr.Client, httpClient *httpclient.HTTPClient, downloader Downloader, logger *slog.Logger) error {
+func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Client, flareClient *flaresolverr.Client, httpClient *httpclient.HTTPClient, downloader Downloader, logger *slog.Logger, mode ScrapeMode) error {
 	startTime := time.Now()
 	var totalChapters, totalPages int64
 
 	logger.Info("starting streaming scraper",
 		"bucket", cfg.Bucket,
-		"use_aria2c", cfg.UseAria2c)
+		"use_aria2c", cfg.UseAria2c,
+		"mode", mode)
 
 	// Collect metadata updates for batch processing at the end
 	type metadataUpdate struct {
@@ -282,6 +307,21 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 					localMeta = &disk.SeriesMetadata{}
 				}
 
+				// Handle different scraping modes
+				if mode == ModeIncremental || mode == ModeSingle {
+					// For incremental mode, skip series that don't exist locally
+					if mode == ModeIncremental && (localMeta == nil || len(localMeta.Chapters) == 0) {
+						logger.Debug("skipping new series in incremental mode", "series", s.Slug)
+						return
+					}
+					
+					// For single mode, only process explicitly included series
+					if mode == ModeSingle && !cfg.IsSeriesIncluded(s.Slug) {
+						logger.Debug("skipping series not in include list for single mode", "series", s.Slug)
+						return
+					}
+				}
+
 				// Fetch chapters from source
 				remoteChapters, err := src.FetchChapters(ctx, httpClient.Client(), s)
 				if err != nil {
@@ -302,19 +342,42 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 					remoteChapters = remoteChapters[:cfg.LimitChapters]
 				}
 
+				// Filter chapters based on mode
+				var chaptersToProcess []sources.Chapter
+				if mode == ModeIncremental && localMeta != nil && len(localMeta.Chapters) > 0 {
+					// In incremental mode, only process new chapters
+					newChapters := findNewChapters(src, localMeta.Chapters, remoteChapters, logger)
+					chaptersToProcess = newChapters
+					logger.Info("filtering chapters in incremental mode",
+						"series", s.Slug,
+						"total_remote", len(remoteChapters),
+						"new_chapters", len(newChapters))
+				} else {
+					// In full mode or for new series, process all chapters
+					chaptersToProcess = remoteChapters
+				}
+
+				if len(chaptersToProcess) == 0 {
+					logger.Info("no new chapters to process",
+						"series", s.Slug,
+						"mode", mode)
+					return
+				}
+
 				logger.Info("found chapters to process",
 					"series", s.Slug,
-					"chapters", len(remoteChapters))
+					"chapters", len(chaptersToProcess),
+					"mode", mode)
 
-				// Track totals
-				atomic.AddInt64(&totalChapters, int64(len(remoteChapters)))
-				for _, ch := range remoteChapters {
+				// Track totals for chapters that will actually be processed
+				atomic.AddInt64(&totalChapters, int64(len(chaptersToProcess)))
+				for _, ch := range chaptersToProcess {
 					atomic.AddInt64(&totalPages, int64(len(ch.Pages)))
 				}
 
 				// Process chapters and stream downloads immediately (unless in dry-run mode)
 				if !cfg.DryRun {
-					err = processSeriesChapters(ctx, src, httpClient, s, remoteChapters, downloader, storageClient, logger)
+					err = processSeriesChapters(ctx, src, httpClient, s, chaptersToProcess, downloader, storageClient, logger)
 					if err != nil {
 						logger.Error("failed to process chapters",
 							"series", s.Slug,
@@ -322,7 +385,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 						return
 					}
 				} else {
-					logger.Info("dry-run mode: skipping chapter processing", "series", s.Slug, "chapters", len(remoteChapters))
+					logger.Info("dry-run mode: skipping chapter processing", "series", s.Slug, "chapters", len(chaptersToProcess))
 				}
 
 				// Prepare metadata update
@@ -333,7 +396,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 				localMeta.Genres = s.Genres
 				localMeta.UpdatedAt = time.Now()
 
-				// Convert remote chapters to disk storage format
+				// Convert remote chapters to disk storage format (include all chapters)
 				localMeta.Chapters = make([]disk.Chapter, len(remoteChapters))
 				for i, chap := range remoteChapters {
 					// Preserve existing upload time if chapter exists
@@ -565,6 +628,22 @@ func filterSources(sourceList []sources.Source, cfg *config.Config) []sources.So
 }
 
 // shouldProcessSeries checks if a series should be processed based on configuration
+func findNewChapters(src sources.Source, localChapters []disk.Chapter, remoteChapters []sources.Chapter, logger *slog.Logger) []sources.Chapter {
+	// Try to access the BaseSource through type assertion
+	switch s := src.(type) {
+	case *sources.AsuraScans:
+		newChapters, _ := s.BaseSource.CompareChapters(localChapters, remoteChapters)
+		return newChapters
+	case *sources.Webtoon:
+		newChapters, _ := s.BaseSource.CompareChapters(localChapters, remoteChapters)
+		return newChapters
+	default:
+		// Fallback: if we can't type assert, process all chapters
+		logger.Debug("unknown source type, processing all chapters", "source", src.Name())
+		return remoteChapters
+	}
+}
+
 func shouldProcessSeries(seriesSlug string, cfg *config.Config) bool {
 	included := cfg.IsSeriesIncluded(seriesSlug)
 
