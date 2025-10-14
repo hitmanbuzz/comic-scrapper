@@ -16,7 +16,7 @@ import (
 	"comicrawl/internal/aria2c"
 	"comicrawl/internal/config"
 	"comicrawl/internal/disk"
-	"comicrawl/internal/flaresolverr"
+	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
 	"comicrawl/internal/worker"
@@ -162,13 +162,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Only create FlareSolverr client if configured
-	var flareClient *flaresolverr.Client
-	if cfg.FlareSolverrURL != "" {
-		flareClient = flaresolverr.NewClient(cfg, logger)
-		logger.Info("FlareSolverr client initialized", "url", cfg.FlareSolverrURL)
+	// Only create Cloudflare client if configured
+	var flareClient *cloudflare.Client
+	if cfg.CloudflareURL != "" {
+		flareClient = cloudflare.NewClient(cfg, logger)
+		logger.Info("Cloudflare client initialized", "url", cfg.CloudflareURL)
 	} else {
-		logger.Info("FlareSolverr disabled - proceeding without Cloudflare bypass")
+		logger.Info("Cloudflare bypass disabled - proceeding without Cloudflare protection bypass")
 	}
 
 	httpClient, err := httpclient.NewHTTPClient(cfg, logger, flareClient)
@@ -210,7 +210,7 @@ func main() {
 	logger.Info("scraper completed successfully")
 }
 
-func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Client, flareClient *flaresolverr.Client, httpClient *httpclient.HTTPClient, downloader Downloader, logger *slog.Logger, mode ScrapeMode) error {
+func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Client, flareClient *cloudflare.Client, httpClient *httpclient.HTTPClient, downloader Downloader, logger *slog.Logger, mode ScrapeMode) error {
 	startTime := time.Now()
 	var totalChapters, totalPages int64
 

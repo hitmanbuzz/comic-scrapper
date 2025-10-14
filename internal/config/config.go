@@ -11,7 +11,7 @@ import (
 
 type Config struct {
 	Bucket            string        `yaml:"bucket"`
-	FlareSolverrURL   string        `yaml:"flaresolverr_url"`
+	CloudflareURL     string        `yaml:"cloudflare_url"`
 	Aria2cURL         string        `yaml:"aria2c_url" default:"http://localhost:6800/jsonrpc"`
 	UserAgent         string        `yaml:"user_agent"`
 	HTTPProxy         string        `yaml:"http_proxy"`

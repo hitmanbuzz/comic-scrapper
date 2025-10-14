@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"comicrawl/internal/config"
-	"comicrawl/internal/flaresolverr"
+	"comicrawl/internal/cloudflare"
 
 	"golang.org/x/time/rate"
 )
@@ -24,7 +24,7 @@ type HTTPClient struct {
 	userAgent string
 }
 
-func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *flaresolverr.Client) (*HTTPClient, error) {
+func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudflare.Client) (*HTTPClient, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cookie jar: %w", err)
@@ -132,14 +132,14 @@ func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flareClient *flaresolverr.Client, proxyURL string) error {
+func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flareClient *cloudflare.Client, proxyURL string) error {
 	if flareClient == nil {
-		return nil // No FlareSolverr configured
+		return nil // No Cloudflare bypass configured
 	}
 
 	solution, err := flareClient.GetSession(ctx, domain, proxyURL)
 	if err != nil {
-		return fmt.Errorf("failed to get FlareSolverr session for %s: %w", domain, err)
+		return fmt.Errorf("failed to get Cloudflare session for %s: %w", domain, err)
 	}
 
 	// Update cookies for the domain
@@ -152,7 +152,7 @@ func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flar
 		jar.SetCookies(url, solution.CreateCookieJar())
 	}
 
-	// Update user agent if provided by FlareSolverr
+	// Update user agent if provided by Cloudflare client
 	if solution.UserAgent != "" {
 		h.userAgent = solution.UserAgent
 	}

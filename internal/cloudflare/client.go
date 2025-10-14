@@ -1,4 +1,6 @@
-package flaresolverr
+// Package cloudflare provides a client for FlareSolver-compatible services
+// that can provide Cloudflare clearance cookies/challenge solutions.
+package cloudflare
 
 import (
 	"bytes"
@@ -42,7 +44,7 @@ type Cookie struct {
 	Value    string  `json:"value"`
 	Domain   string  `json:"domain"`
 	Path     string  `json:"path"`
-	Expires  float64 `json:"expires"` // FlareSolverr returns timestamp as number
+	Expires  float64 `json:"expires"`
 	Secure   bool    `json:"secure"`
 	HTTPOnly bool    `json:"httpOnly"`
 }
@@ -55,9 +57,10 @@ type Request struct {
 	Proxy      map[string]string `json:"proxy,omitempty"`
 }
 
+// NewClient creates a new Cloudflare bypass client for FlareSolver-compatible services.
 func NewClient(cfg *config.Config, logger *slog.Logger) *Client {
 	return &Client{
-		baseURL: cfg.FlareSolverrURL,
+		baseURL: cfg.CloudflareURL,
 		client: &http.Client{
 			Timeout: cfg.RequestTimeout,
 		},
@@ -65,6 +68,8 @@ func NewClient(cfg *config.Config, logger *slog.Logger) *Client {
 	}
 }
 
+// GetSession requests a Cloudflare challenge solution from a FlareSolver-compatible service.
+// It returns the solution containing cookies and headers needed to bypass Cloudflare protection.
 func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL string) (*Solution, error) {
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
@@ -85,7 +90,7 @@ func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL stri
 		}
 	}
 
-	c.logger.Debug("requesting FlareSolverr session", "url", domain, "proxy", proxyURL)
+	c.logger.Debug("requesting FlareSolver-compatible session", "url", domain, "proxy", proxyURL)
 
 	resp, err := c.doRequest(ctx, request)
 	if err != nil {
@@ -93,10 +98,10 @@ func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL stri
 	}
 
 	if resp.Status != "ok" {
-		return nil, fmt.Errorf("flare solverr error: %s", resp.Message)
+		return nil, fmt.Errorf("flare solver compatible client error: %s", resp.Message)
 	}
 
-	c.logger.Info("obtained FlareSolverr session",
+	c.logger.Info("obtained FlareSolver-compatible session",
 		"url", domain,
 		"cookies", len(resp.Solution.Cookies),
 		"proxy", proxyURL)
@@ -104,6 +109,7 @@ func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL stri
 	return &resp.Solution, nil
 }
 
+// doRequest sends a request to the FlareSolver-compatible service and parses the response.
 func (c *Client) doRequest(ctx context.Context, req Request) (*SessionResponse, error) {
 	jsonData, err := json.Marshal(req)
 	if err != nil {
@@ -140,6 +146,7 @@ func (c *Client) doRequest(ctx context.Context, req Request) (*SessionResponse, 
 	return &sessionResp, nil
 }
 
+// CreateCookieJar converts the solution cookies to HTTP cookies that can be used in requests.
 func (s *Solution) CreateCookieJar() []*http.Cookie {
 	var cookies []*http.Cookie
 	for _, cookie := range s.Cookies {
