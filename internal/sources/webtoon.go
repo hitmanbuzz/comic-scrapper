@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"comicrawl/internal/httpclient"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -82,7 +83,7 @@ func (w *Webtoon) BuildURL(path string) string {
 	return fmt.Sprintf("%s/%s/%s", w.baseURL, w.langCode, trimmedPath)
 }
 
-func (w *Webtoon) ListSeries(ctx context.Context, client *http.Client) ([]Series, error) {
+func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]Series, error) {
 	w.logger.Info("fetching series list from Webtoon")
 
 	var allSeries []Series
@@ -176,7 +177,7 @@ func (w *Webtoon) removeDuplicateSeries(series []Series) []Series {
 	return unique
 }
 
-func (w *Webtoon) FetchChapters(ctx context.Context, client *http.Client, series Series) ([]Chapter, error) {
+func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series Series) ([]Chapter, error) {
 	w.logger.Info("fetching chapters", "series", series.Slug)
 
 	// First fetch series details to get the title_no
@@ -393,7 +394,7 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []Chapter {
 	return chapters
 }
 
-func (w *Webtoon) FetchPages(ctx context.Context, client *http.Client, chapter Chapter) ([]Page, error) {
+func (w *Webtoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter Chapter) ([]Page, error) {
 	w.logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)

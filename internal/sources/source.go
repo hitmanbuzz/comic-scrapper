@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 
 	"comicrawl/internal/disk"
+	"comicrawl/internal/httpclient"
 )
 
 type Chapter struct {
@@ -38,9 +38,9 @@ type Series struct {
 type Source interface {
 	Name() string
 	BaseURL() string
-	ListSeries(ctx context.Context, client *http.Client) ([]Series, error)
-	FetchChapters(ctx context.Context, client *http.Client, series Series) ([]Chapter, error)
-	FetchPages(ctx context.Context, client *http.Client, chapter Chapter) ([]Page, error)
+	ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]Series, error)
+	FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series Series) ([]Chapter, error)
+	FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter Chapter) ([]Page, error)
 }
 
 type BaseSource struct {

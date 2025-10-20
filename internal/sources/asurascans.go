@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"comicrawl/internal/httpclient"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,7 +24,7 @@ func NewAsuraScans(logger *slog.Logger) *AsuraScans {
 	}
 }
 
-func (a *AsuraScans) ListSeries(ctx context.Context, client *http.Client) ([]Series, error) {
+func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]Series, error) {
 	a.logger.Info("fetching series list from AsuraScans")
 
 	var allSeries []Series
@@ -102,7 +103,7 @@ func (a *AsuraScans) hasNextPage(doc *goquery.Document) bool {
 	return doc.Find("div.flex > a.flex.bg-themecolor:contains(Next)").Length() > 0
 }
 
-func (a *AsuraScans) FetchChapters(ctx context.Context, client *http.Client, series Series) ([]Chapter, error) {
+func (a *AsuraScans) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series Series) ([]Chapter, error) {
 	a.logger.Info("fetching chapters", "series", series.Slug)
 
 	url := fmt.Sprintf("%s/series/%s", a.BaseURL(), series.Slug)
@@ -164,7 +165,7 @@ func (a *AsuraScans) parseChaptersPage(doc *goquery.Document, seriesSlug string)
 	return chapters, nil
 }
 
-func (a *AsuraScans) FetchPages(ctx context.Context, client *http.Client, chapter Chapter) ([]Page, error) {
+func (a *AsuraScans) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter Chapter) ([]Page, error) {
 	a.logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)

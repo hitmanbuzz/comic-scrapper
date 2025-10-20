@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"comicrawl/internal/config"
 	"comicrawl/internal/cloudflare"
+	"comicrawl/internal/config"
 
 	"golang.org/x/time/rate"
 )
@@ -69,8 +69,8 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudfl
 	}, nil
 }
 
-func (h *HTTPClient) Client() *http.Client {
-	return h.client
+func (h *HTTPClient) Client() *HTTPClient {
+	return h
 }
 
 func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
@@ -81,7 +81,7 @@ func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	if h.userAgent != "" {
-		req.Header.Set("User-Agent", h.userAgent)
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 	}
 
 	h.logger.Debug("HTTP request",

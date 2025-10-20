@@ -231,6 +231,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 	sourceList := []sources.Source{
 		sources.NewAsuraScans(logger),
 		sources.NewWebtoon(logger),
+		sources.NewUtoon(logger),
 	}
 
 	// Filter sources based on configuration
