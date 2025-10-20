@@ -31,9 +31,12 @@ Thumbs.db
 # Logs
 *.log
 
-# Config files with secrets (template only)
-# configs
+# Config files with secrets
+config.yaml
 
 # Test data and temporary files
 /tmp/
 /test-data/
+
+# Downloaded comics
+/downloads/

@@ -232,6 +232,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 		sources.NewAsuraScans(logger),
 		sources.NewWebtoon(logger),
 		sources.NewUtoon(logger),
+		sources.NewFlameComics(logger),
 	}
 
 	// Filter sources based on configuration
@@ -636,6 +637,9 @@ func findNewChapters(src sources.Source, localChapters []disk.Chapter, remoteCha
 		newChapters, _ := s.BaseSource.CompareChapters(localChapters, remoteChapters)
 		return newChapters
 	case *sources.Webtoon:
+		newChapters, _ := s.BaseSource.CompareChapters(localChapters, remoteChapters)
+		return newChapters
+	case *sources.FlameComics:
 		newChapters, _ := s.BaseSource.CompareChapters(localChapters, remoteChapters)
 		return newChapters
 	default:
