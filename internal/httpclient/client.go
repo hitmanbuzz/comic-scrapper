@@ -81,7 +81,7 @@ func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	if h.userAgent != "" {
-		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+		req.Header.Set("User-Agent", h.userAgent)
 	}
 
 	h.logger.Debug("HTTP request",

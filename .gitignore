@@ -35,6 +35,7 @@ Thumbs.db
 # config.yaml
 
 # Test data and temporary files
+/tests
 /tmp/
 /test-data/
 
