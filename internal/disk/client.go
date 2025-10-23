@@ -81,7 +81,7 @@ func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, fil
 	return nil
 }
 
-func (c *Client) DownloadJSON(ctx context.Context, key string, v any) (bool, error) {
+func (c *Client) DownloadJSON(ctx context.Context, key string, v interface{}) (bool, error) {
 	filePath := path.Join(c.basePath, key)
 
 	file, err := os.Open(filePath)
@@ -100,7 +100,7 @@ func (c *Client) DownloadJSON(ctx context.Context, key string, v any) (bool, err
 	return true, nil
 }
 
-func (c *Client) UploadJSON(ctx context.Context, key string, v any) error {
+func (c *Client) UploadJSON(ctx context.Context, key string, v interface{}) error {
 	filePath := path.Join(c.basePath, key)
 
 	// Create directory if it doesn't exist
