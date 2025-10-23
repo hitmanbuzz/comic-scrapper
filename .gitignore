@@ -1,3 +1,6 @@
+# ignore config.yaml (Remove this if you want to commit)
+config.yaml
+
 # Binaries
 comicrawl
 *.exe
