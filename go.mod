@@ -7,6 +7,7 @@ toolchain go1.24.7
 require (
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/siku2/arigo v0.3.0
+	golang.org/x/text v0.24.0
 	golang.org/x/time v0.13.0
 	gopkg.in/yaml.v3 v3.0.1
 )
