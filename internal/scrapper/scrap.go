@@ -1,25 +1,19 @@
-package main
+package scrapper
 
 import (
-	"context"
-	"flag"
-	"fmt"
-	"log/slog"
-	"os"
-	"os/signal"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"syscall"
-	"time"
-
 	"comicrawl/internal/aria2c"
+	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/config"
 	"comicrawl/internal/disk"
-	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/httpclient"
+	"comicrawl/internal/registry"
 	"comicrawl/internal/sources"
-	"comicrawl/internal/worker"
+	"context"
+	"fmt"
+	"log/slog"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 // Downloader interface for streaming downloads
@@ -28,189 +22,16 @@ type Downloader interface {
 	Close() error
 }
 
-type ScrapeMode string
-
-const (
-	ModeFull        ScrapeMode = "full"        // Download all content (default)
-	ModeIncremental ScrapeMode = "incremental"  // Only new/updated chapters
-	ModeSingle      ScrapeMode = "single"      // Specific series only
-)
-
-func main() {
-	// Parse command line arguments
-	configPath := flag.String("config", "config.yaml", "Path to config file")
-	modeFlag := flag.String("mode", "full", "Scraping mode: full, incremental, or single")
-
-	// CLI override flags
-	sourcesFlag := flag.String("sources", "", "Comma-separated list of sources to include (e.g., 'asurascans,webtoon')")
-	includeSeriesFlag := flag.String("include-series", "", "Comma-separated list of series to include")
-	excludeSeriesFlag := flag.String("exclude-series", "", "Comma-separated list of series to exclude")
-	limitSeriesFlag := flag.Int("limit-series", 0, "Limit number of series to process (0 = no limit)")
-	limitChaptersFlag := flag.Int("limit-chapters", 0, "Limit number of chapters per series (0 = no limit)")
-	dryRunFlag := flag.Bool("dry-run", false, "Perform a dry run without downloading")
-
-	flag.Parse()
-
-	// Load configuration
-	cfg, err := config.LoadConfig(*configPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Apply CLI overrides
-	if *sourcesFlag != "" {
-		cfg.IncludeSources = strings.Split(*sourcesFlag, ",")
-		for i := range cfg.IncludeSources {
-			cfg.IncludeSources[i] = strings.TrimSpace(cfg.IncludeSources[i])
-		}
-	}
-
-	if *includeSeriesFlag != "" {
-		cfg.IncludeSeries = strings.Split(*includeSeriesFlag, ",")
-		for i := range cfg.IncludeSeries {
-			cfg.IncludeSeries[i] = strings.TrimSpace(cfg.IncludeSeries[i])
-		}
-	}
-
-	if *excludeSeriesFlag != "" {
-		cfg.ExcludeSeries = strings.Split(*excludeSeriesFlag, ",")
-		for i := range cfg.ExcludeSeries {
-			cfg.ExcludeSeries[i] = strings.TrimSpace(cfg.ExcludeSeries[i])
-		}
-	}
-
-	if *limitSeriesFlag > 0 {
-		cfg.LimitSeries = *limitSeriesFlag
-	}
-
-	if *limitChaptersFlag > 0 {
-		cfg.LimitChapters = *limitChaptersFlag
-	}
-
-	if *dryRunFlag {
-		cfg.DryRun = *dryRunFlag
-	}
-
-	// Parse and validate scraping mode
-	var mode ScrapeMode
-	switch *modeFlag {
-	case "full":
-		mode = ModeFull
-	case "incremental":
-		mode = ModeIncremental
-	case "single":
-		mode = ModeSingle
-	default:
-		fmt.Fprintf(os.Stderr, "Invalid mode: %s. Must be 'full', 'incremental', or 'single'\n", *modeFlag)
-		os.Exit(1)
-	}
-
-	// Validate configuration
-	if err := cfg.Validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Setup logging
-	logger := setupLogger(cfg.LogLevel)
-
-	// Create context with cancellation
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Handle graceful shutdown
-	setupSignalHandler(cancel, logger)
-
-	logger.Info("starting manga scraper", "config", *configPath)
-
-	// Log configuration
-	logger.Info("configuration",
-		"bucket", cfg.Bucket,
-		"storage_type", cfg.StorageType,
-		"use_aria2c", cfg.UseAria2c,
-		"download_workers", cfg.DownloadWorkers,
-		"requests_per_second", cfg.RequestsPerSecond,
-		"limit_series", cfg.LimitSeries,
-		"limit_chapters", cfg.LimitChapters,
-		"dry_run", cfg.DryRun,
-		"mode", mode)
-
-	if cfg.HasSourceFilters() {
-		logger.Info("source filters",
-			"include_sources", cfg.IncludeSources,
-			"exclude_sources", cfg.ExcludeSources)
-	}
-
-	if cfg.HasSeriesFilters() {
-		logger.Info("series filters",
-			"include_series", cfg.IncludeSeries,
-			"exclude_series", cfg.ExcludeSeries)
-	}
-
-	// Initialize storage client
-	var storageClient *disk.Client
-	switch cfg.StorageType {
-	case "disk":
-		storageClient, err = disk.NewClient(ctx, cfg, logger)
-		if err != nil {
-			logger.Error("failed to create disk storage client", "error", err)
-			os.Exit(1)
-		}
-	default:
-		logger.Error("unsupported storage type", "storage_type", cfg.StorageType)
-		os.Exit(1)
-	}
-
-	// Only create Cloudflare client if configured
-	var flareClient *cloudflare.Client
-	if cfg.CloudflareURL != "" {
-		flareClient = cloudflare.NewClient(cfg, logger)
-		logger.Info("Cloudflare client initialized", "url", cfg.CloudflareURL)
-	} else {
-		logger.Info("Cloudflare bypass disabled - proceeding without Cloudflare protection bypass")
-	}
-
-	httpClient, err := httpclient.NewHTTPClient(cfg, logger, flareClient)
-	if err != nil {
-		logger.Error("failed to create HTTP client", "error", err)
-		os.Exit(1)
-	}
-
-	// Create downloader based on configuration
-	var downloader Downloader
-
-	if cfg.UseAria2c {
-		logger.Info("using aria2c for streaming downloads", "aria2c_url", cfg.Aria2cURL)
-		aria2cDownloader, err := aria2c.NewDownloader(cfg.Aria2cURL, cfg.DownloadWorkers*2, logger)
-		if err != nil {
-			logger.Error("failed to create aria2c downloader, falling back to regular pool", "error", err)
-			workerPool := worker.NewPool(cfg.DownloadWorkers, logger)
-			workerPool.Start()
-			downloader = workerPool
-			defer workerPool.Close()
-		} else {
-			downloader = aria2cDownloader
-			defer aria2cDownloader.Close()
-		}
-	} else {
-		logger.Info("using regular worker pool for downloads")
-		workerPool := worker.NewPool(cfg.DownloadWorkers, logger)
-		workerPool.Start()
-		downloader = workerPool
-		defer workerPool.Close()
-	}
-
-	// Run the scraper with the specified mode
-	if err := runScraper(ctx, cfg, storageClient, flareClient, httpClient, downloader, logger, mode); err != nil {
-		logger.Error("scraper failed", "error", err)
-		os.Exit(1)
-	}
-
-	logger.Info("scraper completed successfully")
-}
-
-func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Client, flareClient *cloudflare.Client, httpClient *httpclient.HTTPClient, downloader Downloader, logger *slog.Logger, mode ScrapeMode) error {
+func RunScraper(
+	ctx context.Context,
+	cfg *config.Config,
+	storageClient *disk.Client,
+	flareClient *cloudflare.Client,
+	httpClient *httpclient.HTTPClient,
+	downloader Downloader,
+	logger *slog.Logger,
+	mode ScrapeMode,
+) error {
 	startTime := time.Now()
 	var totalChapters, totalPages int64
 
@@ -228,27 +49,22 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 	var pendingUpdates []metadataUpdate
 	var updatesMutex sync.Mutex
 
-	sourceList := []sources.Source{
-		sources.NewAsuraScans(logger),
-		sources.NewWebtoon(logger),
-		sources.NewUtoon(logger),
-		sources.NewFlameComics(logger),
-	}
+	sourceList := registry.AddSources(logger)
 
 	// Filter sources based on configuration
-	sourceList = filterSources(sourceList, cfg)
+	sourceList = FilterSources(sourceList, cfg)
 
 	var wg sync.WaitGroup
 
 	// Process all sources and series concurrently
 	for _, src := range sourceList {
-		logger.Info("processing source", "source", src.Name())
+		logger.Info("processing source", "source", src.GetName())
 
 		// Configure HTTP client for this source's domain
-		if err := httpClient.ConfigureForDomain(ctx, src.BaseURL(), flareClient, cfg.HTTPProxy); err != nil {
+		if err := httpClient.ConfigureForDomain(ctx, src.GetBaseURL(), flareClient, cfg.HTTPProxy); err != nil {
 			logger.Warn("failed to configure HTTP client for source domain",
-				"source", src.Name(),
-				"domain", src.BaseURL(),
+				"source", src.GetName(),
+				"domain", src.GetBaseURL(),
 				"error", err)
 			continue
 		}
@@ -257,13 +73,13 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 		seriesList, err := src.ListSeries(ctx, httpClient.Client())
 		if err != nil {
 			logger.Error("failed to fetch series from source",
-				"source", src.Name(),
+				"source", src.GetName(),
 				"error", err)
 			continue
 		}
 
 		logger.Info("fetched series from source",
-			"source", src.Name(),
+			"source", src.GetName(),
 			"count", len(seriesList))
 
 		// Log first few series for debugging
@@ -276,7 +92,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 		seriesCount := 0
 		for _, series := range seriesList {
 			// Check if we should process this series
-			if !shouldProcessSeries(series.Slug, cfg) {
+			if !ShouldProcessSeries(series.Slug, cfg) {
 				logger.Debug("skipping series", "series", series.Slug)
 				continue
 			} else {
@@ -296,7 +112,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 				defer wg.Done()
 
 				logger.Info("processing series",
-					"source", src.Name(),
+					"source", src.GetName(),
 					"series", s.Slug,
 					"title", s.Title)
 
@@ -348,7 +164,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 				var chaptersToProcess []sources.Chapter
 				if mode == ModeIncremental && localMeta != nil && len(localMeta.Chapters) > 0 {
 					// In incremental mode, only process new chapters
-					newChapters := findNewChapters(src, localMeta.Chapters, remoteChapters, logger)
+					newChapters := FindNewChapters(src, localMeta.Chapters, remoteChapters, logger)
 					chaptersToProcess = newChapters
 					logger.Info("filtering chapters in incremental mode",
 						"series", s.Slug,
@@ -485,6 +301,7 @@ func runScraper(ctx context.Context, cfg *config.Config, storageClient *disk.Cli
 	return nil
 }
 
+
 // processSeriesChapters processes chapters and streams downloads immediately
 func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *httpclient.HTTPClient,
 	series sources.Series, remoteChapters []sources.Chapter, downloader Downloader, storageClient *disk.Client, logger *slog.Logger) error {
@@ -568,95 +385,3 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 	return nil
 }
 
-func setupLogger(level string) *slog.Logger {
-	var logLevel slog.Level
-
-	switch level {
-	case "debug":
-		logLevel = slog.LevelDebug
-	case "info":
-		logLevel = slog.LevelInfo
-	case "warn":
-		logLevel = slog.LevelWarn
-	case "error":
-		logLevel = slog.LevelError
-	default:
-		logLevel = slog.LevelInfo
-	}
-
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: logLevel,
-	}))
-}
-
-func setupSignalHandler(cancel context.CancelFunc, logger *slog.Logger) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		sig := <-sigChan
-		logger.Info("received signal, shutting down", "signal", sig)
-		cancel()
-
-		// Give some time for graceful shutdown
-		time.Sleep(2 * time.Second)
-		os.Exit(0)
-	}()
-}
-
-// Helper function to get minimum of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// filterSources filters the source list based on configuration
-func filterSources(sourceList []sources.Source, cfg *config.Config) []sources.Source {
-	// If no source filters, return all sources
-	if !cfg.HasSourceFilters() {
-		return sourceList
-	}
-
-	var filtered []sources.Source
-	for _, source := range sourceList {
-		if cfg.IsSourceIncluded(source.Name()) {
-			filtered = append(filtered, source)
-		}
-	}
-
-	return filtered
-}
-
-// shouldProcessSeries checks if a series should be processed based on configuration
-func findNewChapters(src sources.Source, localChapters []disk.Chapter, remoteChapters []sources.Chapter, logger *slog.Logger) []sources.Chapter {
-	// Try to access the BaseSource through type assertion
-	switch s := src.(type) {
-	case *sources.AsuraScans:
-		newChapters, _ := s.BaseSource.CompareChapters(localChapters, remoteChapters)
-		return newChapters
-	case *sources.Webtoon:
-		newChapters, _ := s.BaseSource.CompareChapters(localChapters, remoteChapters)
-		return newChapters
-	case *sources.FlameComics:
-		newChapters, _ := s.BaseSource.CompareChapters(localChapters, remoteChapters)
-		return newChapters
-	default:
-		// Fallback: if we can't type assert, process all chapters
-		logger.Debug("unknown source type, processing all chapters", "source", src.Name())
-		return remoteChapters
-	}
-}
-
-func shouldProcessSeries(seriesSlug string, cfg *config.Config) bool {
-	included := cfg.IsSeriesIncluded(seriesSlug)
-
-	// Debug logging for series filtering
-	if cfg.HasSeriesFilters() {
-		// This would be helpful when debugging, but let's not add slog import here
-		// Instead, we can rely on the debug logging we added elsewhere
-	}
-
-	return included
-}
