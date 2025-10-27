@@ -16,6 +16,19 @@ import (
 	"time"
 )
 
+type ScrapeMode string
+
+const (
+	ModeFull        ScrapeMode = "full"
+	ModeIncremental ScrapeMode = "incremental"
+	ModeSingle      ScrapeMode = "single"
+)
+
+// Define an interface for sources that can compare chapters
+type ChapterComparator interface {
+	CompareChapters(localChapters []disk.Chapter, remoteChapters []sources.Chapter) (newChapters []sources.Chapter, updatedChapters []sources.Chapter)
+}
+
 // Downloader interface for streaming downloads
 type Downloader interface {
 	AddDownload(request aria2c.DownloadRequest)
@@ -52,7 +65,15 @@ func RunScraper(
 	sourceList := registry.AddSources(logger)
 
 	// Filter sources based on configuration
-	sourceList = FilterSources(sourceList, cfg)
+	if cfg.HasSourceFilters() {
+		var filtered []sources.Source
+		for _, source := range sourceList {
+			if cfg.IsSourceIncluded(source.GetName()) {
+				filtered = append(filtered, source)
+			}
+		}
+		sourceList = filtered
+	}
 
 	var wg sync.WaitGroup
 
@@ -92,7 +113,7 @@ func RunScraper(
 		seriesCount := 0
 		for _, series := range seriesList {
 			// Check if we should process this series
-			if !ShouldProcessSeries(series.Slug, cfg) {
+			if !cfg.IsSeriesIncluded(series.Slug) {
 				logger.Debug("skipping series", "series", series.Slug)
 				continue
 			}
@@ -162,7 +183,14 @@ func RunScraper(
 				var chaptersToProcess []sources.Chapter
 				if mode == ModeIncremental && len(localMeta.Chapters) > 0 {
 					// In incremental mode, only process new chapters
-					chaptersToProcess = FindNewChapters(src, localMeta.Chapters, remoteChapters, logger)
+					// Try to use CompareChapters if available
+					if comparator, ok := src.(ChapterComparator); ok {
+						chaptersToProcess, _ = comparator.CompareChapters(localMeta.Chapters, remoteChapters)
+					} else {
+						// Fallback: process all chapters
+						logger.Debug("source doesn't implement ChapterComparator, processing all chapters", "source", src.GetName())
+						chaptersToProcess = remoteChapters
+					}
 					logger.Info("filtering chapters in incremental mode",
 						"series", s.Slug,
 						"total_remote", len(remoteChapters),

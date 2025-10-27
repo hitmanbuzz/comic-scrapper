@@ -25,9 +25,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	scrapeMode, err := scraper.ParseScrapeMode(newFlags.ModeFlag)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+	// Parse scrape mode
+	var scrapeMode scraper.ScrapeMode
+	switch *newFlags.ModeFlag {
+	case "full":
+		scrapeMode = scraper.ModeFull
+	case "incremental":
+		scrapeMode = scraper.ModeIncremental
+	case "single":
+		scrapeMode = scraper.ModeSingle
+	default:
+		fmt.Fprintf(os.Stderr, "Error: invalid mode: %s. Must be 'full', 'incremental', or 'single'\n", *newFlags.ModeFlag)
 		os.Exit(1)
 	}
 	logger := system.SetupLogger(cfg, scrapeMode, newFlags)
