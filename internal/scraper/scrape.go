@@ -84,12 +84,8 @@ func RunScraper(
 
 		// Log first few series for debugging
 		if len(seriesList) > 0 {
-			limit := 5
-			if len(seriesList) < limit {
-				limit = len(seriesList)
-			}
 			logger.Debug("sample series slugs",
-				"first_5", seriesList[:limit])
+				"first_5", seriesList[:min(5, len(seriesList))])
 		}
 
 		// Process each series
@@ -99,9 +95,9 @@ func RunScraper(
 			if !ShouldProcessSeries(series.Slug, cfg) {
 				logger.Debug("skipping series", "series", series.Slug)
 				continue
-			} else {
-				logger.Debug("processing series", "series", series.Slug)
 			}
+
+			logger.Debug("processing series", "series", series.Slug)
 
 			// Check series limit
 			if cfg.LimitSeries > 0 && seriesCount >= cfg.LimitSeries {
