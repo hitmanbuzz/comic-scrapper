@@ -12,8 +12,8 @@ const (
 	ModeSingle      ScrapeMode = "single"
 )
 
-// Apply the mode for scrapping
-func ApplyScrapperMode(modeFlag *string) (ScrapeMode, error) {
+// Parse the scrape mode from flag string
+func ParseScrapeMode(modeFlag *string) (ScrapeMode, error) {
 	var mode ScrapeMode
 
 	switch *modeFlag {

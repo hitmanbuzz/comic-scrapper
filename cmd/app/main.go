@@ -25,7 +25,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	scrapeMode, err := scraper.ApplyScrapperMode(newFlags.ModeFlag)
+	scrapeMode, err := scraper.ParseScrapeMode(newFlags.ModeFlag)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -89,17 +89,29 @@ func main() {
 			workerPool := worker.NewPool(cfg.DownloadWorkers, logger.Logger)
 			workerPool.Start()
 			downloader = workerPool
-			defer workerPool.Close()
+			defer func() {
+				if err := workerPool.Close(); err != nil {
+					logger.Logger.Error("failed to close worker pool", "error", err)
+				}
+			}()
 		} else {
 			downloader = aria2cDownloader
-			defer aria2cDownloader.Close()
+			defer func() {
+				if err := aria2cDownloader.Close(); err != nil {
+					logger.Logger.Error("failed to close aria2c downloader", "error", err)
+				}
+			}()
 		}
 	} else {
 		logger.Logger.Info("using regular worker pool for downloads")
 		workerPool := worker.NewPool(cfg.DownloadWorkers, logger.Logger)
 		workerPool.Start()
 		downloader = workerPool
-		defer workerPool.Close()
+		defer func() {
+			if err := workerPool.Close(); err != nil {
+				logger.Logger.Error("failed to close worker pool", "error", err)
+			}
+		}()
 	}
 
 	// Run the scraper with the specified mode
