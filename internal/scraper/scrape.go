@@ -212,11 +212,12 @@ func RunScraper(
 				localMeta.UpdatedAt = time.Now()
 
 				// Convert remote chapters to disk storage format (include all chapters)
+				oldChapters := localMeta.Chapters
 				localMeta.Chapters = make([]disk.Chapter, len(remoteChapters))
 				for i, chap := range remoteChapters {
 					// Preserve existing upload time if chapter exists
 					var uploadedAt time.Time
-					for _, existingChap := range localMeta.Chapters {
+					for _, existingChap := range oldChapters {
 						if existingChap.Number == chap.Number {
 							uploadedAt = existingChap.UploadedAt
 							break
