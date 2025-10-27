@@ -39,13 +39,5 @@ func FindNewChapters(src sources.Source, localChapters []disk.Chapter, remoteCha
 }
 
 func ShouldProcessSeries(seriesSlug string, cfg *config.Config) bool {
-	included := cfg.IsSeriesIncluded(seriesSlug)
-
-	// Debug logging for series filtering
-	if cfg.HasSeriesFilters() {
-		// This would be helpful when debugging, but let's not add slog import here
-		// Instead, we can rely on the debug logging we added elsewhere
-	}
-
-	return included
+	return cfg.IsSeriesIncluded(seriesSlug)
 }
