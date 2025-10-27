@@ -1,4 +1,4 @@
-package scrapper
+package scraper
 
 import (
 	"comicrawl/internal/aria2c"
@@ -84,8 +84,12 @@ func RunScraper(
 
 		// Log first few series for debugging
 		if len(seriesList) > 0 {
+			limit := 5
+			if len(seriesList) < limit {
+				limit = len(seriesList)
+			}
 			logger.Debug("sample series slugs",
-				"first_5", seriesList[:min(5, len(seriesList))])
+				"first_5", seriesList[:limit])
 		}
 
 		// Process each series
@@ -132,7 +136,7 @@ func RunScraper(
 						logger.Debug("skipping new series in incremental mode", "series", s.Slug)
 						return
 					}
-					
+
 					// For single mode, only process explicitly included series
 					if mode == ModeSingle && !cfg.IsSeriesIncluded(s.Slug) {
 						logger.Debug("skipping series not in include list for single mode", "series", s.Slug)

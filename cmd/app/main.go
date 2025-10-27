@@ -10,14 +10,14 @@ import (
 	"comicrawl/internal/config"
 	"comicrawl/internal/disk"
 	"comicrawl/internal/httpclient"
-	"comicrawl/internal/scrapper"
+	"comicrawl/internal/scraper"
 	"comicrawl/internal/system"
 	"comicrawl/internal/worker"
 )
 
 func main() {
 	newFlags := system.CreateNewFlags()
-	
+
 	// Load configuration
 	cfg, err := config.LoadConfig(*newFlags.ConfigPath)
 	if err != nil {
@@ -25,10 +25,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	scrapeMode := scrapper.ApplyScrapperMode(newFlags.ModeFlag)
+	scrapeMode, err := scraper.ApplyScrapperMode(newFlags.ModeFlag)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 	logger := system.SetupLogger(cfg, scrapeMode, newFlags)
 	logger.UpdateConfigFlags()
-		
+
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
@@ -74,7 +78,7 @@ func main() {
 	}
 
 	// Create downloader based on configuration
-	var downloader scrapper.Downloader
+	var downloader scraper.Downloader
 
 	// Use aria2 from the config
 	if cfg.UseAria2c {
@@ -99,11 +103,10 @@ func main() {
 	}
 
 	// Run the scraper with the specified mode
-	if err := scrapper.RunScraper(ctx, cfg, storageClient, flareClient, httpClient, downloader, logger.Logger, scrapeMode); err != nil {
+	if err := scraper.RunScraper(ctx, cfg, storageClient, flareClient, httpClient, downloader, logger.Logger, scrapeMode); err != nil {
 		logger.Logger.Error("scraper failed", "error", err)
 		os.Exit(1)
 	}
 
 	logger.Logger.Info("scraper completed successfully")
 }
-

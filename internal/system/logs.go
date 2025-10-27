@@ -2,7 +2,7 @@ package system
 
 import (
 	"comicrawl/internal/config"
-	"comicrawl/internal/scrapper"
+	"comicrawl/internal/scraper"
 	"log/slog"
 	"os"
 	"strings"
@@ -12,12 +12,12 @@ import (
 type Logging struct {
 	Logger      *slog.Logger
 	Cfg         *config.Config
-	ScrapMode   scrapper.ScrapeMode
-	FlagLog     *LogFlagConfig 
+	ScrapMode   scraper.ScrapeMode
+	FlagLog     *LogFlagConfig
 }
 
 // Create a new logger
-func SetupLogger(cfg *config.Config, scrapMode scrapper.ScrapeMode, flagLog *LogFlagConfig) *Logging {
+func SetupLogger(cfg *config.Config, scrapMode scraper.ScrapeMode, flagLog *LogFlagConfig) *Logging {
 	var logLevel slog.Level
 	
 	switch cfg.LogLevel {
