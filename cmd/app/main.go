@@ -51,7 +51,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	system.SetupSignalHandler(cancel, logger.Logger)
+	// Create shutdown channel for graceful exit
+	shutdownCh := make(chan struct{})
+	system.SetupSignalHandler(cancel, logger.Logger, shutdownCh)
 
 	logger.ConfigLogging()
 

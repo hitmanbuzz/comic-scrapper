@@ -70,11 +70,15 @@ func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, fil
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			c.logger.Error("failed to close file", "path", filePath, "error", closeErr)
+		}
+	}()
 
-	size, err := io.Copy(file, data)
-	if err != nil {
-		return fmt.Errorf("failed to write to file %s: %w", filePath, err)
+	size, writeErr := io.Copy(file, data)
+	if writeErr != nil {
+		return fmt.Errorf("failed to write to file %s: %w", filePath, writeErr)
 	}
 
 	c.logger.Debug("uploaded image", "path", filePath, "size", size)

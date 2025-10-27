@@ -24,9 +24,33 @@ type Downloader struct {
 
 type DownloadRequest struct {
 	SeriesSlug    string
-	Chapter       interface{}
+	Chapter       Chapter
 	Page          sources.Page
-	StorageClient interface{}
+	StorageClient StorageClient
+}
+
+// Chapter represents a chapter with a number - implemented via type assertion
+type Chapter any
+
+// StorageClient represents a storage backend that can upload images
+type StorageClient any
+
+// getChapterNumber extracts the chapter number from various chapter types
+func getChapterNumber(ch any) (string, error) {
+	switch c := ch.(type) {
+	case struct {
+		Number     string
+		Title      string
+		Pages      int
+		UploadedAt time.Time
+		SourceURL  string
+	}:
+		return c.Number, nil
+	case disk.Chapter:
+		return c.Number, nil
+	default:
+		return "", fmt.Errorf("invalid chapter type: %T", c)
+	}
 }
 
 func NewDownloader(rpcURL string, workerCount int, logger *slog.Logger) (*Downloader, error) {
@@ -64,10 +88,11 @@ func (d *Downloader) worker(id int) {
 		cancel()
 
 		if err != nil {
+			chapterNum, _ := getChapterNumber(task.Chapter)
 			d.logger.Error("download failed",
 				"error", err,
 				"series", task.SeriesSlug,
-				"chapter", d.extractChapterNumber(task.Chapter),
+				"chapter", chapterNum,
 				"page", task.Page.Number)
 		}
 	}
@@ -98,7 +123,10 @@ func (d *Downloader) DownloadBatch(ctx context.Context, requests []DownloadReque
 func (d *Downloader) downloadSingle(ctx context.Context, req DownloadRequest) error {
 	startTime := time.Now()
 
-	chapterNumber := d.extractChapterNumber(req.Chapter)
+	chapterNumber, err := getChapterNumber(req.Chapter)
+	if err != nil {
+		return fmt.Errorf("failed to extract chapter number for series %s (chapter_type=%T): %w", req.SeriesSlug, req.Chapter, err)
+	}
 
 	aria2cFilename := fmt.Sprintf("%s_ch%s_p%03d%s",
 		req.SeriesSlug,
@@ -114,7 +142,7 @@ func (d *Downloader) downloadSingle(ctx context.Context, req DownloadRequest) er
 		"page", req.Page.Number,
 		"url", req.Page.URL)
 
-	err := d.client.DownloadAndStream(ctx, DownloadTask{
+	uploadErr := d.client.DownloadAndStream(ctx, DownloadTask{
 		URL:      req.Page.URL,
 		Filename: aria2cFilename,
 		Headers: map[string]string{
@@ -123,21 +151,19 @@ func (d *Downloader) downloadSingle(ctx context.Context, req DownloadRequest) er
 			"Accept":     "image/webp,image/apng,image/*,*/*;q=0.8",
 		},
 	}, func(reader io.Reader) error {
-		switch client := req.StorageClient.(type) {
-		case interface {
+		if client, ok := req.StorageClient.(interface {
 			UploadImage(context.Context, string, string, string, io.Reader) error
-		}:
+		}); ok {
 			uploadCtx, cancel := context.WithTimeout(ctx, 90*time.Second)
 			defer cancel()
 
 			return client.UploadImage(uploadCtx, req.SeriesSlug, chapterNumber, storageFilename, io.NopCloser(reader))
-		default:
-			return fmt.Errorf("invalid storage client type")
 		}
+		return fmt.Errorf("storage client for series %s (storage_type=%T) does not implement UploadImage method", req.SeriesSlug, req.StorageClient)
 	})
 
-	if err != nil {
-		return fmt.Errorf("aria2c download failed: %w", err)
+	if uploadErr != nil {
+		return fmt.Errorf("aria2c download failed: %w", uploadErr)
 	}
 
 	duration := time.Since(startTime)
@@ -152,23 +178,6 @@ func (d *Downloader) downloadSingle(ctx context.Context, req DownloadRequest) er
 		"total_pages_processed", pageCount)
 
 	return nil
-}
-
-func (d *Downloader) extractChapterNumber(chapter interface{}) string {
-	switch ch := chapter.(type) {
-	case struct {
-		Number     string
-		Title      string
-		Pages      int
-		UploadedAt time.Time
-		SourceURL  string
-	}:
-		return ch.Number
-	case disk.Chapter:
-		return ch.Number
-	default:
-		return "unknown"
-	}
 }
 
 func getFileExtension(url string) string {

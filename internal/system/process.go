@@ -17,7 +17,7 @@ func CreateContext() *context.Context {
 	return &ctx
 }
 
-func SetupSignalHandler(cancel context.CancelFunc, logger *slog.Logger) {
+func SetupSignalHandler(cancel context.CancelFunc, logger *slog.Logger, shutdownCh chan<- struct{}) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -28,6 +28,11 @@ func SetupSignalHandler(cancel context.CancelFunc, logger *slog.Logger) {
 
 		// Give some time for graceful shutdown
 		time.Sleep(2 * time.Second)
-		os.Exit(0)
+
+		// Signal that shutdown is complete
+		select {
+		case shutdownCh <- struct{}{}:
+		default:
+		}
 	}()
 }

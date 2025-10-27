@@ -21,13 +21,45 @@ const (
 	taskQueueMultiplier = 100
 )
 
+// Chapter represents a chapter with a number - implemented via type assertion
+type Chapter any
+
+// StorageClient represents a storage backend that can upload images
+type StorageClient any
+
 type DownloadTask struct {
 	SeriesSlug    string
-	Chapter       any
+	Chapter       Chapter
 	Page          sources.Page
 	HTTPClient    *http.Client
-	StorageClient any
+	StorageClient StorageClient
 	Logger        *slog.Logger
+}
+
+// getChapterNumber extracts the chapter number from various chapter types
+func getChapterNumber(ch any) (string, error) {
+	switch c := ch.(type) {
+	case struct {
+		Number     string
+		Title      string
+		Pages      int
+		UploadedAt time.Time
+		SourceURL  string
+	}:
+		return c.Number, nil
+	case disk.Chapter:
+		return c.Number, nil
+	default:
+		return "", fmt.Errorf("invalid chapter type: %T", c)
+	}
+}
+
+// canUploadImage checks if the client implements the UploadImage method
+func canUploadImage(client any) bool {
+	_, ok := client.(interface {
+		UploadImage(context.Context, string, string, string, io.Reader) error
+	})
+	return ok
 }
 
 type Pool struct {
@@ -90,20 +122,9 @@ func (p *Pool) processTask(task DownloadTask) {
 
 	startTime := time.Now()
 
-	var chapterNumber string
-	switch ch := task.Chapter.(type) {
-	case struct {
-		Number     string
-		Title      string
-		Pages      int
-		UploadedAt time.Time
-		SourceURL  string
-	}:
-		chapterNumber = ch.Number
-	case disk.Chapter:
-		chapterNumber = ch.Number
-	default:
-		p.logger.Error("invalid chapter type in task")
+	chapterNumber, err := getChapterNumber(task.Chapter)
+	if err != nil {
+		p.logger.Error("invalid chapter type in task", "series", task.SeriesSlug, "chapter_type", fmt.Sprintf("%T", task.Chapter), "error", err)
 		return
 	}
 
@@ -115,7 +136,7 @@ func (p *Pool) processTask(task DownloadTask) {
 		"queue_size", len(p.taskChan))
 
 	var resp *http.Response
-	var err error
+	var downloadErr error
 
 	for attempt := 1; attempt <= 3; attempt++ {
 		req, reqErr := http.NewRequestWithContext(ctx, "GET", task.Page.URL, nil)
@@ -129,8 +150,8 @@ func (p *Pool) processTask(task DownloadTask) {
 		req.Header.Set("Referer", task.Page.URL)
 		req.Header.Set("Accept", "image/webp,image/apng,image/*,*/*;q=0.8")
 
-		resp, err = task.HTTPClient.Do(req)
-		if err == nil && resp.StatusCode == http.StatusOK {
+		resp, downloadErr = task.HTTPClient.Do(req)
+		if downloadErr == nil && resp.StatusCode == http.StatusOK {
 			break
 		}
 
@@ -144,14 +165,14 @@ func (p *Pool) processTask(task DownloadTask) {
 				"attempt", attempt,
 				"wait", waitTime,
 				"url", task.Page.URL,
-				"error", err)
+				"error", downloadErr)
 			time.Sleep(waitTime)
 		}
 	}
 
-	if err != nil {
+	if downloadErr != nil {
 		p.logger.Error("failed to download image after retries",
-			"error", err,
+			"error", downloadErr,
 			"url", task.Page.URL)
 		return
 	}
@@ -173,14 +194,20 @@ func (p *Pool) processTask(task DownloadTask) {
 	for attempt := 1; attempt <= 3; attempt++ {
 		uploadCtx, uploadCancel := context.WithTimeout(context.Background(), 90*time.Second)
 
-		switch client := task.StorageClient.(type) {
-		case interface {
-			UploadImage(context.Context, string, string, string, io.Reader) error
-		}:
-			uploadErr = client.UploadImage(uploadCtx, task.SeriesSlug, chapterNumber, filename, io.NopCloser(resp.Body))
-		default:
-			uploadErr = fmt.Errorf("invalid storage client type")
+		if !canUploadImage(task.StorageClient) {
+			uploadCancel()
+			resp.Body.Close()
+			p.logger.Error("invalid storage client type",
+				"series", task.SeriesSlug,
+				"chapter", chapterNumber,
+				"filename", filename,
+				"storage_type", fmt.Sprintf("%T", task.StorageClient))
+			return
 		}
+
+		uploadErr = task.StorageClient.(interface {
+			UploadImage(context.Context, string, string, string, io.Reader) error
+		}).UploadImage(uploadCtx, task.SeriesSlug, chapterNumber, filename, io.NopCloser(resp.Body))
 		uploadCancel()
 
 		if uploadErr == nil {
@@ -280,25 +307,14 @@ func (p *Pool) DownloadBatch(ctx context.Context, requests []aria2c.DownloadRequ
 	return nil
 }
 
-func (p *Pool) ProcessChapterPages(seriesSlug string, chapter any, pages []sources.Page, httpClient *http.Client, storageClient any, logger *slog.Logger) error {
-	var chapterNumber string
-	switch ch := chapter.(type) {
-	case struct {
-		Number     string
-		Title      string
-		Pages      int
-		UploadedAt time.Time
-		SourceURL  string
-	}:
-		chapterNumber = ch.Number
-	case disk.Chapter:
-		chapterNumber = ch.Number
-	default:
-		p.logger.Error("invalid chapter type in ProcessChapterPages")
-		return fmt.Errorf("invalid chapter type")
+func (p *Pool) ProcessChapterPages(seriesSlug string, chapter Chapter, pages []sources.Page, httpClient *http.Client, storageClient StorageClient, logger *slog.Logger) error {
+	chapterNumber, err := getChapterNumber(chapter)
+	if err != nil {
+		logger.Error("invalid chapter type in ProcessChapterPages", "series", seriesSlug, "chapter_type", fmt.Sprintf("%T", chapter), "error", err)
+		return fmt.Errorf("failed to extract chapter number for series %s: %w", seriesSlug, err)
 	}
 
-	p.logger.Info("processing chapter pages",
+	logger.Info("processing chapter pages",
 		"series", seriesSlug,
 		"chapter", chapterNumber,
 		"pages", len(pages))
@@ -315,7 +331,7 @@ func (p *Pool) ProcessChapterPages(seriesSlug string, chapter any, pages []sourc
 		p.putTaskToPool(task)
 	}
 
-	p.logger.Info("chapter pages queued",
+	logger.Info("chapter pages queued",
 		"series", seriesSlug,
 		"chapter", chapterNumber,
 		"pages", len(pages))
