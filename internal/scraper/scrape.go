@@ -97,8 +97,6 @@ func RunScraper(
 				continue
 			}
 
-			logger.Debug("processing series", "series", series.Slug)
-
 			// Check series limit
 			if cfg.LimitSeries > 0 && seriesCount >= cfg.LimitSeries {
 				logger.Info("series limit reached", "limit", cfg.LimitSeries)
@@ -128,7 +126,7 @@ func RunScraper(
 				// Handle different scraping modes
 				if mode == ModeIncremental || mode == ModeSingle {
 					// For incremental mode, skip series that don't exist locally
-					if mode == ModeIncremental && (localMeta == nil || len(localMeta.Chapters) == 0) {
+					if mode == ModeIncremental && len(localMeta.Chapters) == 0 {
 						logger.Debug("skipping new series in incremental mode", "series", s.Slug)
 						return
 					}
@@ -162,14 +160,13 @@ func RunScraper(
 
 				// Filter chapters based on mode
 				var chaptersToProcess []sources.Chapter
-				if mode == ModeIncremental && localMeta != nil && len(localMeta.Chapters) > 0 {
+				if mode == ModeIncremental && len(localMeta.Chapters) > 0 {
 					// In incremental mode, only process new chapters
-					newChapters := FindNewChapters(src, localMeta.Chapters, remoteChapters, logger)
-					chaptersToProcess = newChapters
+					chaptersToProcess = FindNewChapters(src, localMeta.Chapters, remoteChapters, logger)
 					logger.Info("filtering chapters in incremental mode",
 						"series", s.Slug,
 						"total_remote", len(remoteChapters),
-						"new_chapters", len(newChapters))
+						"new_chapters", len(chaptersToProcess))
 				} else {
 					// In full mode or for new series, process all chapters
 					chaptersToProcess = remoteChapters
@@ -250,8 +247,6 @@ func RunScraper(
 	// Wait for all series to be processed (downloads are streaming concurrently)
 	logger.Info("waiting for all series processing to complete")
 	wg.Wait()
-
-	logger.Info("all series processed, downloads are streaming concurrently")
 
 	// Update metadata (unless in dry-run mode)
 	logger.Info("updating metadata", "updates_count", len(pendingUpdates))
