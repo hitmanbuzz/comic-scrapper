@@ -16,12 +16,17 @@ import (
 	"comicrawl/internal/sources"
 )
 
+const (
+	// taskQueueMultiplier determines buffer size per worker
+	taskQueueMultiplier = 100
+)
+
 type DownloadTask struct {
 	SeriesSlug    string
-	Chapter       interface{}
+	Chapter       any
 	Page          sources.Page
 	HTTPClient    *http.Client
-	StorageClient interface{}
+	StorageClient any
 	Logger        *slog.Logger
 }
 
@@ -36,9 +41,9 @@ type Pool struct {
 func NewPool(workerCount int, logger *slog.Logger) *Pool {
 	return &Pool{
 		workerCount: workerCount,
-		taskChan:    make(chan DownloadTask, workerCount*100),
+		taskChan:    make(chan DownloadTask, workerCount*taskQueueMultiplier),
 		taskPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return &DownloadTask{}
 			},
 		},
@@ -159,10 +164,7 @@ func (p *Pool) processTask(task DownloadTask) {
 		return
 	}
 
-	contentLength := resp.ContentLength
-	if contentLength < 0 {
-		contentLength = 0
-	}
+	contentLength := max(resp.ContentLength, 0)
 
 	filename := fmt.Sprintf("%03d%s", task.Page.Number, getFileExtension(task.Page.URL))
 
@@ -278,7 +280,7 @@ func (p *Pool) DownloadBatch(ctx context.Context, requests []aria2c.DownloadRequ
 	return nil
 }
 
-func (p *Pool) ProcessChapterPages(seriesSlug string, chapter interface{}, pages []sources.Page, httpClient *http.Client, storageClient interface{}, logger *slog.Logger) error {
+func (p *Pool) ProcessChapterPages(seriesSlug string, chapter any, pages []sources.Page, httpClient *http.Client, storageClient any, logger *slog.Logger) error {
 	var chapterNumber string
 	switch ch := chapter.(type) {
 	case struct {
@@ -335,21 +337,3 @@ func getFileExtension(url string) string {
 	return ext
 }
 
-func streamDownload(ctx context.Context, client *http.Client, url string) (io.ReadCloser, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	return resp.Body, nil
-}
