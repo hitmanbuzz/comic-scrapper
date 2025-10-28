@@ -15,7 +15,7 @@ chmod +x aria-srv.sh
 Open a new terminal and run this command
 
 ```
-go run cmd/comicrawl/main.go
+go run cmd/app/main.go
 ```
 
 ### Optional: Cloudflare Solver
