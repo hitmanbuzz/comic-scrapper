@@ -1,8 +1,7 @@
 bucket: '/tmp/comicrawl-data'
 storage_type: 'disk'
 
-# Change key to `flaresolverr_url`
-flaresolverra_url: "http://localhost:8191"
+# flaresolverr_url: "http://localhost:8191"
 
 aria2c_url: 'http://localhost:6800/jsonrpc'
 use_aria2c: true
@@ -17,8 +16,7 @@ download_workers: 1000
 
 log_level: 'info'
 
-include_sources: ['utoon']
-# include_sources: ['asurascans']
+include_sources: ['utoon','flamescans','asurascans','webtoon']
 # exclude_sources: ['webtoon']
 
 # include_series: ['tower-of-god']

@@ -76,6 +76,12 @@ func (l *Logging) ConfigLogging() {
 	}
 }
 
+func SetupTestLogger(level slog.Level) *slog.Logger {
+	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: level,
+	}))
+}
+
 // Override the existing config with the CLI flags
 func (l *Logging) UpdateConfigFlags() {
 	if *l.FlagLog.SourcesFlag != "" {
