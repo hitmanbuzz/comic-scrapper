@@ -13,5 +13,6 @@ func AddSources(logger *slog.Logger) []sources.Source {
         scanlators.NewWebtoon(logger),
         scanlators.NewUtoon(logger),
         scanlators.NewFlameComics(logger),
+        scanlators.NewDrakeScans(logger),
     }
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"comicrawl/internal/aria2c"
+	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/config"
 	"comicrawl/internal/disk"
 	"comicrawl/internal/httpclient"
@@ -57,8 +58,6 @@ func main() {
 	cfg.DryRun = false
 	cfg.LimitSeries = 1
 	cfg.LimitChapters = 1
-	cfg.IncludeSources = nil
-	cfg.ExcludeSources = nil
 
 	// Setup logger
 	logger := system.SetupTestLogger(slog.LevelInfo)
@@ -84,7 +83,7 @@ func main() {
 	}
 
 	// Create downloader
-	downloader, err := createDownloader(ctx, cfg, logger)
+	downloader, err := createDownloader(cfg, logger)
 	if err != nil {
 		logger.Error("failed to create downloader", "error", err)
 		os.Exit(1)
@@ -158,14 +157,14 @@ func checkFlareSolver(url string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("non-200 status code: %d", resp.StatusCode)
+	if resp.StatusCode != 405 {
+		return fmt.Errorf("invalid status code: %d", resp.StatusCode)
 	}
 
 	return nil
 }
 
-func createDownloader(ctx context.Context, cfg *config.Config, logger *slog.Logger) (interface {
+func createDownloader(cfg *config.Config, logger *slog.Logger) (interface {
 	AddDownload(request aria2c.DownloadRequest)
 	Close() error
 }, error) {
@@ -191,6 +190,16 @@ func runIntegrationTests(
 	logger *slog.Logger,
 ) TestStats {
 	sourceList := registry.AddSources(logger)
+
+	if cfg.HasSourceFilters() {
+		var filtered []sources.Source
+		for _, source := range sourceList {
+			if cfg.IsSourceIncluded(source.GetName()) {
+				filtered = append(filtered, source)
+			}
+		}
+		sourceList = filtered
+	}
 
 	stats := TestStats{
 		TotalSources: len(sourceList),
@@ -250,7 +259,11 @@ func testSource(
 	}
 
 	// Configure for source domain
-	if err := httpClient.ConfigureForDomain(ctx, src.GetBaseURL(), nil, cfg.HTTPProxy); err != nil {
+	var flareClient *cloudflare.Client
+	if cfg.CloudflareURL != "" {
+		flareClient = cloudflare.NewClient(cfg, logger)
+	}
+	if err := httpClient.ConfigureForDomain(ctx, src.GetBaseURL(), flareClient, cfg.HTTPProxy); err != nil {
 		result.Error = fmt.Sprintf("failed to configure HTTP client: %v", err)
 		return result
 	}
@@ -262,6 +275,8 @@ func testSource(
 		result.Error = fmt.Sprintf("failed to list series: %v", err)
 		return result
 	}
+
+	logger.Info("listed series", "source", src.GetName(), "count", len(seriesList))
 
 	if len(seriesList) == 0 {
 		result.Error = "no series found"

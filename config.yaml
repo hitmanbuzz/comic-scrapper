@@ -1,12 +1,12 @@
 bucket: '/tmp/comicrawl-data'
 storage_type: 'disk'
 
-# flaresolverr_url: "http://localhost:8191"
+flaresolverr_url: "http://localhost:8191/v1"
 
 aria2c_url: 'http://localhost:6800/jsonrpc'
 use_aria2c: true
 
-user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 http_proxy: ''
 requests_per_second: 50
 request_timeout: '60s'
@@ -16,7 +16,7 @@ download_workers: 1000
 
 log_level: 'info'
 
-include_sources: ['utoon','flamescans','asurascans','webtoon']
+include_sources: ['utoon','flamescans','asurascans','drakescans','webtoon']
 # exclude_sources: ['webtoon']
 
 # include_series: ['tower-of-god']

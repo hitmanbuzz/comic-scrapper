@@ -104,6 +104,7 @@ func (c *Client) GetSession(ctx context.Context, targetURL string, proxyURL stri
 	c.logger.Info("obtained FlareSolver-compatible session",
 		"url", domain,
 		"cookies", len(resp.Solution.Cookies),
+		"userAgent", resp.Solution.UserAgent,
 		"proxy", proxyURL)
 
 	return &resp.Solution, nil
