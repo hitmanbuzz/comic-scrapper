@@ -25,10 +25,6 @@ func NewUtoon(logger *slog.Logger) *Utoon {
 	}
 }
 
-func (u *Utoon) GetChaptersUrl() {
-	// url := fmt.Sprintf("%s/manga/%s", u.baseURL, "")
-}
-
 func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
 	u.Logger.Info("fetching series list from Utoon")
 
@@ -82,10 +78,93 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 }
 
 func (u *Utoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	return nil, nil
+	u.Logger.Info("fetching chapters", "series", series.Slug)
+
+	url := fmt.Sprintf("%s/series/%s", u.GetBaseURL(), series.Slug)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch chapters: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+	}
+
+	return u.parseChaptersPage(doc, series.Slug)
+
 }
 func (u *Utoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
-	return nil, nil
+	u.Logger.Info("fetching pages", "chapter", chapter.Number)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch pages: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+	}
+
+	return u.parsePages(doc)
+}
+
+func (u *Utoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
+	var pages []sources.Page
+
+	doc.Find("div.page-break.no-gaps").Each(func(i int, s *goquery.Selection) {
+        // Find the img tag within the div
+        img := s.Find("img")
+        
+        // Get the id attribute (image id has the image number)
+        imageID, exists := img.Attr("id")
+        if exists {
+	        // Get the src attribute (which is the chapter image url)
+	        imageSrc, exists := img.Attr("src")
+	        if exists {
+		        imageNumStr := u.extractImageNumber(imageID)
+
+		        imageUrl := strings.TrimSpace(imageSrc)
+				imageNum, err := strconv.Atoi(imageNumStr)
+
+				if err != nil {
+					fmt.Printf("Failed to convert `%s` to int\n", imageNumStr)
+					return
+				}
+
+				pages = append(pages, sources.Page{
+					Number: imageNum,
+					URL: imageUrl,
+				})
+	        }
+	        // string version of image number
+		}        
+    })
+
+	u.Logger.Info("parsed pages", "count", len(pages))
+	return pages, nil
 }
 
 func (u *Utoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
@@ -99,15 +178,12 @@ func (u *Utoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 
 		slug, title := u.extractSlugTitleFromUrl(href)
 
+		u.Logger.Info("found series", "title", title, "slug", slug, "url", href)
+
 		if title != "" && slug != "" {
 			series = append(series, sources.Series{
 				Slug: slug,
 				Title: "",
-				Description: "",         
-				Author:      "",         
-				Status:      "",         
-				Genres:      []string{}, 
-				Chapters:    []sources.Chapter{},
 			})
 		}		
 	})
@@ -119,16 +195,26 @@ func (u *Utoon) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]s
 	var chapters []sources.Chapter
 
 	doc.Find("li.wp-manga-chapter a").Each(func(index int, element *goquery.Selection) {
-        // Extract href attribute
-        href, exists := element.Attr("href")
+        chapterUrl, exists := element.Attr("href")
         if exists {
-            fmt.Printf("Link %d: %s\n", index, href)
+	        if chapterUrl != "#" {
+		 		chapters = append(chapters, sources.Chapter{
+		 			Number: u.extractChapterNumber(chapterUrl),
+		 			Title: "",
+					URL: chapterUrl,
+					SourceURL: chapterUrl,
+		 		})	       
+	        }
         }
     })
 
+	u.Logger.Info("parsed chapters", "series", seriesSlug, "count", len(chapters))
 	return chapters, nil
 }
 
+// This will get the last page for the entire utoon manga (comic) section
+//
+// URL: https://utoon.net/manga/page/<page-number>/
 func (u *Utoon) getLastPage(doc *goquery.Document) int {
 	last_page_url := ""
 
@@ -153,6 +239,33 @@ func (u *Utoon) getLastPage(doc *goquery.Document) int {
 	}
 
 	return last_page_num
+}
+
+// Extract chapter number from chapter url
+func (u *Utoon) extractChapterNumber(chapterUrl string) string {
+	// example: https://utoon.net/manga/the-return-of-a-crazy-genius-composer/chapter-76/
+	// lastDash = `chapter-` before the chapter number (76)
+	// The reason is that we have url like this https://utoon.net/manga/the-return-of-a-crazy-genius-composer/chapter-0-5/
+	// `chapter-0-5` = chapter 0.5
+	
+	// lastSlash = `/` after the chapter number (76)
+	// Between these two is the chapter number
+	
+	fmt.Println("Chapter URL:", chapterUrl)
+	lastSlash := strings.LastIndex(chapterUrl, "/")
+	lastDash := strings.LastIndex(chapterUrl, "chapter-")
+
+	fmt.Println("Last Dash:", lastDash)
+	fmt.Println("Last Slash", lastSlash)
+	// `chapter-` is 7 in length so we will start from index 8 which is the chapter number starting position
+	chapter_num := chapterUrl[lastDash+8:lastSlash]
+
+	fmt.Println("Chapter Num:", chapter_num)
+	if strings.Contains(chapter_num, "-") {
+		strings.Replace(chapter_num, "-", ".", 1)
+	}
+
+	return chapter_num
 }
 
 // Remove Symbols and Replace with Spaces
@@ -181,4 +294,12 @@ func (u *Utoon) extractSlugTitleFromUrl(url string) (string, string) {
 	title := u.removeSymbolsCapitalize(slug)
 
 	return slug, title
+}
+
+// Extract Image Number from the imageId
+func (u *Utoon) extractImageNumber(imageId string) string {
+	fmt.Println("Image ID:", imageId)
+	// example: image-2
+	dashIndex := strings.Index(imageId, "-")
+	return imageId[dashIndex+1:]
 }
