@@ -15,24 +15,24 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type RizzComic struct {
+type RizzFables struct {
 	*sources.BaseSource
 	globalPrefix string
 }
 
-func NewRizzComic(logger *slog.Logger) *RizzComic {
-	return &RizzComic{
-		BaseSource:   sources.NewBaseSource("rizzcomic", "https://rizzfables.com", logger),
+func NewRizzFables(logger *slog.Logger) *RizzFables {
+	return &RizzFables{
+		BaseSource:   sources.NewBaseSource("rizzfables", "https://rizzfables.com", logger),
 		globalPrefix: "",
 	}
 }
 
-type comicResponse struct {
+type ComicResponse struct {
 	Title string `json:"title"`
 }
 
-func (r *RizzComic) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
-	r.Logger.Info("fetching series list from RizzComic")
+func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+	r.Logger.Info("fetching series list from RizzFables")
 
 	// Fetch global prefix (only once!)
 	if r.globalPrefix == "" {
@@ -69,7 +69,7 @@ func (r *RizzComic) ListSeries(ctx context.Context, client *httpclient.HTTPClien
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var comics []comicResponse
+	var comics []ComicResponse
 	if err := json.NewDecoder(resp.Body).Decode(&comics); err != nil {
 		return nil, fmt.Errorf("failed to decode JSON: %w", err)
 	}
@@ -82,11 +82,11 @@ func (r *RizzComic) ListSeries(ctx context.Context, client *httpclient.HTTPClien
 		})
 	}
 
-	r.Logger.Info("fetched series from RizzComic", "count", len(allSeries))
+	r.Logger.Info("fetched series from RizzFables", "count", len(allSeries))
 	return allSeries, nil
 }
 
-func (r *RizzComic) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+func (r *RizzFables) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	r.Logger.Info("fetching chapters", "series", series.Slug)
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", r.BuildURL(fmt.Sprintf("series/%s%s", r.globalPrefix, series.Slug)), nil)
@@ -125,7 +125,7 @@ func (r *RizzComic) FetchChapters(ctx context.Context, client *httpclient.HTTPCl
 	return chapters, nil
 }
 
-func (r *RizzComic) fetchGlobalPrefix(ctx context.Context, client *httpclient.HTTPClient) (string, error) {
+func (r *RizzFables) fetchGlobalPrefix(ctx context.Context, client *httpclient.HTTPClient) (string, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/series/", r.GetBaseURL()), nil)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -151,7 +151,7 @@ func (r *RizzComic) fetchGlobalPrefix(ctx context.Context, client *httpclient.HT
 	return prefix, nil
 }
 
-func (r *RizzComic) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (r *RizzFables) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	r.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
@@ -173,7 +173,7 @@ func (r *RizzComic) FetchPages(ctx context.Context, client *httpclient.HTTPClien
 	return r.parsePages(doc)
 }
 
-func (r *RizzComic) parsePages(doc *goquery.Document) ([]sources.Page, error) {
+func (r *RizzFables) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 	var pages []sources.Page
 
 	doc.Find("img").Each(func(i int, s *goquery.Selection) {
@@ -201,7 +201,7 @@ func (r *RizzComic) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 	return pages, nil
 }
 
-func (r *RizzComic) extractChapterNumber(text string) string {
+func (r *RizzFables) extractChapterNumber(text string) string {
 	re := regexp.MustCompile(`(?i)chapter[\s:]*(\d+(?:\.\d+)?)`)
 	if matches := re.FindStringSubmatch(text); len(matches) > 1 {
 		return matches[1]
@@ -209,7 +209,7 @@ func (r *RizzComic) extractChapterNumber(text string) string {
 	return "0"
 }
 
-func (r *RizzComic) slugify(title string) string {
+func (r *RizzFables) slugify(title string) string {
 	re := regexp.MustCompile(`[^a-z0-9]+`)
 	slug := re.ReplaceAllString(strings.ToLower(strings.ReplaceAll(title, "'", "")), "-")
 	return strings.Trim(slug, "-")
