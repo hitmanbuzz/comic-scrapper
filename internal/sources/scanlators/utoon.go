@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -19,6 +20,9 @@ type Utoon struct {
 	*sources.BaseSource
 }
 
+// FIX
+// Titles with chinese text
+// Extract the english titles instead
 func NewUtoon(logger *slog.Logger) *Utoon {
 	return &Utoon{
 		BaseSource: sources.NewBaseSource("utoon", "https://utoon.net", logger),
@@ -65,10 +69,8 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 		}
 
 		pageSeries := u.parseSeriesPage(doc)
-		// fmt.Println("Page Series:", pageSeries)
 		allSeries = append(allSeries, pageSeries...)
 		
-		// fmt.Printf("Page %d done\n", page)
 		page++
 	}
 
@@ -135,15 +137,14 @@ func (u *Utoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 	var pages []sources.Page
 
 	doc.Find("div.page-break.no-gaps").Each(func(i int, s *goquery.Selection) {
-        // Find the img tag within the div
         img := s.Find("img")
         
         // Get the id attribute (image id has the image number)
         imageID, exists := img.Attr("id")
         if exists {
-	        // Get the src attribute (which is the chapter image url)
 	        imageSrc, exists := img.Attr("src")
 	        if exists {
+		        // string version of image number
 		        imageNumStr := u.extractImageNumber(imageID)
 
 		        imageUrl := strings.TrimSpace(imageSrc)
@@ -159,7 +160,6 @@ func (u *Utoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 					URL: imageUrl,
 				})
 	        }
-	        // string version of image number
 		}        
     })
 
@@ -177,13 +177,14 @@ func (u *Utoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 		}
 
 		slug, title := u.extractSlugTitleFromUrl(href)
+		title = u.decodePercentEncoded(title)
 
 		u.Logger.Info("found series", "title", title, "slug", slug, "url", href)
 
 		if title != "" && slug != "" {
 			series = append(series, sources.Series{
 				Slug: slug,
-				Title: "",
+				Title: title,
 			})
 		}		
 	})
@@ -251,21 +252,31 @@ func (u *Utoon) extractChapterNumber(chapterUrl string) string {
 	// lastSlash = `/` after the chapter number (76)
 	// Between these two is the chapter number
 	
-	fmt.Println("Chapter URL:", chapterUrl)
 	lastSlash := strings.LastIndex(chapterUrl, "/")
 	lastDash := strings.LastIndex(chapterUrl, "chapter-")
 
-	fmt.Println("Last Dash:", lastDash)
-	fmt.Println("Last Slash", lastSlash)
 	// `chapter-` is 7 in length so we will start from index 8 which is the chapter number starting position
 	chapter_num := chapterUrl[lastDash+8:lastSlash]
 
-	fmt.Println("Chapter Num:", chapter_num)
 	if strings.Contains(chapter_num, "-") {
 		strings.Replace(chapter_num, "-", ".", 1)
 	}
 
 	return chapter_num
+}
+
+// Decode those percent-encoded string
+//
+// example: %e6%88%b0%e7%8e%8b%e5%82%b3%e8%a8%98
+// this shows as `戰王傳記` after decoding
+func (u *Utoon) decodePercentEncoded(encoded_text string) string {
+    decoded_text, err := url.PathUnescape(encoded_text)
+    if err != nil {
+    	fmt.Println("Couldn't decode this string:", encoded_text)
+    	return ""
+    }
+
+	return decoded_text
 }
 
 // Remove Symbols and Replace with Spaces
@@ -298,7 +309,6 @@ func (u *Utoon) extractSlugTitleFromUrl(url string) (string, string) {
 
 // Extract Image Number from the imageId
 func (u *Utoon) extractImageNumber(imageId string) string {
-	fmt.Println("Image ID:", imageId)
 	// example: image-2
 	dashIndex := strings.Index(imageId, "-")
 	return imageId[dashIndex+1:]
