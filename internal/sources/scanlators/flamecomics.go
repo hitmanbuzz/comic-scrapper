@@ -87,6 +87,7 @@ func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPCli
 	}
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/series", f.GetBaseURL()), nil)
+	req.Header.Set("Origin", f.GetBaseURL())
 	req.Header.Set("Referer", f.GetBaseURL()+"/")
 
 	resp, err := client.Do(req)
@@ -113,7 +114,7 @@ func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPCli
 	return allSeries, nil
 }
 
-func (f *FlameComics) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+func (f *FlameComics) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	f.Logger.Info("fetching chapters", "series", series.Slug)
 
 	seriesID, err := f.extractSeriesID(series.Slug)
@@ -122,6 +123,7 @@ func (f *FlameComics) FetchChapters(ctx context.Context, client *httpclient.HTTP
 	}
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/_next/data/%s/series/%02d.json", f.GetBaseURL(), f.dataToken, seriesID), nil)
+	req.Header.Set("Origin", f.GetBaseURL())
 	req.Header.Set("Referer", f.GetBaseURL()+"/")
 
 	resp, err := client.Do(req)
@@ -138,10 +140,11 @@ func (f *FlameComics) FetchChapters(ctx context.Context, client *httpclient.HTTP
 	return f.parseChapters(apiResponse.PageProps.Chapters, seriesID), nil
 }
 
-func (f *FlameComics) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (f *FlameComics) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	f.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	req.Header.Set("Origin", f.GetBaseURL())
 	req.Header.Set("Referer", f.GetBaseURL()+"/")
 
 	resp, err := client.Do(req)

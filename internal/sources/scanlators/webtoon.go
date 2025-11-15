@@ -96,11 +96,8 @@ func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient)
 		url := fmt.Sprintf("%s/%s/ranking/%s", w.GetBaseURL(), w.langCode, ranking)
 		w.Logger.Debug("fetching ranking page", "ranking", ranking, "url", url)
 
-		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %w", err)
-		}
-
+		req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+		req.Header.Set("Origin", w.GetBaseURL())
 		req.Header.Set("Referer", w.GetBaseURL()+"/")
 
 		resp, err := client.Do(req)
@@ -178,16 +175,13 @@ func (w *Webtoon) removeDuplicateSeries(series []sources.Series) []sources.Serie
 	return unique
 }
 
-func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+func (w *Webtoon) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	w.Logger.Info("fetching chapters", "series", series.Slug)
 
 	// First fetch series details to get the title_no
 	detailsURL := w.BuildURL(fmt.Sprintf("%s/list", series.Slug))
-	req, err := http.NewRequestWithContext(ctx, "GET", detailsURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
+	req, _ := http.NewRequestWithContext(ctx, "GET", detailsURL, nil)
+	req.Header.Set("Origin", w.GetBaseURL())
 	req.Header.Set("Referer", w.GetBaseURL()+"/")
 
 	resp, err := client.Do(req)
@@ -221,11 +215,7 @@ func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClie
 	apiURL := fmt.Sprintf("https://m.webtoons.com/api/v1/%s/%s/episodes?pageSize=99999", webtoonType, titleNo)
 	w.Logger.Debug("fetching chapters via API", "url", apiURL)
 
-	req, err = http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create API request: %w", err)
-	}
-
+	req, _ = http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	req.Header.Set("Referer", "https://m.webtoons.com/")
 
 	resp, err = client.Do(req)
@@ -395,14 +385,11 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []sources.Chapter {
 	return chapters
 }
 
-func (w *Webtoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (w *Webtoon) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	w.Logger.Info("fetching pages", "chapter", chapter.Number)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
+	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	req.Header.Set("Origin", w.GetBaseURL())
 	req.Header.Set("Referer", w.GetBaseURL()+"/")
 
 	resp, err := client.Do(req)

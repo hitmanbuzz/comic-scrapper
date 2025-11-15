@@ -37,10 +37,10 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 	last_page := 0
 
 	for {
-		if page > 1 && page + 1 > last_page {
+		if page > 1 && page+1 > last_page {
 			break
 		}
-		
+
 		page_url := fmt.Sprintf("%s/manga/page/%d/", u.BaseURL, page)
 		u.Logger.Debug("fetching series page", "page", page, "url", page_url)
 
@@ -70,16 +70,16 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 
 		pageSeries := u.parseSeriesPage(doc)
 		allSeries = append(allSeries, pageSeries...)
-		
+
 		page++
 	}
 
 	u.Logger.Info("fetched series from Utoon", "count", len(allSeries))
-	
+
 	return allSeries, nil
 }
 
-func (u *Utoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+func (u *Utoon) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	u.Logger.Info("fetching chapters", "series", series.Slug)
 
 	url := fmt.Sprintf("%s/series/%s", u.GetBaseURL(), series.Slug)
@@ -107,7 +107,7 @@ func (u *Utoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient
 	return u.parseChaptersPage(doc, series.Slug)
 
 }
-func (u *Utoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (u *Utoon) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	u.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
@@ -137,17 +137,17 @@ func (u *Utoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 	var pages []sources.Page
 
 	doc.Find("div.page-break.no-gaps").Each(func(i int, s *goquery.Selection) {
-        img := s.Find("img")
-        
-        // Get the id attribute (image id has the image number)
-        imageID, exists := img.Attr("id")
-        if exists {
-	        imageSrc, exists := img.Attr("src")
-	        if exists {
-		        // string version of image number
-		        imageNumStr := u.extractImageNumber(imageID)
+		img := s.Find("img")
 
-		        imageUrl := strings.TrimSpace(imageSrc)
+		// Get the id attribute (image id has the image number)
+		imageID, exists := img.Attr("id")
+		if exists {
+			imageSrc, exists := img.Attr("src")
+			if exists {
+				// string version of image number
+				imageNumStr := u.extractImageNumber(imageID)
+
+				imageUrl := strings.TrimSpace(imageSrc)
 				imageNum, err := strconv.Atoi(imageNumStr)
 
 				if err != nil {
@@ -157,11 +157,11 @@ func (u *Utoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 
 				pages = append(pages, sources.Page{
 					Number: imageNum,
-					URL: imageUrl,
+					URL:    imageUrl,
 				})
-	        }
-		}        
-    })
+			}
+		}
+	})
 
 	u.Logger.Info("parsed pages", "count", len(pages))
 	return pages, nil
@@ -171,7 +171,7 @@ func (u *Utoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 	var series []sources.Series
 
 	doc.Find("h3.h5 a").Each(func(i int, s *goquery.Selection) {
-	    href, exists := s.Attr("href")
+		href, exists := s.Attr("href")
 		if !exists {
 			return
 		}
@@ -183,10 +183,10 @@ func (u *Utoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 
 		if title != "" && slug != "" {
 			series = append(series, sources.Series{
-				Slug: slug,
+				Slug:  slug,
 				Title: title,
 			})
-		}		
+		}
 	})
 
 	return series
@@ -196,18 +196,18 @@ func (u *Utoon) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]s
 	var chapters []sources.Chapter
 
 	doc.Find("li.wp-manga-chapter a").Each(func(index int, element *goquery.Selection) {
-        chapterUrl, exists := element.Attr("href")
-        if exists {
-	        if chapterUrl != "#" {
-		 		chapters = append(chapters, sources.Chapter{
-		 			Number: u.extractChapterNumber(chapterUrl),
-		 			Title: "",
-					URL: chapterUrl,
+		chapterUrl, exists := element.Attr("href")
+		if exists {
+			if chapterUrl != "#" {
+				chapters = append(chapters, sources.Chapter{
+					Number:    u.extractChapterNumber(chapterUrl),
+					Title:     "",
+					URL:       chapterUrl,
 					SourceURL: chapterUrl,
-		 		})	       
-	        }
-        }
-    })
+				})
+			}
+		}
+	})
 
 	u.Logger.Info("parsed chapters", "series", seriesSlug, "count", len(chapters))
 	return chapters, nil
@@ -248,15 +248,15 @@ func (u *Utoon) extractChapterNumber(chapterUrl string) string {
 	// lastDash = `chapter-` before the chapter number (76)
 	// The reason is that we have url like this https://utoon.net/manga/the-return-of-a-crazy-genius-composer/chapter-0-5/
 	// `chapter-0-5` = chapter 0.5
-	
+
 	// lastSlash = `/` after the chapter number (76)
 	// Between these two is the chapter number
-	
+
 	lastSlash := strings.LastIndex(chapterUrl, "/")
 	lastDash := strings.LastIndex(chapterUrl, "chapter-")
 
 	// `chapter-` is 7 in length so we will start from index 8 which is the chapter number starting position
-	chapter_num := chapterUrl[lastDash+8:lastSlash]
+	chapter_num := chapterUrl[lastDash+8 : lastSlash]
 
 	if strings.Contains(chapter_num, "-") {
 		strings.Replace(chapter_num, "-", ".", 1)
@@ -270,11 +270,11 @@ func (u *Utoon) extractChapterNumber(chapterUrl string) string {
 // example: %e6%88%b0%e7%8e%8b%e5%82%b3%e8%a8%98
 // this shows as `戰王傳記` after decoding
 func (u *Utoon) decodePercentEncoded(encoded_text string) string {
-    decoded_text, err := url.PathUnescape(encoded_text)
-    if err != nil {
-    	fmt.Println("Couldn't decode this string:", encoded_text)
-    	return ""
-    }
+	decoded_text, err := url.PathUnescape(encoded_text)
+	if err != nil {
+		fmt.Println("Couldn't decode this string:", encoded_text)
+		return ""
+	}
 
 	return decoded_text
 }

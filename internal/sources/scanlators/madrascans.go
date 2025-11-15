@@ -13,21 +13,21 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type DrakeScans struct {
+type MadraScans struct {
 	*sources.BaseSource
 }
 
-func NewDrakeScans(logger *slog.Logger) *DrakeScans {
-	return &DrakeScans{
-		BaseSource: sources.NewBaseSource("drakescans", "https://drakecomic.org", logger),
+func NewMadraScans(logger *slog.Logger) *MadraScans {
+	return &MadraScans{
+		BaseSource: sources.NewBaseSource("madrascans", "https://madarascans.com", logger),
 	}
 }
 
-func (d *DrakeScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
-	d.Logger.Info("fetching series list from Drake Scans")
+func (m *MadraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+	m.Logger.Info("fetching series list from MadraScans")
 
-	url := fmt.Sprintf("%s/manga/list-mode/", d.GetBaseURL())
-	d.Logger.Debug("fetching series list", "url", url)
+	url := fmt.Sprintf("%s/series/list-mode/", m.GetBaseURL())
+	m.Logger.Debug("fetching series list", "url", url)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -49,13 +49,13 @@ func (d *DrakeScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	allSeries := d.parseSeriesList(doc)
+	allSeries := m.parseSeriesList(doc)
 
-	d.Logger.Info("fetched series from Drake Scans", "count", len(allSeries))
+	m.Logger.Info("fetched series from MadraScans", "count", len(allSeries))
 	return allSeries, nil
 }
 
-func (d *DrakeScans) parseSeriesList(doc *goquery.Document) []sources.Series {
+func (m *MadraScans) parseSeriesList(doc *goquery.Document) []sources.Series {
 	var series []sources.Series
 
 	// Find all li elements containing a.series.tip links
@@ -67,9 +67,9 @@ func (d *DrakeScans) parseSeriesList(doc *goquery.Document) []sources.Series {
 
 		title := strings.TrimSpace(s.Text())
 
-		slug, err := d.ExtractSlugFromURL(url)
+		slug, err := m.ExtractSlugFromURL(url)
 		if err != nil {
-			d.Logger.Warn("failed to extract slug from URL", "url", url, "error", err)
+			m.Logger.Warn("failed to extract slug from URL", "url", url, "error", err)
 			return
 		}
 
@@ -84,10 +84,10 @@ func (d *DrakeScans) parseSeriesList(doc *goquery.Document) []sources.Series {
 	return series
 }
 
-func (d *DrakeScans) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	d.Logger.Info("fetching chapters", "series", series.Slug)
+func (m *MadraScans) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+	m.Logger.Info("fetching chapters", "series", series.Slug)
 
-	url := fmt.Sprintf("%s/manga/%s", d.GetBaseURL(), series.Slug)
+	url := fmt.Sprintf("%s/series/%s", m.GetBaseURL(), series.Slug)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -109,10 +109,10 @@ func (d *DrakeScans) ScrapeComicChaptersURL(ctx context.Context, client *httpcli
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	return d.parseChaptersPage(doc, series.Slug)
+	return m.parseChaptersPage(doc, series.Slug)
 }
 
-func (d *DrakeScans) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]sources.Chapter, error) {
+func (m *MadraScans) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]sources.Chapter, error) {
 	var chapters []sources.Chapter
 
 	// MangaThemesia chapter list selector: div.bxcl li, div.cl li, #chapterlist li, ul li:has(div.chbox):has(div.eph-num)
@@ -124,7 +124,7 @@ func (d *DrakeScans) parseChaptersPage(doc *goquery.Document, seriesSlug string)
 		}
 
 		chapterText := link.Text()
-		chapterNumber := d.extractChapterNumber(chapterText)
+		chapterNumber := m.extractChapterNumber(chapterText)
 
 		var titleParts []string
 		s.Find("span, .chapter-title").Each(func(j int, span *goquery.Selection) {
@@ -136,19 +136,19 @@ func (d *DrakeScans) parseChaptersPage(doc *goquery.Document, seriesSlug string)
 		chapterTitle := strings.Join(titleParts, " ")
 
 		chapters = append(chapters, sources.Chapter{
-			Number:    d.NormalizeChapterNumber(chapterNumber),
+			Number:    m.NormalizeChapterNumber(chapterNumber),
 			Title:     strings.TrimSpace(chapterTitle),
-			URL:       d.ensureAbsoluteURL(url),
-			SourceURL: d.ensureAbsoluteURL(url),
+			URL:       m.ensureAbsoluteURL(url),
+			SourceURL: m.ensureAbsoluteURL(url),
 		})
 	})
 
-	d.Logger.Info("parsed chapters", "series", seriesSlug, "count", len(chapters))
+	m.Logger.Info("parsed chapters", "series", seriesSlug, "count", len(chapters))
 	return chapters, nil
 }
 
-func (d *DrakeScans) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
-	d.Logger.Info("fetching pages", "chapter", chapter.Number)
+func (m *MadraScans) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+	m.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
 	if err != nil {
@@ -170,14 +170,14 @@ func (d *DrakeScans) ScrapeChapterImagesURL(ctx context.Context, client *httpcli
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	return d.parsePages(doc)
+	return m.parsePages(doc)
 }
 
-func (d *DrakeScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
+func (m *MadraScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 	var pages []sources.Page
 
-	// MangaThemesia page selector: div#readerarea img
-	doc.Find("div#readerarea img").Each(func(i int, s *goquery.Selection) {
+	// MangaThemesia page selector: div#readerarea img, div#ts_reader img, div.ts_reader img
+	doc.Find("div#readerarea img, div#ts_reader img, div.ts_reader img").Each(func(i int, s *goquery.Selection) {
 		imageURL := s.AttrOr("src", "")
 		if imageURL == "" {
 			imageURL = s.AttrOr("data-src", "")
@@ -187,7 +187,7 @@ func (d *DrakeScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 		}
 
 		// Transform Jetpack CDN URLs: remove the i[0-9].wp.com prefix
-		imageURL = d.transformJetpackCDNURL(imageURL)
+		imageURL = m.transformJetpackCDNURL(imageURL)
 
 		if imageURL != "" {
 			pages = append(pages, sources.Page{
@@ -199,16 +199,16 @@ func (d *DrakeScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 
 	// If no images found, try to parse from script content (JSON-based image loading)
 	if len(pages) == 0 {
-		pages = d.parsePagesFromScript(doc)
+		pages = m.parsePagesFromScript(doc)
 	}
 
-	d.Logger.Info("parsed pages", "count", len(pages))
+	m.Logger.Info("parsed pages", "count", len(pages))
 	return pages, nil
 }
 
 // transformJetpackCDNURL replaces Jetpack CDN URLs with direct HTTPS
 // Example: https://i0.wp.com/example.com/image.jpg -> https://example.com/image.jpg
-func (d *DrakeScans) transformJetpackCDNURL(url string) string {
+func (m *MadraScans) transformJetpackCDNURL(url string) string {
 	if url == "" {
 		return url
 	}
@@ -220,7 +220,7 @@ func (d *DrakeScans) transformJetpackCDNURL(url string) string {
 
 // parsePagesFromScript attempts to extract page URLs from JavaScript content
 // This handles sites that load images via JSON in script tags
-func (d *DrakeScans) parsePagesFromScript(doc *goquery.Document) []sources.Page {
+func (m *MadraScans) parsePagesFromScript(doc *goquery.Document) []sources.Page {
 	var pages []sources.Page
 
 	// Look for JSON data in script tags
@@ -259,7 +259,7 @@ func (d *DrakeScans) parsePagesFromScript(doc *goquery.Document) []sources.Page 
 		for i, match := range urlMatches {
 			if len(match) > 1 {
 				url := match[1]
-				url = d.transformJetpackCDNURL(url)
+				url = m.transformJetpackCDNURL(url)
 				pages = append(pages, sources.Page{
 					Number: i,
 					URL:    url,
@@ -271,7 +271,7 @@ func (d *DrakeScans) parsePagesFromScript(doc *goquery.Document) []sources.Page 
 	return pages
 }
 
-func (d *DrakeScans) extractChapterNumber(text string) string {
+func (m *MadraScans) extractChapterNumber(text string) string {
 	patterns := []*regexp.Regexp{
 		regexp.MustCompile(`(?i)Chapter[\s:]*(\d+(?:\.\d+)?)`),
 		regexp.MustCompile(`(?i)Ch\.\s*(\d+(?:\.\d+)?)`),
@@ -289,7 +289,7 @@ func (d *DrakeScans) extractChapterNumber(text string) string {
 	return "0"
 }
 
-func (d *DrakeScans) ensureAbsoluteURL(url string) string {
+func (m *MadraScans) ensureAbsoluteURL(url string) string {
 	if strings.HasPrefix(url, "http") {
 		return url
 	}
@@ -297,8 +297,8 @@ func (d *DrakeScans) ensureAbsoluteURL(url string) string {
 		return "https:" + url
 	}
 	if strings.HasPrefix(url, "/") {
-		return d.GetBaseURL() + url
+		return m.GetBaseURL() + url
 	}
 
-	return d.GetBaseURL() + "/" + url
+	return m.GetBaseURL() + "/" + url
 }

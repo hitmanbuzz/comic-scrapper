@@ -86,7 +86,7 @@ func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 	return allSeries, nil
 }
 
-func (r *RizzFables) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+func (r *RizzFables) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	r.Logger.Info("fetching chapters", "series", series.Slug)
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", r.BuildURL(fmt.Sprintf("series/%s%s", r.globalPrefix, series.Slug)), nil)
@@ -151,7 +151,7 @@ func (r *RizzFables) fetchGlobalPrefix(ctx context.Context, client *httpclient.H
 	return prefix, nil
 }
 
-func (r *RizzFables) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (r *RizzFables) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	r.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
