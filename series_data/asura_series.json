@@ -1,0 +1,2383 @@
+{
+  "group_name": "asura",
+  "group_id": 43229596679,
+  "total_series": 297,
+  "series": [
+    {
+      "title": "The Greatest Estate Developer",
+      "comic_url": "https://asuracomic.net/series/the-greatest-estate-developer-d2154dc0",
+      "comic_mu_id": 27180626786,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806084
+    },
+    {
+      "title": "Eternally Regressing Knight",
+      "comic_url": "https://asuracomic.net/series/eternally-regressing-knight-0fcb9fc4",
+      "comic_mu_id": 35590700362,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761870627
+    },
+    {
+      "title": "Omniscient Reader’s Viewpoint",
+      "comic_url": "https://asuracomic.net/series/omniscient-readers-viewpoint-1e43b9fd",
+      "comic_mu_id": 50369844984,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762843198
+    },
+    {
+      "title": "Myst, Might, Mayhem",
+      "comic_url": "https://asuracomic.net/series/myst-might-mayhem-b9959133",
+      "comic_mu_id": 66602465958,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763459291
+    },
+    {
+      "title": "Warrior High School - Dungeon Raid Depar...",
+      "comic_url": "https://asuracomic.net/series/warrior-high-school-dungeon-raid-department-8a3c0ec0",
+      "comic_mu_id": 71891843317,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1748063525
+    },
+    {
+      "title": "Star-Embracing Swordmaster",
+      "comic_url": "https://asuracomic.net/series/star-embracing-swordmaster-602f126d",
+      "comic_mu_id": 27558584427,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1750905803
+    },
+    {
+      "title": "The Regressed Mercenary's Machinations",
+      "comic_url": "https://asuracomic.net/series/the-regressed-mercenarys-machinations-64574070",
+      "comic_mu_id": 74631868688,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762212900
+    },
+    {
+      "title": "Return of the Mount Hua Sect",
+      "comic_url": "https://asuracomic.net/series/return-of-the-mount-hua-sect-ca45f0ce",
+      "comic_mu_id": 27507453126,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761535586
+    },
+    {
+      "title": "Dungeon Odyssey",
+      "comic_url": "https://asuracomic.net/series/dungeon-odyssey-afdfe7aa",
+      "comic_mu_id": 67341137571,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763072686
+    },
+    {
+      "title": "Pick Me Up, Infinite Gacha",
+      "comic_url": "https://asuracomic.net/series/pick-me-up-infinite-gacha-286ed1a4",
+      "comic_mu_id": 59049915845,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763708203
+    },
+    {
+      "title": "Death Is the Only Ending for the Villain...",
+      "comic_url": "https://asuracomic.net/series/death-is-the-only-ending-for-the-villainess-6c620013",
+      "comic_mu_id": 4081439862,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763735772
+    },
+    {
+      "title": "SSS-Class Suicide Hunter",
+      "comic_url": "https://asuracomic.net/series/sss-class-suicide-hunter-32552b81",
+      "comic_mu_id": 17122182327,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763793810
+    },
+    {
+      "title": "The Return of the Crazy Demon",
+      "comic_url": "https://asuracomic.net/series/the-return-of-the-crazy-demon-40fafbfd",
+      "comic_mu_id": 16611247248,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761181843
+    },
+    {
+      "title": "Murim Login",
+      "comic_url": "https://asuracomic.net/series/murim-login-91fe3e64",
+      "comic_mu_id": 76874161220,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761595506
+    },
+    {
+      "title": "Ending Maker",
+      "comic_url": "https://asuracomic.net/series/ending-maker-d4bdb58b",
+      "comic_mu_id": 52542103520,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1753740797
+    },
+    {
+      "title": "Surviving The Game as a Barbarian",
+      "comic_url": "https://asuracomic.net/series/surviving-the-game-as-a-barbarian-488323e0",
+      "comic_mu_id": 47777182673,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761085463
+    },
+    {
+      "title": "Everyone Else is A Returnee",
+      "comic_url": "https://asuracomic.net/series/everyone-else-is-a-returnee-82e57c77",
+      "comic_mu_id": 76087308855,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1745781690
+    },
+    {
+      "title": "Of All Things, I Became a Crow",
+      "comic_url": "https://asuracomic.net/series/of-all-things-i-became-a-crow-9df22735",
+      "comic_mu_id": 20835316597,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761583151
+    },
+    {
+      "title": "Damn Reincarnation",
+      "comic_url": "https://asuracomic.net/series/damn-reincarnation-39d40c42",
+      "comic_mu_id": 41837581597,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1757281792
+    },
+    {
+      "title": "The Extra’s Academy Survival Guide",
+      "comic_url": "https://asuracomic.net/series/the-extras-academy-survival-guide-ba3e0574",
+      "comic_mu_id": 41254648118,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763444284
+    },
+    {
+      "title": "How To Live As a Villain",
+      "comic_url": "https://asuracomic.net/series/how-to-live-as-a-villain-ff57e4bd",
+      "comic_mu_id": 55623686270,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1753985723
+    },
+    {
+      "title": "Absolute Regression",
+      "comic_url": "https://asuracomic.net/series/absolute-regression-f313c1b9",
+      "comic_mu_id": 73697803962,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761256290
+    },
+    {
+      "title": "Surviving as a Genius on Borrowed Time",
+      "comic_url": "https://asuracomic.net/series/surviving-as-a-genius-on-borrowed-time-4a10598f",
+      "comic_mu_id": 74570092283,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762447760
+    },
+    {
+      "title": "Drug-Eating Genius Mage",
+      "comic_url": "https://asuracomic.net/series/drug-eating-genius-mage-fd677131",
+      "comic_mu_id": 27330127662,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1748051790
+    },
+    {
+      "title": "A Villain's Will to Survive",
+      "comic_url": "https://asuracomic.net/series/a-villains-will-to-survive-9ad7f1ab",
+      "comic_mu_id": 53313153101,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762450685
+    },
+    {
+      "title": "I Shall Live As a Prince",
+      "comic_url": "https://asuracomic.net/series/i-shall-live-as-a-prince-4f7a20b3",
+      "comic_mu_id": 38539699249,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1754384231
+    },
+    {
+      "title": "Solo Leveling",
+      "comic_url": "https://asuracomic.net/series/solo-leveling-77652948",
+      "comic_mu_id": 15180124327,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1763114133
+    },
+    {
+      "title": "Academy’s Undercover Professor",
+      "comic_url": "https://asuracomic.net/series/academys-undercover-professor-af5c63f2",
+      "comic_mu_id": 15626324892,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762688867
+    },
+    {
+      "title": "Devil Returns To School Days",
+      "comic_url": "https://asuracomic.net/series/devil-returns-to-school-days-12271746",
+      "comic_mu_id": 31992573011,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760760187
+    },
+    {
+      "title": "The Nebula's Civilization",
+      "comic_url": "https://asuracomic.net/series/the-nebulas-civilization-9bd65e8c",
+      "comic_mu_id": 32000029889,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762149535
+    },
+    {
+      "title": "A Regressor’s Tale of Cultivation",
+      "comic_url": "https://asuracomic.net/series/a-regressors-tale-of-cultivation-602eab09",
+      "comic_mu_id": 59450236290,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763134187
+    },
+    {
+      "title": "My Daughter is the Final Boss",
+      "comic_url": "https://asuracomic.net/series/my-daughter-is-the-final-boss-fd811289",
+      "comic_mu_id": 25277482937,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759311113
+    },
+    {
+      "title": "The S-Classes That I Raised",
+      "comic_url": "https://asuracomic.net/series/the-s-classes-that-i-raised-f4a134d9",
+      "comic_mu_id": 47240416797,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1752119761
+    },
+    {
+      "title": "Reincarnation of the Suicidal Battle God",
+      "comic_url": "https://asuracomic.net/series/reincarnation-of-the-suicidal-battle-god-32990c76",
+      "comic_mu_id": 3796218942,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1745326365
+    },
+    {
+      "title": "The Max-Level Player's 100th Regression",
+      "comic_url": "https://asuracomic.net/series/the-max-level-players-100th-regression-9e0bbae5",
+      "comic_mu_id": 22108062520,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762969217
+    },
+    {
+      "title": "The Player Hides His Past",
+      "comic_url": "https://asuracomic.net/series/the-player-hides-his-past-87f6d24e",
+      "comic_mu_id": 20034156153,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763576866
+    },
+    {
+      "title": "Revenge of the Iron-Blooded Sword Hound",
+      "comic_url": "https://asuracomic.net/series/revenge-of-the-iron-blooded-sword-hound-002391d1",
+      "comic_mu_id": 12770925855,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761041229
+    },
+    {
+      "title": "Absolute Sword Sense",
+      "comic_url": "https://asuracomic.net/series/absolute-sword-sense-f5d86955",
+      "comic_mu_id": 14348001305,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759789500
+    },
+    {
+      "title": "Worthless Regression",
+      "comic_url": "https://asuracomic.net/series/worthless-regression-4cf1861d",
+      "comic_mu_id": 42435913003,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761391974
+    },
+    {
+      "title": "Reaper of the Drifting Moon",
+      "comic_url": "https://asuracomic.net/series/reaper-of-the-drifting-moon-e2c2240e",
+      "comic_mu_id": 49838489832,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762588130
+    },
+    {
+      "title": "Bad Born Blood",
+      "comic_url": "https://asuracomic.net/series/bad-born-blood-d5522836",
+      "comic_mu_id": 66892705111,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761204448
+    },
+    {
+      "title": "I Returned as an FFF-Class Witch Doctor",
+      "comic_url": "https://asuracomic.net/series/i-returned-as-an-fff-class-witch-doctor-93fcf77c",
+      "comic_mu_id": 10150210984,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1745021362
+    },
+    {
+      "title": "Reborn As The Heavenly Demon",
+      "comic_url": "https://asuracomic.net/series/reborn-as-the-heavenly-demon-8843b7fe",
+      "comic_mu_id": 50963634205,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761607468
+    },
+    {
+      "title": "Nano Machine",
+      "comic_url": "https://asuracomic.net/series/nano-machine-95097693",
+      "comic_mu_id": 114563652,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807455
+    },
+    {
+      "title": "What a Bountiful Harvest, Demon Lord!",
+      "comic_url": "https://asuracomic.net/series/what-a-bountiful-harvest-demon-lord-ee467f28",
+      "comic_mu_id": 35582519678,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763015932
+    },
+    {
+      "title": "The Game That I Came From",
+      "comic_url": "https://asuracomic.net/series/the-game-that-i-came-from-10d389f7",
+      "comic_mu_id": 74670143381,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1755452107
+    },
+    {
+      "title": "Solo Max-Level Newbie",
+      "comic_url": "https://asuracomic.net/series/solo-max-level-newbie-99e7057f",
+      "comic_mu_id": 66833512843,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763808232
+    },
+    {
+      "title": "Reformation of the Deadbeat Noble",
+      "comic_url": "https://asuracomic.net/series/reformation-of-the-deadbeat-noble-96c5eab3",
+      "comic_mu_id": 43476221806,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1744815042
+    },
+    {
+      "title": "Killer Pietro",
+      "comic_url": "https://asuracomic.net/series/killer-pietro-6e87b822",
+      "comic_mu_id": 11930339093,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754407120
+    },
+    {
+      "title": "Swordmaster’s Youngest Son",
+      "comic_url": "https://asuracomic.net/series/swordmasters-youngest-son-1066b84b",
+      "comic_mu_id": 74095324437,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807753
+    },
+    {
+      "title": "The Heavenly Demon Can't Live a Normal L...",
+      "comic_url": "https://asuracomic.net/series/the-heavenly-demon-cant-live-a-normal-life-017b31c2",
+      "comic_mu_id": 36005686209,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806702
+    },
+    {
+      "title": "Legend of Asura – The Venom Dragon",
+      "comic_url": "https://asuracomic.net/series/legend-of-asura-the-venom-dragon-a807abeb",
+      "comic_mu_id": 78118822321,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1757135522
+    },
+    {
+      "title": "Return Of The Shattered Constellation",
+      "comic_url": "https://asuracomic.net/series/return-of-the-shattered-constellation-643fff04",
+      "comic_mu_id": 59508337221,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1739933428
+    },
+    {
+      "title": "Return of the 8th Class Magician",
+      "comic_url": "https://asuracomic.net/series/return-of-the-8th-class-magician-79037971",
+      "comic_mu_id": 13905960032,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1759135851
+    },
+    {
+      "title": "The Ultimate Shut-In",
+      "comic_url": "https://asuracomic.net/series/the-ultimate-shut-in-de081263",
+      "comic_mu_id": 14217420473,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763443547
+    },
+    {
+      "title": "Reincarnation of the Fist King",
+      "comic_url": "https://asuracomic.net/series/reincarnation-of-the-fist-king-aea13269",
+      "comic_mu_id": 28502488727,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763694124
+    },
+    {
+      "title": "Chronicles of the Demon Faction",
+      "comic_url": "https://asuracomic.net/series/chronicles-of-the-demon-faction-5ee918e8",
+      "comic_mu_id": 45403722734,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761646770
+    },
+    {
+      "title": "The Novel’s Extra (Remake)",
+      "comic_url": "https://asuracomic.net/series/the-novels-extra-remake-41b07228",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Archmage Transcending Through Regression",
+      "comic_url": "https://asuracomic.net/series/archmage-transcending-through-regression-6a4af418",
+      "comic_mu_id": 48409718158,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807832
+    },
+    {
+      "title": "Worn and Torn Newbie",
+      "comic_url": "https://asuracomic.net/series/worn-and-torn-newbie-8cf4f0eb",
+      "comic_mu_id": 28031341015,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761403376
+    },
+    {
+      "title": "Hoarding in Hell",
+      "comic_url": "https://asuracomic.net/series/hoarding-in-hell-a75465d3",
+      "comic_mu_id": 41332020211,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1758297331
+    },
+    {
+      "title": "Raising Villains the Right Way",
+      "comic_url": "https://asuracomic.net/series/raising-villains-the-right-way-9af3c425",
+      "comic_mu_id": 61048080321,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762547407
+    },
+    {
+      "title": "Barbarian Quest",
+      "comic_url": "https://asuracomic.net/series/barbarian-quest-f3886939",
+      "comic_mu_id": 57059547252,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758592715
+    },
+    {
+      "title": "The Academy’s Sashimi Sword Master",
+      "comic_url": "https://asuracomic.net/series/the-academys-sashimi-sword-master-643d3046",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Return to Player",
+      "comic_url": "https://asuracomic.net/series/return-to-player-2837d14d",
+      "comic_mu_id": 32447219971,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806195
+    },
+    {
+      "title": "Necromancer's Evolutionary Traits",
+      "comic_url": "https://asuracomic.net/series/necromancers-evolutionary-traits-f71dc22b",
+      "comic_mu_id": 7194863382,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1755893160
+    },
+    {
+      "title": "Chronicles Of The Martial God's Return",
+      "comic_url": "https://asuracomic.net/series/chronicles-of-the-martial-gods-return-c2da44e0",
+      "comic_mu_id": 29667643858,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759887568
+    },
+    {
+      "title": "The Dark Magician Transmigrates After 66...",
+      "comic_url": "https://asuracomic.net/series/the-dark-magician-transmigrates-after-66666-years-e1155236",
+      "comic_mu_id": 77645713662,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758581096
+    },
+    {
+      "title": "Star Instructor, Master Baek",
+      "comic_url": "https://asuracomic.net/series/star-instructor-master-baek-6612d66a",
+      "comic_mu_id": 31271042750,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763371245
+    },
+    {
+      "title": "Return of the Disaster-Class Hero",
+      "comic_url": "https://asuracomic.net/series/return-of-the-disaster-class-hero-048dafc2",
+      "comic_mu_id": 43236637606,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807586
+    },
+    {
+      "title": "The Priest of Corruption",
+      "comic_url": "https://asuracomic.net/series/the-priest-of-corruption-fbb6e8ce",
+      "comic_mu_id": 22369784005,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1751188437
+    },
+    {
+      "title": "Genius Martial Arts Trainer",
+      "comic_url": "https://asuracomic.net/series/genius-martial-arts-trainer-4c5738a9",
+      "comic_mu_id": 46939239188,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762038700
+    },
+    {
+      "title": "Overgeared",
+      "comic_url": "https://asuracomic.net/series/overgeared-291f49f6",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Trash of the Count’s Family",
+      "comic_url": "https://asuracomic.net/series/trash-of-the-counts-family-ece77ec7",
+      "comic_mu_id": 28433049110,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763533579
+    },
+    {
+      "title": "Raising the Princess to Overcome Death",
+      "comic_url": "https://asuracomic.net/series/raising-the-princess-to-overcome-death-cacfc72e",
+      "comic_mu_id": 262180524,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1747594812
+    },
+    {
+      "title": "The World After The End",
+      "comic_url": "https://asuracomic.net/series/the-world-after-the-end-36a46fd9",
+      "comic_mu_id": 39426575272,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763808261
+    },
+    {
+      "title": "Relife Player",
+      "comic_url": "https://asuracomic.net/series/relife-player-ee29b560",
+      "comic_mu_id": 2334101370,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1748085474
+    },
+    {
+      "title": "Magic Academy's Genius Blinker",
+      "comic_url": "https://asuracomic.net/series/magic-academys-genius-blinker-55859b5d",
+      "comic_mu_id": 10704835615,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807947
+    },
+    {
+      "title": "Solo Leveling: Ragnarok",
+      "comic_url": "https://asuracomic.net/series/solo-leveling-ragnarok-25d174b4",
+      "comic_mu_id": 47955563021,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763344410
+    },
+    {
+      "title": "Sword Fanatic Wanders Through The Night",
+      "comic_url": "https://asuracomic.net/series/sword-fanatic-wanders-through-the-night-0b80f771",
+      "comic_mu_id": 35127199294,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1757194683
+    },
+    {
+      "title": "I'm Not That Kind of Talent",
+      "comic_url": "https://asuracomic.net/series/im-not-that-kind-of-talent-2b722af1",
+      "comic_mu_id": 23042912592,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762266764
+    },
+    {
+      "title": "Kill The Dragon",
+      "comic_url": "https://asuracomic.net/series/kill-the-dragon-39188bd4",
+      "comic_mu_id": 72156200094,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758096924
+    },
+    {
+      "title": "World's Strongest Troll",
+      "comic_url": "https://asuracomic.net/series/worlds-strongest-troll-edf5bfc2",
+      "comic_mu_id": 7165844085,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763808096
+    },
+    {
+      "title": "Echoes of the Reverse Planet",
+      "comic_url": "https://asuracomic.net/series/echoes-of-the-reverse-planet-ce04a827",
+      "comic_mu_id": 41261891640,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763708208
+    },
+    {
+      "title": "Heavenly Grand Archive's Young Master",
+      "comic_url": "https://asuracomic.net/series/heavenly-grand-archives-young-master-7a328618",
+      "comic_mu_id": 28848041818,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1756841926
+    },
+    {
+      "title": "Poison-Eating Healer",
+      "comic_url": "https://asuracomic.net/series/poison-eating-healer-980985b2",
+      "comic_mu_id": 1115991611,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1747012650
+    },
+    {
+      "title": "Wandering Warrior of Wudang",
+      "comic_url": "https://asuracomic.net/series/wandering-warrior-of-wudang-1273d46f",
+      "comic_mu_id": 62748569168,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1753698069
+    },
+    {
+      "title": "Infinite Mage",
+      "comic_url": "https://asuracomic.net/series/infinite-mage-4b5efbfd",
+      "comic_mu_id": 32357730076,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761102857
+    },
+    {
+      "title": "I’m Not a Regressor",
+      "comic_url": "https://asuracomic.net/series/im-not-a-regressor-3cdd7298",
+      "comic_mu_id": 32854372793,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1760214589
+    },
+    {
+      "title": "Return of the SSS-Class Ranker",
+      "comic_url": "https://asuracomic.net/series/return-of-the-sss-class-ranker-f7245855",
+      "comic_mu_id": 22176525142,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762682336
+    },
+    {
+      "title": "The Crown Prince That Sells Medicine",
+      "comic_url": "https://asuracomic.net/series/the-crown-prince-that-sells-medicine-bd8ce740",
+      "comic_mu_id": 64121948663,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763808010
+    },
+    {
+      "title": "The Divine Demon’s Grand Ascension",
+      "comic_url": "https://asuracomic.net/series/the-divine-demons-grand-ascension-d9455028",
+      "comic_mu_id": 64757166629,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763391349
+    },
+    {
+      "title": "Superhuman Battlefield",
+      "comic_url": "https://asuracomic.net/series/superhuman-battlefield-233d3f58",
+      "comic_mu_id": 55414143730,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1752595172
+    },
+    {
+      "title": "I'll Retire After Saving the World",
+      "comic_url": "https://asuracomic.net/series/ill-retire-after-saving-the-world-8f8272ce",
+      "comic_mu_id": 25326944786,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762963792
+    },
+    {
+      "title": "Reincarnated Escort Warrior",
+      "comic_url": "https://asuracomic.net/series/reincarnated-escort-warrior-c28e5cdd",
+      "comic_mu_id": 71203953321,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762130531
+    },
+    {
+      "title": "Martial God Regressed to Level 2",
+      "comic_url": "https://asuracomic.net/series/martial-god-regressed-to-level-2-96eec42a",
+      "comic_mu_id": 25821490516,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759397905
+    },
+    {
+      "title": "I Killed an Academy Player",
+      "comic_url": "https://asuracomic.net/series/i-killed-an-academy-player-873e38a3",
+      "comic_mu_id": 42054693446,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762762927
+    },
+    {
+      "title": "A Dragonslayer's Peerless Regression",
+      "comic_url": "https://asuracomic.net/series/a-dragonslayers-peerless-regression-5faf83d6",
+      "comic_mu_id": 11569556847,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760127519
+    },
+    {
+      "title": "Life of a Magic Academy Mage",
+      "comic_url": "https://asuracomic.net/series/life-of-a-magic-academy-mage-4e42d375",
+      "comic_mu_id": 34313491284,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807979
+    },
+    {
+      "title": "Demon King",
+      "comic_url": "https://asuracomic.net/series/demon-king-0e3ef6f1",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Childhood Friend of the Zenith",
+      "comic_url": "https://asuracomic.net/series/childhood-friend-of-the-zenith-40c9d632",
+      "comic_mu_id": 72969228759,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763083364
+    },
+    {
+      "title": "Sleeping Ranker",
+      "comic_url": "https://asuracomic.net/series/sleeping-ranker-d44faca9",
+      "comic_mu_id": 46253154585,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758296265
+    },
+    {
+      "title": "Overpowered Sword",
+      "comic_url": "https://asuracomic.net/series/overpowered-sword-108a5e29",
+      "comic_mu_id": 26120289095,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759933312
+    },
+    {
+      "title": "Player Who Returned 10,000 Years Later",
+      "comic_url": "https://asuracomic.net/series/player-who-returned-10000-years-later-0283c9a9",
+      "comic_mu_id": 25084267078,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761703930
+    },
+    {
+      "title": "I Am the Fated Villain",
+      "comic_url": "https://asuracomic.net/series/i-am-the-fated-villain-778e6f0c",
+      "comic_mu_id": 75183500944,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763363054
+    },
+    {
+      "title": "Heavenly Sword's Grand Saga",
+      "comic_url": "https://asuracomic.net/series/heavenly-swords-grand-saga-2a4d28f7",
+      "comic_mu_id": 6933940471,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1729842859
+    },
+    {
+      "title": "The Magic Tower's Problem Child",
+      "comic_url": "https://asuracomic.net/series/the-magic-towers-problem-child-17db0bc8",
+      "comic_mu_id": 42430990104,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763764775
+    },
+    {
+      "title": "The Heavenly Demon Wants a Quiet Life",
+      "comic_url": "https://asuracomic.net/series/the-heavenly-demon-wants-a-quiet-life-17318060",
+      "comic_mu_id": 33693980950,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761061185
+    },
+    {
+      "title": "Doctor’s Rebirth",
+      "comic_url": "https://asuracomic.net/series/doctors-rebirth-9445f440",
+      "comic_mu_id": 55701762783,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762894088
+    },
+    {
+      "title": "Regressor of the Fallen family",
+      "comic_url": "https://asuracomic.net/series/regressor-of-the-fallen-family-d94663b4",
+      "comic_mu_id": 30716877474,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763808344
+    },
+    {
+      "title": "Dr. Player",
+      "comic_url": "https://asuracomic.net/series/dr-player-9100444f",
+      "comic_mu_id": 69690221020,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758295486
+    },
+    {
+      "title": "The Main Characters That Only I Know",
+      "comic_url": "https://asuracomic.net/series/the-main-characters-that-only-i-know-46a1c047",
+      "comic_mu_id": 27353978812,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1750418259
+    },
+    {
+      "title": "Genius Archer’s Streaming",
+      "comic_url": "https://asuracomic.net/series/genius-archers-streaming-e2d1a671",
+      "comic_mu_id": 58567821341,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763044739
+    },
+    {
+      "title": "Existence",
+      "comic_url": "https://asuracomic.net/series/existence-58687bd4",
+      "comic_mu_id": 72958583547,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758353709
+    },
+    {
+      "title": "Bloodhound's Regression Instinct",
+      "comic_url": "https://asuracomic.net/series/bloodhounds-regression-instinct-8417bb15",
+      "comic_mu_id": 34035986854,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761459644
+    },
+    {
+      "title": "Mount Hua Sect's Genius Phantom Swordsma...",
+      "comic_url": "https://asuracomic.net/series/mount-hua-sects-genius-phantom-swordsman-fda26ff3",
+      "comic_mu_id": 11916856578,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763392487
+    },
+    {
+      "title": "The Great Mage Returns After 4000 Years",
+      "comic_url": "https://asuracomic.net/series/the-great-mage-returns-after-4000-years-daac09f8",
+      "comic_mu_id": 17066552636,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806494
+    },
+    {
+      "title": "World's Strongest Survivor",
+      "comic_url": "https://asuracomic.net/series/worlds-strongest-survivor-c0d6e1e8",
+      "comic_mu_id": 43569358397,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758100713
+    },
+    {
+      "title": "Hero Has Returned",
+      "comic_url": "https://asuracomic.net/series/hero-has-returned-2f783d26",
+      "comic_mu_id": 52748823152,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1748500535
+    },
+    {
+      "title": "Reborn as the Enemy Prince",
+      "comic_url": "https://asuracomic.net/series/reborn-as-the-enemy-prince-7f02a263",
+      "comic_mu_id": 48095731462,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762963767
+    },
+    {
+      "title": "Villain To Kill",
+      "comic_url": "https://asuracomic.net/series/villain-to-kill-e53482c8",
+      "comic_mu_id": 66426531763,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760758197
+    },
+    {
+      "title": "Legend of the Reincarnated Demon God",
+      "comic_url": "https://asuracomic.net/series/legend-of-the-reincarnated-demon-god-fd2b6658",
+      "comic_mu_id": 30215136819,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761243033
+    },
+    {
+      "title": "Helmut: The Forsaken Child",
+      "comic_url": "https://asuracomic.net/series/helmut-the-forsaken-child-6864ca85",
+      "comic_mu_id": 44736819997,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807139
+    },
+    {
+      "title": "The Knight King Who Returned with a God",
+      "comic_url": "https://asuracomic.net/series/the-knight-king-who-returned-with-a-god-d7a0d3fb",
+      "comic_mu_id": 61777034741,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763446455
+    },
+    {
+      "title": "Mr Devourer, Please Act Like a Final Bos...",
+      "comic_url": "https://asuracomic.net/series/mr-devourer-please-act-like-a-final-boss-d3a23026",
+      "comic_mu_id": 63958220672,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762767448
+    },
+    {
+      "title": "The Extra is Too Strong",
+      "comic_url": "https://asuracomic.net/series/the-extra-is-too-strong-d11f40a9",
+      "comic_mu_id": 69687042857,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761098163
+    },
+    {
+      "title": "The Dark Mage's Return to Enlistment",
+      "comic_url": "https://asuracomic.net/series/the-dark-mages-return-to-enlistment-f7b3e49e",
+      "comic_mu_id": 162098692,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763658760
+    },
+    {
+      "title": "Somebody Stop the Pope",
+      "comic_url": "https://asuracomic.net/series/somebody-stop-the-pope-c43aa71f",
+      "comic_mu_id": 71408423736,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1757351061
+    },
+    {
+      "title": "Regressor Instruction Manual",
+      "comic_url": "https://asuracomic.net/series/regressor-instruction-manual-e38257f0",
+      "comic_mu_id": 17058241528,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763044065
+    },
+    {
+      "title": "The Tutorial is Too Hard",
+      "comic_url": "https://asuracomic.net/series/the-tutorial-is-too-hard-927893aa",
+      "comic_mu_id": 32908411241,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761085742
+    },
+    {
+      "title": "Genius Prismatic Mage",
+      "comic_url": "https://asuracomic.net/series/genius-prismatic-mage-0dc1b5cf",
+      "comic_mu_id": 9177102622,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762267197
+    },
+    {
+      "title": "The Newbie is Too Strong",
+      "comic_url": "https://asuracomic.net/series/the-newbie-is-too-strong-21746dfa",
+      "comic_mu_id": 7556327614,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806533
+    },
+    {
+      "title": "The Lord's Coins Aren't Decreasing?!",
+      "comic_url": "https://asuracomic.net/series/the-lords-coins-arent-decreasing-16f822b8",
+      "comic_mu_id": 45646973509,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761872701
+    },
+    {
+      "title": "Artifact-Devouring Player",
+      "comic_url": "https://asuracomic.net/series/artifact-devouring-player-fc323e14",
+      "comic_mu_id": 30357839186,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762340226
+    },
+    {
+      "title": "Rebirth of the Divine Demon",
+      "comic_url": "https://asuracomic.net/series/rebirth-of-the-divine-demon-c6c94601",
+      "comic_mu_id": 16944109194,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759686570
+    },
+    {
+      "title": "Standard of Reincarnation",
+      "comic_url": "https://asuracomic.net/series/standard-of-reincarnation-ad1055af",
+      "comic_mu_id": 31481924256,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806616
+    },
+    {
+      "title": "Chronicles of the Lazy Sovereign",
+      "comic_url": "https://asuracomic.net/series/chronicles-of-the-lazy-sovereign-82e03357",
+      "comic_mu_id": 20339859531,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759851839
+    },
+    {
+      "title": "The Last Adventurer",
+      "comic_url": "https://asuracomic.net/series/the-last-adventurer-771ba998",
+      "comic_mu_id": 67671265448,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763076843
+    },
+    {
+      "title": "Why I Quit Being the Demon King",
+      "comic_url": "https://asuracomic.net/series/why-i-quit-being-the-demon-king-d6e9270c",
+      "comic_mu_id": 50744171529,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754807795
+    },
+    {
+      "title": "Talent-Swallowing Magician",
+      "comic_url": "https://asuracomic.net/series/talent-swallowing-magician-75c7fa5c",
+      "comic_mu_id": 58524655910,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807218
+    },
+    {
+      "title": "Regression of the Yong Clan Heir",
+      "comic_url": "https://asuracomic.net/series/regression-of-the-yong-clan-heir-ebdcd560",
+      "comic_mu_id": 67544851086,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763159534
+    },
+    {
+      "title": "Heavenly Martial God",
+      "comic_url": "https://asuracomic.net/series/heavenly-martial-god-ce5dd0cd",
+      "comic_mu_id": 11627360504,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763744207
+    },
+    {
+      "title": "Academy's Genius Swordmaster",
+      "comic_url": "https://asuracomic.net/series/academys-genius-swordmaster-ad33d2b2",
+      "comic_mu_id": 40767254486,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763496216
+    },
+    {
+      "title": "The Reincarnated Assassin is a Genius Sw...",
+      "comic_url": "https://asuracomic.net/series/the-reincarnated-assassin-is-a-genius-swordsman-5103b81b",
+      "comic_mu_id": 60225852049,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763485459
+    },
+    {
+      "title": "The Indomitable Martial King",
+      "comic_url": "https://asuracomic.net/series/the-indomitable-martial-king-34397df9",
+      "comic_mu_id": 55536067196,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763076363
+    },
+    {
+      "title": "The Regressed Son of a Duke is an Assass...",
+      "comic_url": "https://asuracomic.net/series/the-regressed-son-of-a-duke-is-an-assassin-53f6c854",
+      "comic_mu_id": 5895054205,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763673379
+    },
+    {
+      "title": "The Genius Assassin Who Takes it All",
+      "comic_url": "https://asuracomic.net/series/the-genius-assassin-who-takes-it-all-3f8344a3",
+      "comic_mu_id": 13524990424,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1753572233
+    },
+    {
+      "title": "The Youngest Son of the Eunhae Merchant ...",
+      "comic_url": "https://asuracomic.net/series/the-youngest-son-of-the-eunhae-merchant-group-3b181545",
+      "comic_mu_id": 10642841594,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763170022
+    },
+    {
+      "title": "The Fox-Eyed Villain of the Demon Academ...",
+      "comic_url": "https://asuracomic.net/series/the-fox-eyed-villain-of-the-demon-academy-abfe4485",
+      "comic_mu_id": 36971814890,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763632060
+    },
+    {
+      "title": "Reincarnator",
+      "comic_url": "https://asuracomic.net/series/reincarnator-c820f29b",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Fated to Be Loved by Villains",
+      "comic_url": "https://asuracomic.net/series/fated-to-be-loved-by-villains-0e212297",
+      "comic_mu_id": 63906478790,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763553972
+    },
+    {
+      "title": "I Reincarnated As The Crazed Heir",
+      "comic_url": "https://asuracomic.net/series/i-reincarnated-as-the-crazed-heir-6ef317c4",
+      "comic_mu_id": 1451673602,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1756299936
+    },
+    {
+      "title": "Genius Corpse-Collecting Warrior",
+      "comic_url": "https://asuracomic.net/series/genius-corpse-collecting-warrior-38c6a800",
+      "comic_mu_id": 13829070461,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1761889362
+    },
+    {
+      "title": "I Obtained a Mythic Item",
+      "comic_url": "https://asuracomic.net/series/i-obtained-a-mythic-item-8ea2e60b",
+      "comic_mu_id": 40972615446,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807662
+    },
+    {
+      "title": "The Tutorial Tower of the Advanced Playe...",
+      "comic_url": "https://asuracomic.net/series/the-tutorial-tower-of-the-advanced-player-82c62392",
+      "comic_mu_id": 18260996370,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1746835165
+    },
+    {
+      "title": "The Second Coming of Gluttony",
+      "comic_url": "https://asuracomic.net/series/the-second-coming-of-gluttony-3c55e1ea",
+      "comic_mu_id": 48450035333,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1741954064
+    },
+    {
+      "title": "I Became a Renowned Family's Sword Prodi...",
+      "comic_url": "https://asuracomic.net/series/i-became-a-renowned-familys-sword-prodigy-092ad9c0",
+      "comic_mu_id": 7048733568,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1755025314
+    },
+    {
+      "title": "Arcana Fantasy",
+      "comic_url": "https://asuracomic.net/series/arcana-fantasy-fa880bf4",
+      "comic_mu_id": 20982255478,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1739598262
+    },
+    {
+      "title": "The Executioner",
+      "comic_url": "https://asuracomic.net/series/the-executioner-8b5d2bd4",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Starting With 13 Hidden Traits",
+      "comic_url": "https://asuracomic.net/series/starting-with-13-hidden-traits-5d378b0b",
+      "comic_mu_id": 24365143102,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763684353
+    },
+    {
+      "title": "Spirit Farmer",
+      "comic_url": "https://asuracomic.net/series/spirit-farmer-215aad63",
+      "comic_mu_id": 49388032360,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758297596
+    },
+    {
+      "title": "To Hell With Being A Saint, I'm A Doctor",
+      "comic_url": "https://asuracomic.net/series/to-hell-with-being-a-saint-im-a-doctor-35af3f88",
+      "comic_mu_id": 12455891855,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760980789
+    },
+    {
+      "title": "Duke Pendragon",
+      "comic_url": "https://asuracomic.net/series/duke-pendragon-c9abceaa",
+      "comic_mu_id": 31495991623,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1744639348
+    },
+    {
+      "title": "The Constellation That Returned From Hel...",
+      "comic_url": "https://asuracomic.net/series/the-constellation-that-returned-from-hell-813b6e9a",
+      "comic_mu_id": 58992657801,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762951299
+    },
+    {
+      "title": "Trait Hoarder",
+      "comic_url": "https://asuracomic.net/series/trait-hoarder-98300abb",
+      "comic_mu_id": 13611585557,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758436020
+    },
+    {
+      "title": "Heavenly Demon Instructor",
+      "comic_url": "https://asuracomic.net/series/heavenly-demon-instructor-beb8e320",
+      "comic_mu_id": 67563532465,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1758297796
+    },
+    {
+      "title": "Your Talent is Mine",
+      "comic_url": "https://asuracomic.net/series/your-talent-is-mine-ac3381fe",
+      "comic_mu_id": 60261451232,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763744622
+    },
+    {
+      "title": "Terminally-Ill Genius Dark Knight",
+      "comic_url": "https://asuracomic.net/series/terminally-ill-genius-dark-knight-7eb36830",
+      "comic_mu_id": 77084457305,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807909
+    },
+    {
+      "title": "I Grow Stronger By Eating!",
+      "comic_url": "https://asuracomic.net/series/i-grow-stronger-by-eating-1d6521ea",
+      "comic_mu_id": 24708400824,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1754416545
+    },
+    {
+      "title": "Night of the Soulless Heathens",
+      "comic_url": "https://asuracomic.net/series/night-of-the-soulless-heathens-a3b7cedd",
+      "comic_mu_id": 64717769644,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763390182
+    },
+    {
+      "title": "Reincarnation Of The Strongest Sword God",
+      "comic_url": "https://asuracomic.net/series/reincarnation-of-the-strongest-sword-god-41215a76",
+      "comic_mu_id": 55870046016,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1752783358
+    },
+    {
+      "title": "I’ll Be Taking A Break For Personal Reas...",
+      "comic_url": "https://asuracomic.net/series/ill-be-taking-a-break-for-personal-reasons-9160dcea",
+      "comic_mu_id": 57308224343,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1747765960
+    },
+    {
+      "title": "A Cadet Becomes a Prophet?!",
+      "comic_url": "https://asuracomic.net/series/a-cadet-becomes-a-prophet-90b0cc9b",
+      "comic_mu_id": 54633802524,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763078712
+    },
+    {
+      "title": "Mookhyang The Origin",
+      "comic_url": "https://asuracomic.net/series/mookhyang-the-origin-ef123bdd",
+      "comic_mu_id": 40657972818,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1754385087
+    },
+    {
+      "title": "I Became the Successor of the Martial Go...",
+      "comic_url": "https://asuracomic.net/series/i-became-the-successor-of-the-martial-god-a72c055e",
+      "comic_mu_id": 66130677989,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1755423305
+    },
+    {
+      "title": "Dragon-Devouring Mage",
+      "comic_url": "https://asuracomic.net/series/dragon-devouring-mage-2995e102",
+      "comic_mu_id": 37355558483,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807176
+    },
+    {
+      "title": "I Regressed to My Ruined Family",
+      "comic_url": "https://asuracomic.net/series/i-regressed-to-my-ruined-family-4897e993",
+      "comic_mu_id": 42416921655,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1758297428
+    },
+    {
+      "title": "Death King Karnak",
+      "comic_url": "https://asuracomic.net/series/death-king-karnak-d0190c3c",
+      "comic_mu_id": 26616671544,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1757755269
+    },
+    {
+      "title": "Steel-Eating Player",
+      "comic_url": "https://asuracomic.net/series/steel-eating-player-26f302a5",
+      "comic_mu_id": 72836770879,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1756605195
+    },
+    {
+      "title": "Player Who Can't Level Up",
+      "comic_url": "https://asuracomic.net/series/player-who-cant-level-up-b3f309b0",
+      "comic_mu_id": 66042781119,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806437
+    },
+    {
+      "title": "The Terminally Ill Young Master of the B...",
+      "comic_url": "https://asuracomic.net/series/the-terminally-ill-young-master-of-the-baek-clan-77eb5366",
+      "comic_mu_id": 40530646695,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1751043971
+    },
+    {
+      "title": "Logging 10,000 Years into the Future",
+      "comic_url": "https://asuracomic.net/series/logging-10000-years-into-the-future-fc451a1c",
+      "comic_mu_id": 22904829999,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763076462
+    },
+    {
+      "title": "Reborn on the Demonic Cult Battlefield",
+      "comic_url": "https://asuracomic.net/series/reborn-on-the-demonic-cult-battlefield-aed77db4",
+      "comic_mu_id": 7168221933,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762687345
+    },
+    {
+      "title": "F-Class Destiny Hunter",
+      "comic_url": "https://asuracomic.net/series/f-class-destiny-hunter-ba131e4d",
+      "comic_mu_id": 10658903116,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763807867
+    },
+    {
+      "title": "Regressing with the King’s Power",
+      "comic_url": "https://asuracomic.net/series/regressing-with-the-kings-power-6e787ec2",
+      "comic_mu_id": 68044296404,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761066728
+    },
+    {
+      "title": "My Wife is the Demonic Cult Leader",
+      "comic_url": "https://asuracomic.net/series/my-wife-is-the-demonic-cult-leader-47547a6e",
+      "comic_mu_id": 32755689594,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760868110
+    },
+    {
+      "title": "Otherworldly Skeleton Evolution",
+      "comic_url": "https://asuracomic.net/series/otherworldly-skeleton-evolution-093c6f7c",
+      "comic_mu_id": 53084079624,
+      "found_mu": true,
+      "status": "hiatus",
+      "last_updated": 1752714444
+    },
+    {
+      "title": "Rise of the Fallen Kingdom's Third Princ...",
+      "comic_url": "https://asuracomic.net/series/rise-of-the-fallen-kingdoms-third-prince-0d003a0f",
+      "comic_mu_id": 44055968025,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763659457
+    },
+    {
+      "title": "A Million-Sub Gym Influencer Becomes a W...",
+      "comic_url": "https://asuracomic.net/series/a-million-sub-gym-influencer-becomes-a-webtoon-loser-3bded2f6",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Dukedom’s Legendary Prodigy",
+      "comic_url": "https://asuracomic.net/series/dukedoms-legendary-prodigy-2cb338d4",
+      "comic_mu_id": 62857610298,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762248238
+    },
+    {
+      "title": "The Max Level Hero has Returned!",
+      "comic_url": "https://asuracomic.net/series/the-max-level-hero-has-returned-b9284f61",
+      "comic_mu_id": 67956501448,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762030449
+    },
+    {
+      "title": "I'm Gonna Annihilate This Land",
+      "comic_url": "https://asuracomic.net/series/im-gonna-annihilate-this-land-5e2df79a",
+      "comic_mu_id": 60206220532,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761133944
+    },
+    {
+      "title": "Breakers",
+      "comic_url": "https://asuracomic.net/series/breakers-fd0ff0bd",
+      "comic_mu_id": 51998753951,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763129676
+    },
+    {
+      "title": "Legend of Mir: The Golden Armored Dragon",
+      "comic_url": "https://asuracomic.net/series/legend-of-mir-the-golden-armored-dragon-3727678e",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Playing the Perfect Fox-Eyed Villain",
+      "comic_url": "https://asuracomic.net/series/playing-the-perfect-fox-eyed-villain-6923fdef",
+      "comic_mu_id": 64237657933,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763638113
+    },
+    {
+      "title": "Return of the Apocalypse-Class Death Kni...",
+      "comic_url": "https://asuracomic.net/series/return-of-the-apocalypse-class-death-knight-4a96653a",
+      "comic_mu_id": 77188967419,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763211413
+    },
+    {
+      "title": "Overbearing Tyrant",
+      "comic_url": "https://asuracomic.net/series/overbearing-tyrant-9ac17d5e",
+      "comic_mu_id": 8942263406,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759557702
+    },
+    {
+      "title": "My Exclusive Tower Guide",
+      "comic_url": "https://asuracomic.net/series/my-exclusive-tower-guide-277f4c28",
+      "comic_mu_id": 21549918470,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762642447
+    },
+    {
+      "title": "Legendary Youngest Son of the Marquis Ho...",
+      "comic_url": "https://asuracomic.net/series/legendary-youngest-son-of-the-marquis-house-3177faee",
+      "comic_mu_id": 56620565348,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763805877
+    },
+    {
+      "title": "Boundless Necromancer",
+      "comic_url": "https://asuracomic.net/series/boundless-necromancer-9ec47edc",
+      "comic_mu_id": 57444291766,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763808123
+    },
+    {
+      "title": "Margrave’s Bastard Son was The Emperor",
+      "comic_url": "https://asuracomic.net/series/margraves-bastard-son-was-the-emperor-d502c08d",
+      "comic_mu_id": 42001226411,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762474415
+    },
+    {
+      "title": "The Regressed Demon Lord is Kind",
+      "comic_url": "https://asuracomic.net/series/the-regressed-demon-lord-is-kind-ab387e1a",
+      "comic_mu_id": 74685188366,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754768536
+    },
+    {
+      "title": "Youngest Scion of the Mages",
+      "comic_url": "https://asuracomic.net/series/youngest-scion-of-the-mages-244bd260",
+      "comic_mu_id": 51839209099,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806751
+    },
+    {
+      "title": "Emperor of Solo Play",
+      "comic_url": "https://asuracomic.net/series/emperor-of-solo-play-ba0fe06b",
+      "comic_mu_id": 43390209989,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762768863
+    },
+    {
+      "title": "The Dark Swordsman Returns",
+      "comic_url": "https://asuracomic.net/series/the-dark-swordsman-returns-a9896951",
+      "comic_mu_id": 9599500091,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763755028
+    },
+    {
+      "title": "Taming Master",
+      "comic_url": "https://asuracomic.net/series/taming-master-a1fc8f36",
+      "comic_mu_id": 44657031929,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754047420
+    },
+    {
+      "title": "The Demon Faction’s Return",
+      "comic_url": "https://asuracomic.net/series/the-demon-factions-return-cd1a2277",
+      "comic_mu_id": 17824608719,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1757617993
+    },
+    {
+      "title": "The Challenger",
+      "comic_url": "https://asuracomic.net/series/the-challenger-d08b4717",
+      "comic_mu_id": 53038653227,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759795290
+    },
+    {
+      "title": "The Illegitimate Who Devours Weapons",
+      "comic_url": "https://asuracomic.net/series/the-illegitimate-who-devours-weapons-3671f09e",
+      "comic_mu_id": 53727520052,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763444164
+    },
+    {
+      "title": "I'm the Only One Loved by the Constellat...",
+      "comic_url": "https://asuracomic.net/series/im-the-only-one-loved-by-the-constellations-a3a1cd35",
+      "comic_mu_id": 11328165867,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762594495
+    },
+    {
+      "title": "SSS-Class Gacha Hunter",
+      "comic_url": "https://asuracomic.net/series/sss-class-gacha-hunter-8957b46b",
+      "comic_mu_id": 76138565368,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806666
+    },
+    {
+      "title": "Above the Heavens",
+      "comic_url": "https://asuracomic.net/series/above-the-heavens-2383fc34",
+      "comic_mu_id": 2957337764,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1695460570
+    },
+    {
+      "title": "Starting Today, I’m a Player",
+      "comic_url": "https://asuracomic.net/series/starting-today-im-a-player-d485abce",
+      "comic_mu_id": 70200675451,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762167279
+    },
+    {
+      "title": "Ultra Alter",
+      "comic_url": "https://asuracomic.net/series/ultra-alter-ec63c4ce",
+      "comic_mu_id": 8360586449,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1745326963
+    },
+    {
+      "title": "Dungeon Architect",
+      "comic_url": "https://asuracomic.net/series/dungeon-architect-675ed5e0",
+      "comic_mu_id": 21872135097,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763679770
+    },
+    {
+      "title": "Super Evolution",
+      "comic_url": "https://asuracomic.net/series/super-evolution-f8cc3023",
+      "comic_mu_id": 38642673841,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1726552325
+    },
+    {
+      "title": "The Hero Starts Over at the Academy",
+      "comic_url": "https://asuracomic.net/series/the-hero-starts-over-at-the-academy-194c6c4a",
+      "comic_mu_id": 13266248610,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1756493580
+    },
+    {
+      "title": "Demonic Spirit King",
+      "comic_url": "https://asuracomic.net/series/demonic-spirit-king-13b77af8",
+      "comic_mu_id": 74226441598,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1746394722
+    },
+    {
+      "title": "The Frenzy Of Evolution",
+      "comic_url": "https://asuracomic.net/series/the-frenzy-of-evolution-5b53ceb9",
+      "comic_mu_id": 23255235797,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1755132776
+    },
+    {
+      "title": "Return From The Abyss",
+      "comic_url": "https://asuracomic.net/series/return-from-the-abyss-12a6a936",
+      "comic_mu_id": 6574111645,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758813983
+    },
+    {
+      "title": "The Time of the Terminally ill Extra",
+      "comic_url": "https://asuracomic.net/series/the-time-of-the-terminally-ill-extra-cf246c9d",
+      "comic_mu_id": 32391530989,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760916230
+    },
+    {
+      "title": "Level 999 Goblin",
+      "comic_url": "https://asuracomic.net/series/level-999-goblin-9b26f7db",
+      "comic_mu_id": 51031227526,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760894525
+    },
+    {
+      "title": "The Strongest Player",
+      "comic_url": "https://asuracomic.net/series/the-strongest-player-9cca11a0",
+      "comic_mu_id": 20882922509,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1746618698
+    },
+    {
+      "title": "Limit-Breaking Genius Mage",
+      "comic_url": "https://asuracomic.net/series/limit-breaking-genius-mage-8796877d",
+      "comic_mu_id": 1345951024,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806685
+    },
+    {
+      "title": "Maxed Out Leveling",
+      "comic_url": "https://asuracomic.net/series/maxed-out-leveling-de4bac4a",
+      "comic_mu_id": 76416010450,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758297758
+    },
+    {
+      "title": "Golden Mage",
+      "comic_url": "https://asuracomic.net/series/golden-mage-2a041607",
+      "comic_mu_id": 72701130655,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1723053132
+    },
+    {
+      "title": "God-Tier Extra's Ultimate Guide (Remake)",
+      "comic_url": "https://asuracomic.net/series/god-tier-extras-ultimate-guide-remake-c0f167d4",
+      "comic_mu_id": 77099251017,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1756526542
+    },
+    {
+      "title": "My Civil Servant Life Reborn in the Stra...",
+      "comic_url": "https://asuracomic.net/series/my-civil-servant-life-reborn-in-the-strange-world-523f97bb",
+      "comic_mu_id": 8609521275,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1726513019
+    },
+    {
+      "title": "King of Runes",
+      "comic_url": "https://asuracomic.net/series/king-of-runes-def05085",
+      "comic_mu_id": 32320734698,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1751449101
+    },
+    {
+      "title": "The Cold-Blooded Warrior",
+      "comic_url": "https://asuracomic.net/series/the-cold-blooded-warrior-d139500c",
+      "comic_mu_id": 62740410323,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763216823
+    },
+    {
+      "title": "The Star of a Supreme Ruler",
+      "comic_url": "https://asuracomic.net/series/the-star-of-a-supreme-ruler-bdd77a70",
+      "comic_mu_id": 11340613409,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1735714090
+    },
+    {
+      "title": "The Hero Returns",
+      "comic_url": "https://asuracomic.net/series/the-hero-returns-ba0e0c39",
+      "comic_mu_id": 47868483967,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806793
+    },
+    {
+      "title": "The Demonic Cult Instructor Returns",
+      "comic_url": "https://asuracomic.net/series/the-demonic-cult-instructor-returns-90daf8dd",
+      "comic_mu_id": 5257123750,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763443264
+    },
+    {
+      "title": "The First Order",
+      "comic_url": "https://asuracomic.net/series/the-first-order-1ef0600c",
+      "comic_mu_id": 33515403815,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762660296
+    },
+    {
+      "title": "The Tang Clan Chronicles",
+      "comic_url": "https://asuracomic.net/series/the-tang-clan-chronicles-1e65e2e4",
+      "comic_mu_id": 31878865204,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762339699
+    },
+    {
+      "title": "My Path to Killing Gods in Another World",
+      "comic_url": "https://asuracomic.net/series/my-path-to-killing-gods-in-another-world-701a8306",
+      "comic_mu_id": 66660538701,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1742142024
+    },
+    {
+      "title": "Initializing the Sect System",
+      "comic_url": "https://asuracomic.net/series/initializing-the-sect-system-ebe03ba2",
+      "comic_mu_id": 2273407926,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762641903
+    },
+    {
+      "title": "The God of Pro Wrestling",
+      "comic_url": "https://asuracomic.net/series/the-god-of-pro-wrestling-9d0c2763",
+      "comic_mu_id": 75792649993,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1755344742
+    },
+    {
+      "title": "Rise From The Rubble",
+      "comic_url": "https://asuracomic.net/series/rise-from-the-rubble-91da1e30",
+      "comic_mu_id": 74756959752,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1753701955
+    },
+    {
+      "title": "Updater",
+      "comic_url": "https://asuracomic.net/series/updater-72aa0bf5",
+      "comic_mu_id": 7802096151,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754412934
+    },
+    {
+      "title": "Return of The Unrivaled Spear Knight",
+      "comic_url": "https://asuracomic.net/series/return-of-the-unrivaled-spear-knight-6d17f108",
+      "comic_mu_id": 37845185027,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763581341
+    },
+    {
+      "title": "The King Of Bugs",
+      "comic_url": "https://asuracomic.net/series/the-king-of-bugs-7781e1d5",
+      "comic_mu_id": 21372988412,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759202660
+    },
+    {
+      "title": "Carnivorous Hunter",
+      "comic_url": "https://asuracomic.net/series/carnivorous-hunter-3f87ab2a",
+      "comic_mu_id": 66232177156,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762253680
+    },
+    {
+      "title": "Genius of the Unique Lineage",
+      "comic_url": "https://asuracomic.net/series/genius-of-the-unique-lineage-cc4c13a9",
+      "comic_mu_id": 14659818775,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758435593
+    },
+    {
+      "title": "Demon in Mount Hua",
+      "comic_url": "https://asuracomic.net/series/demon-in-mount-hua-935024a8",
+      "comic_mu_id": 23548573828,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754405392
+    },
+    {
+      "title": "My Healing Game",
+      "comic_url": "https://asuracomic.net/series/my-healing-game-4f199ac2",
+      "comic_mu_id": 4580925033,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1733575120
+    },
+    {
+      "title": "My School Life Pretending To Be a Worthl...",
+      "comic_url": "https://asuracomic.net/series/my-school-life-pretending-to-be-a-worthless-person-d6a2fc70",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Shadowless Night",
+      "comic_url": "https://asuracomic.net/series/shadowless-night-89abf04f",
+      "comic_mu_id": 55555187326,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762876293
+    },
+    {
+      "title": "Emperor’s Domination",
+      "comic_url": "https://asuracomic.net/series/emperors-domination-40391227",
+      "comic_mu_id": 66791847595,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1756296282
+    },
+    {
+      "title": "The Book of Lagier",
+      "comic_url": "https://asuracomic.net/series/the-book-of-lagier-e50d48a2",
+      "comic_mu_id": 23080357084,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754047805
+    },
+    {
+      "title": "On My Way to Kill God",
+      "comic_url": "https://asuracomic.net/series/on-my-way-to-kill-god-4734b8e2",
+      "comic_mu_id": 58933134694,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1703584903
+    },
+    {
+      "title": "For My Forsaken Beloved",
+      "comic_url": "https://asuracomic.net/series/for-my-forsaken-beloved-bfd58a66",
+      "comic_mu_id": 60450167176,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763786859
+    },
+    {
+      "title": "Champion's Path to Murim",
+      "comic_url": "https://asuracomic.net/series/champions-path-to-murim-4b38bc5d",
+      "comic_mu_id": 49167044261,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1752013088
+    },
+    {
+      "title": "Drug Devourer",
+      "comic_url": "https://asuracomic.net/series/drug-devourer-54643512",
+      "comic_mu_id": 55250707179,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762205413
+    },
+    {
+      "title": "A Comic Artist's Survival Guide",
+      "comic_url": "https://asuracomic.net/series/a-comic-artists-survival-guide-5a594d97",
+      "comic_mu_id": 48239768466,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1681781302
+    },
+    {
+      "title": "I Regressed As The Duke",
+      "comic_url": "https://asuracomic.net/series/i-regressed-as-the-duke-b98c54c3",
+      "comic_mu_id": 7048644902,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1741905462
+    },
+    {
+      "title": "My Daughter is a Dragon!",
+      "comic_url": "https://asuracomic.net/series/my-daughter-is-a-dragon-d8a17d01",
+      "comic_mu_id": 36486537828,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762701036
+    },
+    {
+      "title": "King of the Mound",
+      "comic_url": "https://asuracomic.net/series/king-of-the-mound-878aa6f1",
+      "comic_mu_id": 27404568775,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1719705827
+    },
+    {
+      "title": "Tiger's Descent",
+      "comic_url": "https://asuracomic.net/series/tigers-descent-b3b4c9f3",
+      "comic_mu_id": 14105458191,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1725966572
+    },
+    {
+      "title": "Max Level Returner",
+      "comic_url": "https://asuracomic.net/series/max-level-returner-a100b080",
+      "comic_mu_id": 31788722548,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1761129601
+    },
+    {
+      "title": "Heavenly Inquisition Sword",
+      "comic_url": "https://asuracomic.net/series/heavenly-inquisition-sword-3184d548",
+      "comic_mu_id": 53868619311,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763159651
+    },
+    {
+      "title": "Absolute Necromancer",
+      "comic_url": "https://asuracomic.net/series/absolute-necromancer-54577c2c",
+      "comic_mu_id": 36395549708,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1757879488
+    },
+    {
+      "title": "The Blood Knight's Villains",
+      "comic_url": "https://asuracomic.net/series/the-blood-knights-villains-42a30b23",
+      "comic_mu_id": 9891189546,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1740629504
+    },
+    {
+      "title": "Bones",
+      "comic_url": "https://asuracomic.net/series/bones-f6fbe6c6",
+      "comic_mu_id": 68851671201,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758882986
+    },
+    {
+      "title": "I've Become the Villainous Empress of a ...",
+      "comic_url": "https://asuracomic.net/series/ive-become-the-villainous-empress-of-a-novel-dd80162d",
+      "comic_mu_id": 46307183337,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1759243380
+    },
+    {
+      "title": "Transmigrating to the Otherworld Once Mo...",
+      "comic_url": "https://asuracomic.net/series/transmigrating-to-the-otherworld-once-more-dec55c2a",
+      "comic_mu_id": 77503267662,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1756033072
+    },
+    {
+      "title": "Legendary Ranker's Comeback",
+      "comic_url": "https://asuracomic.net/series/legendary-rankers-comeback-1e7d4ad2",
+      "comic_mu_id": 46388120809,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1739121976
+    },
+    {
+      "title": "The King's Avatar",
+      "comic_url": "https://asuracomic.net/series/the-kings-avatar-308f272b",
+      "comic_mu_id": 11340613409,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1735714090
+    },
+    {
+      "title": "Solo Bug Player",
+      "comic_url": "https://asuracomic.net/series/solo-bug-player-f5908a3f",
+      "comic_mu_id": 2769515618,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763806355
+    },
+    {
+      "title": "Ultimate Devouring System",
+      "comic_url": "https://asuracomic.net/series/ultimate-devouring-system-958b2eaa",
+      "comic_mu_id": 1329512708,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1725542736
+    },
+    {
+      "title": "Weapon Maker",
+      "comic_url": "https://asuracomic.net/series/weapon-maker-c87ec88a",
+      "comic_mu_id": 20213636119,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1755571083
+    },
+    {
+      "title": "The Live",
+      "comic_url": "https://asuracomic.net/series/the-live-bf8aba19",
+      "comic_mu_id": 9693461367,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758297040
+    },
+    {
+      "title": "The Return of the Prodigious Swordmaster",
+      "comic_url": "https://asuracomic.net/series/the-return-of-the-prodigious-swordmaster-84d25210",
+      "comic_mu_id": 20867313204,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1739170236
+    },
+    {
+      "title": "Saving the Villain Who was Abandoned by ...",
+      "comic_url": "https://asuracomic.net/series/saving-the-villain-who-was-abandoned-by-the-female-lead-8f9d85e8",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "The Immortal Emperor Luo Wuji Has Return...",
+      "comic_url": "https://asuracomic.net/series/the-immortal-emperor-luo-wuji-has-returned-d3f1c045",
+      "comic_mu_id": 22873112455,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762350749
+    },
+    {
+      "title": "Insanely-Talented Player",
+      "comic_url": "https://asuracomic.net/series/insanely-talented-player-822ad340",
+      "comic_mu_id": 10748997940,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1757793283
+    },
+    {
+      "title": "Dangerous Dungeon Escape",
+      "comic_url": "https://asuracomic.net/series/dangerous-dungeon-escape-0848f96e",
+      "comic_mu_id": 10212642036,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1748544789
+    },
+    {
+      "title": "Dungeon Defense",
+      "comic_url": "https://asuracomic.net/series/dungeon-defense-105b5f36",
+      "comic_mu_id": 1370751419,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754432063
+    },
+    {
+      "title": "Gods' Gambit",
+      "comic_url": "https://asuracomic.net/series/gods-gambit-40116721",
+      "comic_mu_id": 15953748717,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1752107793
+    },
+    {
+      "title": "I Awoke as a God After Auto Battling For...",
+      "comic_url": "https://asuracomic.net/series/i-awoke-as-a-god-after-auto-battling-for-a-million-years-c1e65a73",
+      "comic_mu_id": 0,
+      "found_mu": false,
+      "status": "ongoing",
+      "last_updated": 0
+    },
+    {
+      "title": "Children of the Rune",
+      "comic_url": "https://asuracomic.net/series/children-of-the-rune-0db953c7",
+      "comic_mu_id": 39861241612,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758659068
+    },
+    {
+      "title": "Rise of The Cheat User",
+      "comic_url": "https://asuracomic.net/series/rise-of-the-cheat-user-e806f45a",
+      "comic_mu_id": 4034959052,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1740625889
+    },
+    {
+      "title": "Solo Spell Caster",
+      "comic_url": "https://asuracomic.net/series/solo-spell-caster-da7e7688",
+      "comic_mu_id": 34484651400,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1748878311
+    },
+    {
+      "title": "My Insanely Competent Underlings",
+      "comic_url": "https://asuracomic.net/series/my-insanely-competent-underlings-22ba536a",
+      "comic_mu_id": 4242143426,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1741797669
+    },
+    {
+      "title": "Demon Lord's Martial Arts Ascension",
+      "comic_url": "https://asuracomic.net/series/demon-lords-martial-arts-ascension-2353ab62",
+      "comic_mu_id": 23808200352,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1762688790
+    },
+    {
+      "title": "Return of the Bloodthirsty Police",
+      "comic_url": "https://asuracomic.net/series/return-of-the-bloodthirsty-police-137015ed",
+      "comic_mu_id": 62243833229,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760759960
+    },
+    {
+      "title": "Never Die Extra",
+      "comic_url": "https://asuracomic.net/series/never-die-extra-f60dea4d",
+      "comic_mu_id": 66605180680,
+      "found_mu": true,
+      "status": "completed",
+      "last_updated": 1734743845
+    },
+    {
+      "title": "I Captured The Tyrant's Heart",
+      "comic_url": "https://asuracomic.net/series/i-captured-the-tyrants-heart-96874337",
+      "comic_mu_id": 17771599280,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1744254108
+    },
+    {
+      "title": "Regressor's Life After Retirement",
+      "comic_url": "https://asuracomic.net/series/regressors-life-after-retirement-bde5b7a3",
+      "comic_mu_id": 50669361710,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1754393228
+    },
+    {
+      "title": "King of Violence",
+      "comic_url": "https://asuracomic.net/series/king-of-violence-72b57508",
+      "comic_mu_id": 12086120922,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758097930
+    },
+    {
+      "title": "The Heavenly Demon's Descendant",
+      "comic_url": "https://asuracomic.net/series/the-heavenly-demons-descendant-f35191d7",
+      "comic_mu_id": 5145539430,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1740296203
+    },
+    {
+      "title": "Shenwu Tianzun",
+      "comic_url": "https://asuracomic.net/series/shenwu-tianzun-7921f6e8",
+      "comic_mu_id": 76839007414,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760606449
+    },
+    {
+      "title": "Son's Retribution",
+      "comic_url": "https://asuracomic.net/series/sons-retribution-82ddddde",
+      "comic_mu_id": 61881239410,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1763609462
+    },
+    {
+      "title": "Light of Arad: Forerunner",
+      "comic_url": "https://asuracomic.net/series/light-of-arad-forerunner-b5086d74",
+      "comic_mu_id": 21887528999,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1749531545
+    },
+    {
+      "title": "Requiem of Subdued Souls",
+      "comic_url": "https://asuracomic.net/series/requiem-of-subdued-souls-937f1de6",
+      "comic_mu_id": 51319164172,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1758513307
+    },
+    {
+      "title": "Emperor of Steel",
+      "comic_url": "https://asuracomic.net/series/emperor-of-steel-f8e76007",
+      "comic_mu_id": 39349541334,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1755191429
+    },
+    {
+      "title": "Love Letter From The Future",
+      "comic_url": "https://asuracomic.net/series/love-letter-from-the-future-babe68b1",
+      "comic_mu_id": 12749096161,
+      "found_mu": true,
+      "status": "ongoing",
+      "last_updated": 1760153720
+    }
+  ]
+}

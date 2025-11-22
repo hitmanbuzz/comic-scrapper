@@ -1,8 +1,10 @@
 package scanlators
 
 import (
+	"comicrawl/internal/cstructs"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
+	"comicrawl/internal/util"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,14 +23,16 @@ type AsuraScans struct {
 
 func NewAsuraScans(logger *slog.Logger) *AsuraScans {
 	return &AsuraScans{
-		BaseSource: sources.NewBaseSource("asurascans", "https://asuracomic.net", logger),
+		BaseSource: sources.NewBaseSource("asura", "https://asuracomic.net", util.ParseSlugToId(util.Asura), logger), // We can put those MU Group ID as a hardcoded value instead of parsing from slug
 	}
 }
 
-func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
 	a.Logger.Info("fetching series list from AsuraScans")
 
-	var allSeries []sources.Series
+	var allSeries cstructs.FullSeriesResponse
+	totalSeries := 0
+
 	page := 1
 
 	for {
@@ -37,26 +41,39 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %w", err)
+			return allSeries, fmt.Errorf("failed to create request: %w", err)
 		}
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch series page %d: %w", page, err)
+			return allSeries, fmt.Errorf("failed to fetch series page %d: %w", page, err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			return allSeries, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 		}
 
 		doc, err := goquery.NewDocumentFromReader(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse HTML: %w", err)
+			return allSeries, fmt.Errorf("failed to parse HTML: %w", err)
 		}
 
-		pageSeries := a.parseSeriesPage(doc)
-		allSeries = append(allSeries, pageSeries...)
+		pageSeries := a.parseSeriesData(doc)
+		totalSeries += len(pageSeries)
+		allSeries.GroupName = a.GetName()
+		allSeries.MuGroupId = util.ParseSlugToId(util.Asura)
+		allSeries.TotalSeries = totalSeries
+
+		for _, data := range pageSeries {
+			allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+				MainTitle:    data.Title,
+				ComicPageUrl: data.URL,
+				ComicMuID: -1,
+				ComicStatus:  data.Status,
+				Found:        false,
+			})
+		}
 
 		if !a.hasNextPage(doc) {
 			break
@@ -65,11 +82,11 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 		page++
 	}
 
-	a.Logger.Info("fetched series from AsuraScans", "count", len(allSeries))
+	a.Logger.Info("fetched series from AsuraScans", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 
-func (a *AsuraScans) parseSeriesPage(doc *goquery.Document) []sources.Series {
+func (a *AsuraScans) parseSeriesData(doc *goquery.Document) []sources.Series {
 	var series []sources.Series
 
 	doc.Find("div.grid > a[href]").Each(func(i int, s *goquery.Selection) {
@@ -83,16 +100,25 @@ func (a *AsuraScans) parseSeriesPage(doc *goquery.Document) []sources.Series {
 			title = s.Find("span.block").First().Text()
 		}
 
-		slug, err := a.ExtractSlugFromURL(url)
-		if err != nil {
-			a.Logger.Warn("failed to extract slug from URL", "url", url, "error", err)
-			return
+		status := s.Find("div.flex > span.status").First().Text()
+		if status == "" {
+			status = s.Find("span.status").First().Text()
+		}
+			
+		status = strings.TrimSpace(strings.ToLower(status))
+
+		switch status {
+		case "completed", "ongoing", "hiatus":
+		default:
+			// Forecefully putting this status because status like `Season End` doesn't make sense to use
+		    status = "ongoing"
 		}
 
-		if title != "" && slug != "" {
+		if title != "" && url != "" {
 			series = append(series, sources.Series{
-				Slug:  slug,
+				URL: fmt.Sprintf("%s/%s", a.BaseURL, url),
 				Title: strings.TrimSpace(title),
+				Status: status,
 			})
 		}
 	})
@@ -105,11 +131,7 @@ func (a *AsuraScans) hasNextPage(doc *goquery.Document) bool {
 }
 
 func (a *AsuraScans) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	a.Logger.Info("fetching chapters", "series", series.Slug)
-
-	url := fmt.Sprintf("%s/series/%s", a.GetBaseURL(), series.Slug)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -129,10 +151,10 @@ func (a *AsuraScans) FetchChapters(ctx context.Context, client *httpclient.HTTPC
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	return a.parseChaptersPage(doc, series.Slug)
+	return a.parseChaptersPage(doc)
 }
 
-func (a *AsuraScans) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]sources.Chapter, error) {
+func (a *AsuraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter, error) {
 	var chapters []sources.Chapter
 
 	doc.Find("div.scrollbar-thumb-themecolor > div.group:not(:has(svg))").Each(func(i int, s *goquery.Selection) {
@@ -162,7 +184,8 @@ func (a *AsuraScans) parseChaptersPage(doc *goquery.Document, seriesSlug string)
 		})
 	})
 
-	a.Logger.Info("parsed chapters", "series", seriesSlug, "count", len(chapters))
+	// Will uncomment out again
+	// a.Logger.Info("parsed chapters", "series",  "count", len(chapters))
 	return chapters, nil
 }
 

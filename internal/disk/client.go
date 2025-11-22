@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"path"
@@ -56,35 +55,7 @@ func NewClient(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*C
 	}, nil
 }
 
-func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, filename string, data io.Reader) error {
-	filePath := path.Join(c.basePath, seriesSlug, chapterNumber, filename)
-
-	// Create directory if it doesn't exist
-	dir := filepath.Dir(filePath)
-	err := os.MkdirAll(dir, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", filePath, err)
-	}
-	defer func() {
-		if closeErr := file.Close(); closeErr != nil {
-			c.logger.Error("failed to close file", "path", filePath, "error", closeErr)
-		}
-	}()
-
-	size, writeErr := io.Copy(file, data)
-	if writeErr != nil {
-		return fmt.Errorf("failed to write to file %s: %w", filePath, writeErr)
-	}
-
-	c.logger.Debug("uploaded image", "path", filePath, "size", size)
-	return nil
-}
-
+// NOTE: Remove it once after we fix scrape.go code
 func (c *Client) DownloadJSON(ctx context.Context, key string, v any) (bool, error) {
 	filePath := path.Join(c.basePath, key)
 
@@ -104,6 +75,7 @@ func (c *Client) DownloadJSON(ctx context.Context, key string, v any) (bool, err
 	return true, nil
 }
 
+// NOTE: Remove it once after we fix scrape.go code
 func (c *Client) UploadJSON(ctx context.Context, key string, v any) error {
 	filePath := path.Join(c.basePath, key)
 
@@ -128,6 +100,7 @@ func (c *Client) UploadJSON(ctx context.Context, key string, v any) error {
 	return nil
 }
 
+// NOTE: Remove it once after we fix scrape.go code
 func (c *Client) LoadSeriesMetadata(ctx context.Context, seriesSlug string) (*SeriesMetadata, error) {
 	key := path.Join(seriesSlug, "meta.json")
 	var meta SeriesMetadata
@@ -146,29 +119,9 @@ func (c *Client) LoadSeriesMetadata(ctx context.Context, seriesSlug string) (*Se
 	return &meta, nil
 }
 
+// NOTE: Remove it once after we fix scrape.go code
 func (c *Client) SaveSeriesMetadata(ctx context.Context, seriesSlug string, meta *SeriesMetadata) error {
 	meta.UpdatedAt = time.Now()
 	key := path.Join(seriesSlug, "meta.json")
 	return c.UploadJSON(ctx, key, meta)
-}
-
-func (c *Client) LoadChapters(ctx context.Context, seriesSlug string) ([]Chapter, error) {
-	key := path.Join(seriesSlug, "chapters.json")
-	var chapters []Chapter
-
-	exists, err := c.DownloadJSON(ctx, key, &chapters)
-	if err != nil {
-		return nil, err
-	}
-
-	if !exists {
-		return []Chapter{}, nil
-	}
-
-	return chapters, nil
-}
-
-func (c *Client) SaveChapters(ctx context.Context, seriesSlug string, chapters []Chapter) error {
-	key := path.Join(seriesSlug, "chapters.json")
-	return c.UploadJSON(ctx, key, chapters)
 }

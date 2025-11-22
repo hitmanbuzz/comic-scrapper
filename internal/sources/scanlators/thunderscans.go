@@ -84,7 +84,7 @@ func (t *ThunderScans) parseSeriesList(doc *goquery.Document) []sources.Series {
 	return series
 }
 
-func (t *ThunderScans) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+func (t *ThunderScans) FetchComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	t.Logger.Info("fetching chapters", "series", series.Slug)
 
 	url := fmt.Sprintf("%s/comics/%s", t.GetBaseURL(), series.Slug)

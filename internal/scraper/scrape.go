@@ -1,5 +1,15 @@
 package scraper
 
+// From Hitman
+//
+// I really wish this whole part to be refactor
+// This really is a trigger point for any new person joining
+//
+// God knows WTF is happening, it is connected to every single part of the codebase
+//
+// That `runScrapper` function is ~300 lines of code.
+// I would recommend every function to be less 80-100 lines of code
+
 import (
 	"comicrawl/internal/aria2c"
 	"comicrawl/internal/cloudflare"
@@ -91,7 +101,7 @@ func RunScraper(
 		}
 
 		// Fetch series from source
-		seriesList, err := src.ListSeries(ctx, httpClient.Client())
+		seriesData, err := src.ListSeries(ctx, httpClient.Client())
 		if err != nil {
 			logger.Error("failed to fetch series from source",
 				"source", src.GetName(),
@@ -101,22 +111,26 @@ func RunScraper(
 
 		logger.Info("fetched series from source",
 			"source", src.GetName(),
-			"count", len(seriesList))
+			"count", len(seriesData.Series))
 
 		// Log first few series for debugging
-		if len(seriesList) > 0 {
+		if len(seriesData.Series) > 0 {
 			logger.Debug("sample series slugs",
-				"first_5", seriesList[:min(5, len(seriesList))])
+				"first_5", seriesData.Series[:min(5, len(seriesData.Series))])
 		}
 
 		// Process each series
 		seriesCount := 0
-		for _, series := range seriesList {
+		for _, series := range seriesData.Series {
+			// NOTE: I don't think we need this anymore
+			// Probably we can make something that can scrape specific titles only but for now not needed
+			// If really needed just change all `found_mu` to false and only change the one you need to true
+			
 			// Check if we should process this series
-			if !cfg.IsSeriesIncluded(series.Slug) {
-				logger.Debug("skipping series", "series", series.Slug)
-				continue
-			}
+			// if !cfg.IsSeriesIncluded(series.Slug) {
+			// 	logger.Debug("skipping series", "series", series.Slug)
+			// 	continue
+			// }
 
 			// Check series limit
 			if cfg.LimitSeries > 0 && seriesCount >= cfg.LimitSeries {
@@ -126,20 +140,27 @@ func RunScraper(
 
 			seriesCount++
 
+			// Convert cstructs.ScanSeriesResponse to sources.Series
+			sourceSeries := sources.Series{
+				URL:    series.ComicPageUrl,
+				Title:  series.MainTitle,
+				Status: series.ComicStatus,
+			}
+
 			wg.Add(1)
 			go func(s sources.Series) {
 				defer wg.Done()
 
 				logger.Info("processing series",
 					"source", src.GetName(),
-					"series", s.Slug,
+					"series", s.URL,
 					"title", s.Title)
 
 				// Load existing metadata
-				localMeta, err := storageClient.LoadSeriesMetadata(ctx, s.Slug)
+				localMeta, err := storageClient.LoadSeriesMetadata(ctx, s.URL)
 				if err != nil {
 					logger.Warn("failed to load series metadata from storage",
-						"series", s.Slug,
+						"series", s.URL,
 						"error", err)
 					localMeta = &disk.SeriesMetadata{}
 				}
@@ -148,13 +169,13 @@ func RunScraper(
 				if mode == ModeIncremental || mode == ModeSingle {
 					// For incremental mode, skip series that don't exist locally
 					if mode == ModeIncremental && len(localMeta.Chapters) == 0 {
-						logger.Debug("skipping new series in incremental mode", "series", s.Slug)
+						logger.Debug("skipping new series in incremental mode", "series", s.URL)
 						return
 					}
 
 					// For single mode, only process explicitly included series
-					if mode == ModeSingle && !cfg.IsSeriesIncluded(s.Slug) {
-						logger.Debug("skipping series not in include list for single mode", "series", s.Slug)
+					if mode == ModeSingle && !cfg.IsSeriesIncluded(s.URL) {
+						logger.Debug("skipping series not in include list for single mode", "series", s.URL)
 						return
 					}
 				}
@@ -163,19 +184,19 @@ func RunScraper(
 				remoteChapters, err := src.FetchChapters(ctx, httpClient.Client(), s)
 				if err != nil {
 					logger.Error("failed to fetch chapters from source",
-						"series", s.Slug,
+						"series", s.URL,
 						"error", err)
 					return
 				}
 
 				if len(remoteChapters) == 0 {
-					logger.Info("no chapters found", "series", s.Slug)
+					logger.Info("no chapters found", "series", s.URL)
 					return
 				}
 
 				// Apply chapter limit if configured
 				if cfg.LimitChapters > 0 && len(remoteChapters) > cfg.LimitChapters {
-					logger.Info("limiting chapters", "series", s.Slug, "original", len(remoteChapters), "limited", cfg.LimitChapters)
+					logger.Info("limiting chapters", "series", s.URL, "original", len(remoteChapters), "limited", cfg.LimitChapters)
 					remoteChapters = remoteChapters[:cfg.LimitChapters]
 				}
 
@@ -192,7 +213,7 @@ func RunScraper(
 						chaptersToProcess = remoteChapters
 					}
 					logger.Info("filtering chapters in incremental mode",
-						"series", s.Slug,
+						"series", s.URL,
 						"total_remote", len(remoteChapters),
 						"new_chapters", len(chaptersToProcess))
 				} else {
@@ -202,13 +223,13 @@ func RunScraper(
 
 				if len(chaptersToProcess) == 0 {
 					logger.Info("no new chapters to process",
-						"series", s.Slug,
+						"series", s.URL,
 						"mode", mode)
 					return
 				}
 
 				logger.Info("found chapters to process",
-					"series", s.Slug,
+					"series", s.URL,
 					"chapters", len(chaptersToProcess),
 					"mode", mode)
 
@@ -223,20 +244,17 @@ func RunScraper(
 					err = processSeriesChapters(ctx, src, httpClient, s, chaptersToProcess, downloader, storageClient, logger)
 					if err != nil {
 						logger.Error("failed to process chapters",
-							"series", s.Slug,
+							"series", s.URL,
 							"error", err)
 						return
 					}
 				} else {
-					logger.Info("dry-run mode: skipping chapter processing", "series", s.Slug, "chapters", len(chaptersToProcess))
+					logger.Info("dry-run mode: skipping chapter processing", "series", s.URL, "chapters", len(chaptersToProcess))
 				}
 
 				// Prepare metadata update
 				localMeta.Title = s.Title
-				localMeta.Description = s.Description
-				localMeta.Author = s.Author
 				localMeta.Status = s.Status
-				localMeta.Genres = s.Genres
 				localMeta.UpdatedAt = time.Now()
 
 				// Convert remote chapters to disk storage format (include all chapters)
@@ -264,12 +282,12 @@ func RunScraper(
 				// Add to pending updates
 				updatesMutex.Lock()
 				pendingUpdates = append(pendingUpdates, metadataUpdate{
-					seriesSlug: s.Slug,
+					seriesSlug: s.URL,
 					metadata:   localMeta,
 				})
 				updatesMutex.Unlock()
 
-			}(series)
+			}(sourceSeries)
 		}
 	}
 
@@ -341,7 +359,7 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 			defer wg.Done()
 
 			logger.Debug("fetching pages for chapter",
-				"series", series.Slug,
+				"series", series.URL,
 				"chapter", ch.Number)
 
 			// Fetch page URLs for this chapter
@@ -349,7 +367,7 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 			if err != nil {
 				atomic.AddInt64(&errorCount, 1)
 				logger.Error("failed to fetch pages for chapter",
-					"series", series.Slug,
+					"series", series.URL,
 					"chapter", ch.Number,
 					"error", err)
 				return
@@ -357,7 +375,7 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 
 			if len(pages) == 0 {
 				logger.Warn("no pages found for chapter",
-					"series", series.Slug,
+					"series", series.URL,
 					"chapter", ch.Number)
 				return
 			}
@@ -373,7 +391,7 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 			// Stream each page download immediately
 			for _, page := range pages {
 				downloader.AddDownload(aria2c.DownloadRequest{
-					SeriesSlug:    series.Slug,
+					SeriesSlug:    series.URL,
 					Chapter:       diskChapter,
 					Page:          page,
 					StorageClient: storageClient,
@@ -382,7 +400,7 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 
 			atomic.AddInt64(&processedCount, 1)
 			logger.Info("chapter pages queued for download",
-				"series", series.Slug,
+				"series", series.URL,
 				"chapter", ch.Number,
 				"pages", len(pages),
 				"processed", atomic.LoadInt64(&processedCount),
@@ -397,7 +415,7 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 	finalErrors := atomic.LoadInt64(&errorCount)
 
 	logger.Info("chapter processing completed",
-		"series", series.Slug,
+		"series", series.URL,
 		"processed", finalProcessed,
 		"errors", finalErrors,
 		"total", len(remoteChapters))

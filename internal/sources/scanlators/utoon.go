@@ -20,9 +20,7 @@ type Utoon struct {
 	*sources.BaseSource
 }
 
-// FIX
-// Titles with chinese text
-// Extract the english titles instead
+
 func NewUtoon(logger *slog.Logger) *Utoon {
 	return &Utoon{
 		BaseSource: sources.NewBaseSource("utoon", "https://utoon.net", logger),
@@ -80,8 +78,6 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 }
 
 func (u *Utoon) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	u.Logger.Info("fetching chapters", "series", series.Slug)
-
 	url := fmt.Sprintf("%s/series/%s", u.GetBaseURL(), series.Slug)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)

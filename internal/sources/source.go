@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"regexp"
 	"strings"
 
+	"comicrawl/internal/cstructs"
 	"comicrawl/internal/disk"
 	"comicrawl/internal/httpclient"
 )
@@ -26,74 +26,61 @@ type Page struct {
 }
 
 type Series struct {
-	Slug        string
+	// URL to the comic page on scanlator website (a.k.a comic page)
+	URL         string
+	// Title fetch from the scanlator website for the comic
 	Title       string
-	Description string
-	Author      string
+	// Current Comic Status from scanlator website
 	Status      string
-	Genres      []string
-	Chapters    []Chapter
 }
 
 type Source interface {
+	// Get the Source Provider Name (aka Scanlator name)
 	GetName() string
+	// Get the base URL for the source provider site
 	GetBaseURL() string
-	ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]Series, error)
+	// Get the group (source provider) ID on MU
+	GetMuGroupID() int64
+	// It will not be use directly in scanlator code but only for generating those series data in a json file
+	ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error)
 	FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series Series) ([]Chapter, error)
 	FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter Chapter) ([]Page, error)
 }
 
 type BaseSource struct {
-	Name    string
-	BaseURL string
-	Logger  *slog.Logger
+	Name         string
+	BaseURL      string
+	MuGroupID    int64
+	Logger       *slog.Logger
 }
 
-func NewBaseSource(name, baseURL string, logger *slog.Logger) *BaseSource {
+func NewBaseSource(name, baseURL string, muGroupId int64, logger *slog.Logger) *BaseSource {
 	return &BaseSource{
 		Name:    name,
 		BaseURL: strings.TrimRight(baseURL, "/"),
+		MuGroupID: muGroupId,
 		Logger:  logger,
 	}
 }
 
+// Get the Source Provider Name (aka Scanlator name)
 func (b *BaseSource) GetName() string {
 	return b.Name
 }
 
+// Get the base URL for the source provider site
 func (b *BaseSource) GetBaseURL() string {
 	return b.BaseURL
 }
 
-func (b *BaseSource) BuildURL(path string) string {
-	return fmt.Sprintf("%s/%s", b.BaseURL, strings.TrimLeft(path, "/"))
+// Get the group (source provider) ID on MU
+func (b *BaseSource) GetMuGroupID() int64 {
+	return b.MuGroupID
 }
 
-func (b *BaseSource) ExtractSlugFromURL(urlStr string) (string, error) {
-	if urlStr == "" {
-		return "", fmt.Errorf("empty URL")
-	}
-	
-	parsed, err := url.Parse(urlStr)
-	if err != nil {
-		return "", fmt.Errorf("invalid URL: %w", err)
-	}
-
-	path := strings.Trim(parsed.Path, "/")
-	if path == "" {
-		return "", fmt.Errorf("empty path in URL: %s", urlStr)
-	}
-	
-	segments := strings.Split(path, "/")
-
-	// General case: take the last non-empty segment
-	for i := len(segments) - 1; i >= 0; i-- {
-		if segments[i] != "" {
-			return segments[i], nil
-		}
-	}
-
-	return "", fmt.Errorf("could not extract slug from URL: %s", urlStr)
+// NOTE: NOT NEEDED (will think about it)
+func (b *BaseSource) BuildURL(path string) string {
+	return fmt.Sprintf("%s/%s", b.BaseURL, strings.TrimLeft(path, "/"))
 }
 
 func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
@@ -118,6 +105,7 @@ func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
 	return strings.Join(parts, ".")
 }
 
+// NOTE: NOT NEEDED (can be update so that it fits with our new codebase)
 func (b *BaseSource) CompareChapters(localChapters []disk.Chapter, remoteChapters []Chapter) (newChapters []Chapter, updatedChapters []Chapter) {
     localMap := make(map[string]disk.Chapter)
     for _, chap := range localChapters {

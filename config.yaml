@@ -1,7 +1,8 @@
 bucket: '/tmp/comicrawl-data'
 storage_type: 'disk'
 
-flaresolverr_url: "http://localhost:8191/v1"
+# Comment out the below flaresolverr field to ignore cloudflare stuff
+# flaresolverr_url: "http://localhost:8191/v1"
 
 aria2c_url: 'http://localhost:6800/jsonrpc'
 use_aria2c: true
@@ -16,7 +17,8 @@ download_workers: 1000
 
 log_level: 'info'
 
-include_sources: ['utoon','flamecomics','asurascans','drakescans','webtoon','rizzfables']
+# include_sources: ['utoon','flamecomics','asurascans','drakescans','webtoon','rizzfables']
+include_sources: ['asura']
 # exclude_sources: ['webtoon']
 
 # include_series: ['tower-of-god']

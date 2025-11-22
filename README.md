@@ -1,5 +1,18 @@
 # Comic Crawl
 
+### NOTE:
+- Every process like `scrapping` `update` `filter` should have their own separate process (look `cmd/`)
+
+### Todo
+- [ ] Connect MU with Source Provider (Need to fix the downloading/scrapping part)
+- [ ] Storing those scrapped data in a proper structure
+- [ ] Implement New Update Checker for Comics
+- [ ] Make a small scrapping testing environment
+- [ ] Refactor FlareSolverr and Aria2c Source Code for optimization (optional)
+- [ ] Remove unwanted code from the codebase
+- [ ] Refactor Source Provider Code if needed (Optional)
+- [ ] Make Documentation or Notes to the existing codebase (mostly scrape, scanlator, source, disk)
+
 ### Prerequisites:
 - [aria2](https://github.com/aria2/aria2)
 - Docker

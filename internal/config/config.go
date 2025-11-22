@@ -25,7 +25,7 @@ type Config struct {
 	StorageType       string        `yaml:"storage_type" default:"disk"`
 	UseAria2c         bool          `yaml:"use_aria2c" default:"true"`
 
-	// Enhanced filtering options
+	// Enhanced Sources filtering options
 	IncludeSources []string `yaml:"include_sources"`
 	ExcludeSources []string `yaml:"exclude_sources"`
 	IncludeSeries  []string `yaml:"include_series"`

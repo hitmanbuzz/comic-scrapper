@@ -42,5 +42,11 @@ Thumbs.db
 /tmp/
 /test-data/
 
+# Data directories (ignore files but keep directory structure)
+/backup_data/*
+!/backup_data/.gitkeep
+# /series_data/*
+# !/series_data/.gitkeep
+
 # Downloaded comics
 /downloads/
