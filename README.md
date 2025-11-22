@@ -17,7 +17,16 @@
 - [aria2](https://github.com/aria2/aria2)
 - Docker
 
-### How to run Project?
+### Run (Each Separate Process)
+#### Get All Series from source provider (scanlator)
+
+`go run cmd/series/series.go`
+
+#### Filter those series
+
+`go run cmd/filter/filter.go`
+
+### How to run Project? (NOT WORKING)
 > *For now, it only run on Linux*
 
 ```
