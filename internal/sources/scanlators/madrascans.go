@@ -1,8 +1,10 @@
 package scanlators
 
 import (
+	"comicrawl/internal/cstructs"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
+	"comicrawl/internal/util"
 	"context"
 	"fmt"
 	"log/slog"
@@ -19,39 +21,54 @@ type MadraScans struct {
 
 func NewMadraScans(logger *slog.Logger) *MadraScans {
 	return &MadraScans{
-		BaseSource: sources.NewBaseSource("madrascans", "https://madarascans.com", logger),
+		BaseSource: sources.NewBaseSource("madrascans", "https://madarascans.com", util.ParseSlugToId(util.MadraScans), logger),
 	}
 }
 
-func (m *MadraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+func (m *MadraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
 	m.Logger.Info("fetching series list from MadraScans")
+
+	var allSeries cstructs.FullSeriesResponse
 
 	url := fmt.Sprintf("%s/series/list-mode/", m.GetBaseURL())
 	m.Logger.Debug("fetching series list", "url", url)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return allSeries, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch series: %w", err)
+		return allSeries, fmt.Errorf("failed to fetch series: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return allSeries, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+		return allSeries, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	allSeries := m.parseSeriesList(doc)
+	pageSeries := m.parseSeriesList(doc)
+	allSeries.GroupName = m.GetName()
+	allSeries.MuGroupId = util.ParseSlugToId(util.MadraScans)
+	allSeries.TotalSeries = len(pageSeries)
 
-	m.Logger.Info("fetched series from MadraScans", "count", len(allSeries))
+	for _, data := range pageSeries {
+		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+			MainTitle:    data.Title,
+			ComicPageUrl: data.URL,
+			MuSeriesId:   -1,
+			ComicStatus:  data.Status,
+			Found:        false,
+		})
+	}
+
+	m.Logger.Info("fetched series from MadraScans", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 
@@ -67,16 +84,11 @@ func (m *MadraScans) parseSeriesList(doc *goquery.Document) []sources.Series {
 
 		title := strings.TrimSpace(s.Text())
 
-		slug, err := m.ExtractSlugFromURL(url)
-		if err != nil {
-			m.Logger.Warn("failed to extract slug from URL", "url", url, "error", err)
-			return
-		}
-
-		if title != "" && slug != "" {
+		if title != "" && url != "" {
 			series = append(series, sources.Series{
-				Slug:  slug,
-				Title: title,
+				URL:    url,
+				Title:  title,
+				Status: "", // Status not available on list page
 			})
 		}
 	})
@@ -84,12 +96,8 @@ func (m *MadraScans) parseSeriesList(doc *goquery.Document) []sources.Series {
 	return series
 }
 
-func (m *MadraScans) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	m.Logger.Info("fetching chapters", "series", series.Slug)
-
-	url := fmt.Sprintf("%s/series/%s", m.GetBaseURL(), series.Slug)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+func (m *MadraScans) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -109,10 +117,10 @@ func (m *MadraScans) ScrapeComicChaptersURL(ctx context.Context, client *httpcli
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	return m.parseChaptersPage(doc, series.Slug)
+	return m.parseChaptersPage(doc)
 }
 
-func (m *MadraScans) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]sources.Chapter, error) {
+func (m *MadraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter, error) {
 	var chapters []sources.Chapter
 
 	// MangaThemesia chapter list selector: div.bxcl li, div.cl li, #chapterlist li, ul li:has(div.chbox):has(div.eph-num)
@@ -143,11 +151,10 @@ func (m *MadraScans) parseChaptersPage(doc *goquery.Document, seriesSlug string)
 		})
 	})
 
-	m.Logger.Info("parsed chapters", "series", seriesSlug, "count", len(chapters))
 	return chapters, nil
 }
 
-func (m *MadraScans) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (m *MadraScans) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	m.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)

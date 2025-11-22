@@ -10,10 +10,13 @@ import (
 func AddSources(logger *slog.Logger) []sources.Source {
 	return []sources.Source{
 		scanlators.NewAsuraScans(logger),
-		// scanlators.NewWebtoon(logger),
-		// scanlators.NewUtoon(logger),
-		// scanlators.NewFlameComics(logger),
-		// scanlators.NewDrakeScans(logger),
-		// scanlators.NewRizzFables(logger),
+		scanlators.NewWebtoon(logger),
+		scanlators.NewUtoon(logger),
+		scanlators.NewFlameComics(logger),
+		scanlators.NewDrakeScans(logger),
+		scanlators.NewRizzFables(logger),
+		scanlators.NewHiveScans(logger),
+		scanlators.NewThunderScans(logger),
+		scanlators.NewMadraScans(logger),
 	}
 }

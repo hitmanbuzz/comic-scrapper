@@ -4,7 +4,13 @@ package util
 
 // MU group slug
 const (
-	Asura 		string = "juxsa9z"
-	Drakescans 	string = "ktajd9u"
-	Utoon      	string = "mtcug74"
+	Asura        string = "juxsa9z"
+	Drakescans   string = "ktajd9u"
+	Utoon        string = "mtcug74"
+	MadraScans   string = "shgdt4w"
+	ThunderScans string = "6j43bjm"
+	FlameComics  string = "qmddlyg"
+	HiveScans    string = "16xly8l"
+	RizzFables   string = "v5djjz8"
+	Webtoon      string = "1ohgbpm"
 )

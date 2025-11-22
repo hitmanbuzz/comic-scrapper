@@ -1,13 +1,16 @@
 package scanlators
 
 import (
+	"comicrawl/internal/cstructs"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
+	"comicrawl/internal/util"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -20,7 +23,7 @@ type HiveScans struct {
 
 func NewHiveScans(logger *slog.Logger) *HiveScans {
 	return &HiveScans{
-		BaseSource: sources.NewBaseSource("hivescans", "https://hivetoons.org", logger),
+		BaseSource: sources.NewBaseSource("hivescans", "https://hivetoons.org", util.ParseSlugToId(util.HiveScans), logger),
 	}
 }
 
@@ -50,8 +53,10 @@ type HiveChapter struct {
 	IsAccessible bool    `json:"isAccessible"`
 }
 
-func (h *HiveScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+func (h *HiveScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
 	h.Logger.Info("fetching series list from HiveScans")
+
+	var allSeries cstructs.FullSeriesResponse
 
 	url := "https://api.hivetoons.org/api/query?page=1&perPage=100000"
 
@@ -61,37 +66,42 @@ func (h *HiveScans) ListSeries(ctx context.Context, client *httpclient.HTTPClien
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch series metadata: %w", err)
+		return allSeries, fmt.Errorf("failed to fetch series metadata: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return allSeries, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var metadata HiveSeriesMetadata
 	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON: %w", err)
+		return allSeries, fmt.Errorf("failed to decode JSON: %w", err)
 	}
 
-	var allSeries []sources.Series
+	allSeries.GroupName = h.GetName()
+	allSeries.MuGroupId = util.ParseSlugToId(util.HiveScans)
+	allSeries.TotalSeries = len(metadata.Posts)
+
 	for _, item := range metadata.Posts {
-		allSeries = append(allSeries, sources.Series{
-			Slug:   fmt.Sprintf("%d:%s", item.ID, item.Slug),
-			Title:  item.PostTitle,
-			Status: item.Status,
+		// Store series ID in URL path for later extraction
+		seriesURL := fmt.Sprintf("%s/series/%d/%s", h.GetBaseURL(), item.ID, item.Slug)
+		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+			MainTitle:    item.PostTitle,
+			ComicPageUrl: seriesURL,
+			MuSeriesId:   -1,
+			ComicStatus:  item.Status,
+			Found:        false,
 		})
 	}
 
-	h.Logger.Info("fetched series from HiveScans", "count", len(allSeries))
+	h.Logger.Info("fetched series from HiveScans", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 
-func (h *HiveScans) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	h.Logger.Info("fetching chapters", "series", series.Slug)
-
-	// Extract series ID from slug
-	seriesID, seriesSlug, err := h.parseSeriesSlug(series.Slug)
+func (h *HiveScans) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+	// Extract series ID and slug from URL
+	seriesID, seriesSlug, err := h.parseSeriesURL(series.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +151,7 @@ func (h *HiveScans) parseChapters(hiveChapters []HiveChapter, seriesSlug string)
 	return chapters
 }
 
-func (h *HiveScans) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (h *HiveScans) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	h.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
@@ -183,9 +193,8 @@ func (h *HiveScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 		// Only include images from storage.hivetoon.com with /upload/series/ path
 		if strings.Contains(imageURL, "storage.hivetoon.com") && strings.Contains(imageURL, "/upload/series/") {
 			pages = append(pages, sources.Page{
-				Number:  len(pages),
-				URL:     imageURL,
-				Referer: h.GetBaseURL() + "/",
+				Number: len(pages),
+				URL:    imageURL,
 			})
 		}
 	})
@@ -194,17 +203,17 @@ func (h *HiveScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 	return pages, nil
 }
 
-// parseSeriesSlug extracts series ID and slug from the combined slug format "ID:slug"
-func (h *HiveScans) parseSeriesSlug(slug string) (int, string, error) {
-	parts := strings.SplitN(slug, ":", 2)
-	if len(parts) != 2 {
-		return 0, "", fmt.Errorf("invalid series slug format: %s", slug)
+// parseSeriesURL extracts series ID and slug from the series URL
+func (h *HiveScans) parseSeriesURL(seriesURL string) (int, string, error) {
+	// Extract ID and slug from URL like https://hivetoons.org/series/123/the-warrior-king
+	re := regexp.MustCompile(`/series/(\d+)/([^/]+)`)
+	matches := re.FindStringSubmatch(seriesURL)
+	if len(matches) < 3 {
+		return 0, "", fmt.Errorf("invalid series URL format: %s", seriesURL)
 	}
-
-	seriesID, err := strconv.Atoi(parts[0])
+	seriesID, err := strconv.Atoi(matches[1])
 	if err != nil {
-		return 0, "", fmt.Errorf("invalid series ID in slug: %s", slug)
+		return 0, "", fmt.Errorf("invalid series ID in URL: %s", seriesURL)
 	}
-
-	return seriesID, parts[1], nil
+	return seriesID, matches[2], nil
 }

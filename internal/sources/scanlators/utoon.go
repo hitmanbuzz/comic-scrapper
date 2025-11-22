@@ -1,8 +1,10 @@
 package scanlators
 
 import (
+	"comicrawl/internal/cstructs"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
+	"comicrawl/internal/util"
 	"context"
 	"fmt"
 	"log/slog"
@@ -20,17 +22,16 @@ type Utoon struct {
 	*sources.BaseSource
 }
 
-
 func NewUtoon(logger *slog.Logger) *Utoon {
 	return &Utoon{
-		BaseSource: sources.NewBaseSource("utoon", "https://utoon.net", logger),
+		BaseSource: sources.NewBaseSource("utoon", "https://utoon.net", util.ParseSlugToId(util.Utoon), logger),
 	}
 }
 
-func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
 	u.Logger.Info("fetching series list from Utoon")
 
-	var allSeries []sources.Series
+	var allSeries cstructs.FullSeriesResponse
 	page := 1
 	last_page := 0
 
@@ -44,22 +45,22 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 
 		req, err := http.NewRequestWithContext(ctx, "GET", page_url, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %w", err)
+			return allSeries, fmt.Errorf("failed to create request: %w", err)
 		}
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch series page %d: %w", page, err)
+			return allSeries, fmt.Errorf("failed to fetch series page %d: %w", page, err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("unexpected status code; %d", resp.StatusCode)
+			return allSeries, fmt.Errorf("unexpected status code; %d", resp.StatusCode)
 		}
 
 		doc, err := goquery.NewDocumentFromReader(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse HTML: %w", err)
+			return allSeries, fmt.Errorf("failed to parse HTML: %w", err)
 		}
 
 		if page == 1 {
@@ -67,20 +68,29 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 		}
 
 		pageSeries := u.parseSeriesPage(doc)
-		allSeries = append(allSeries, pageSeries...)
+		for _, data := range pageSeries {
+			allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+				MainTitle:    data.Title,
+				ComicPageUrl: data.URL,
+				MuSeriesId:   -1,
+				ComicStatus:  data.Status,
+				Found:        false,
+			})
+		}
 
 		page++
 	}
 
-	u.Logger.Info("fetched series from Utoon", "count", len(allSeries))
+	allSeries.GroupName = u.GetName()
+	allSeries.MuGroupId = util.ParseSlugToId(util.Utoon)
+	allSeries.TotalSeries = len(allSeries.Series)
 
+	u.Logger.Info("fetched series from Utoon", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 
-func (u *Utoon) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	url := fmt.Sprintf("%s/series/%s", u.GetBaseURL(), series.Slug)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+func (u *Utoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -100,10 +110,9 @@ func (u *Utoon) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.H
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 
-	return u.parseChaptersPage(doc, series.Slug)
-
+	return u.parseChaptersPage(doc)
 }
-func (u *Utoon) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (u *Utoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	u.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
@@ -175,12 +184,11 @@ func (u *Utoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 		slug, title := u.extractSlugTitleFromUrl(href)
 		title = u.decodePercentEncoded(title)
 
-		u.Logger.Info("found series", "title", title, "slug", slug, "url", href)
-
 		if title != "" && slug != "" {
 			series = append(series, sources.Series{
-				Slug:  slug,
-				Title: title,
+				URL:    href,
+				Title:  title,
+				Status: "", // Status not available on list page
 			})
 		}
 	})
@@ -188,7 +196,7 @@ func (u *Utoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 	return series
 }
 
-func (u *Utoon) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]sources.Chapter, error) {
+func (u *Utoon) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter, error) {
 	var chapters []sources.Chapter
 
 	doc.Find("li.wp-manga-chapter a").Each(func(index int, element *goquery.Selection) {
@@ -205,7 +213,6 @@ func (u *Utoon) parseChaptersPage(doc *goquery.Document, seriesSlug string) ([]s
 		}
 	})
 
-	u.Logger.Info("parsed chapters", "series", seriesSlug, "count", len(chapters))
 	return chapters, nil
 }
 

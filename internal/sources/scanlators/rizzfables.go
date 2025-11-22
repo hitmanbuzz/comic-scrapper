@@ -1,8 +1,10 @@
 package scanlators
 
 import (
+	"comicrawl/internal/cstructs"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
+	"comicrawl/internal/util"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,7 +24,7 @@ type RizzFables struct {
 
 func NewRizzFables(logger *slog.Logger) *RizzFables {
 	return &RizzFables{
-		BaseSource:   sources.NewBaseSource("rizzfables", "https://rizzfables.com", logger),
+		BaseSource:   sources.NewBaseSource("rizzfables", "https://rizzfables.com", util.ParseSlugToId(util.RizzFables), logger),
 		globalPrefix: "",
 	}
 }
@@ -31,15 +33,17 @@ type ComicResponse struct {
 	Title string `json:"title"`
 }
 
-func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
 	r.Logger.Info("fetching series list from RizzFables")
+
+	var allSeries cstructs.FullSeriesResponse
 
 	// Fetch global prefix (only once!)
 	if r.globalPrefix == "" {
 		r.Logger.Info("fetching global prefix")
 		prefix, err := r.fetchGlobalPrefix(ctx, client)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch global prefix: %w", err)
+			return allSeries, fmt.Errorf("failed to fetch global prefix: %w", err)
 		}
 		r.globalPrefix = prefix
 		r.Logger.Info("cached global prefix", "prefix", prefix)
@@ -61,35 +65,41 @@ func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch series: %w", err)
+		return allSeries, fmt.Errorf("failed to fetch series: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return allSeries, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var comics []ComicResponse
 	if err := json.NewDecoder(resp.Body).Decode(&comics); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON: %w", err)
+		return allSeries, fmt.Errorf("failed to decode JSON: %w", err)
 	}
 
-	allSeries := make([]sources.Series, 0, len(comics))
+	allSeries.GroupName = r.GetName()
+	allSeries.MuGroupId = util.ParseSlugToId(util.RizzFables)
+	allSeries.TotalSeries = len(comics)
+
 	for _, comic := range comics {
-		allSeries = append(allSeries, sources.Series{
-			Slug:  r.slugify(comic.Title),
-			Title: comic.Title,
+		slug := r.slugify(comic.Title)
+		seriesURL := r.BuildURL(fmt.Sprintf("series/%s%s", r.globalPrefix, slug))
+		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+			MainTitle:    comic.Title,
+			ComicPageUrl: seriesURL,
+			MuSeriesId:   -1,
+			ComicStatus:  "", // Status not provided in response
+			Found:        false,
 		})
 	}
 
-	r.Logger.Info("fetched series from RizzFables", "count", len(allSeries))
+	r.Logger.Info("fetched series from RizzFables", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 
-func (r *RizzFables) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	r.Logger.Info("fetching chapters", "series", series.Slug)
-
-	req, _ := http.NewRequestWithContext(ctx, "GET", r.BuildURL(fmt.Sprintf("series/%s%s", r.globalPrefix, series.Slug)), nil)
+func (r *RizzFables) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+	req, _ := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chapters page: %w", err)
@@ -121,7 +131,6 @@ func (r *RizzFables) ScrapeComicChaptersURL(ctx context.Context, client *httpcli
 		return true
 	})
 
-	r.Logger.Info("parsed chapters", "series", series.Slug, "count", len(chapters))
 	return chapters, nil
 }
 
@@ -151,7 +160,7 @@ func (r *RizzFables) fetchGlobalPrefix(ctx context.Context, client *httpclient.H
 	return prefix, nil
 }
 
-func (r *RizzFables) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (r *RizzFables) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	r.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)

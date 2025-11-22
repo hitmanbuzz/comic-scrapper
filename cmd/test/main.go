@@ -275,22 +275,25 @@ func testSource(
 		result.Error = fmt.Sprintf("failed to list series: %v", err)
 		return result
 	}
-
-	logger.Info("listed series", "source", src.GetName(), "count", len(seriesList))
-
-	if len(seriesList) == 0 {
+	logger.Info("listed series", "source", src.GetName(), "count", len(seriesList.Series))
+	if len(seriesList.Series) == 0 {
 		result.Error = "no series found"
 		return result
 	}
 
-	// Select first series
-	series := seriesList[0]
-	result.SeriesSlug = series.Slug
+	// Pick first series and convert to sources.Series
+	scanSeries := seriesList.Series[0]
+	series := sources.Series{
+		URL:    scanSeries.ComicPageUrl,
+		Title:  scanSeries.MainTitle,
+		Status: scanSeries.ComicStatus,
+	}
+	result.SeriesSlug = scanSeries.ComicPageUrl
 
-	logger.Info("selected series", "source", src.GetName(), "series", series.Slug, "title", series.Title)
+	logger.Info("selected series", "source", src.GetName(), "url", series.URL, "title", series.Title)
 
 	// Step 2: Fetch chapters
-	logger.Info("fetching chapters", "source", src.GetName(), "series", series.Slug)
+	logger.Info("fetching chapters", "source", src.GetName(), "url", series.URL)
 	chapters, err := src.FetchChapters(ctx, httpClient.Client(), series)
 	if err != nil {
 		result.Error = fmt.Sprintf("failed to fetch chapters: %v", err)
@@ -304,10 +307,10 @@ func testSource(
 
 	// Take only first chapter
 	chapter := chapters[0]
-	logger.Info("selected chapter", "source", src.GetName(), "series", series.Slug, "chapter", chapter.Number)
+	logger.Info("selected chapter", "source", src.GetName(), "url", series.URL, "chapter", chapter.Number)
 
 	// Step 3: Fetch pages
-	logger.Info("fetching pages", "source", src.GetName(), "series", series.Slug, "chapter", chapter.Number)
+	logger.Info("fetching pages", "source", src.GetName(), "url", series.URL, "chapter", chapter.Number)
 	pages, err := src.FetchPages(ctx, httpClient.Client(), chapter)
 	if err != nil {
 		result.Error = fmt.Sprintf("failed to fetch pages: %v", err)
@@ -319,10 +322,10 @@ func testSource(
 		return result
 	}
 
-	logger.Info("found pages", "source", src.GetName(), "series", series.Slug, "chapter", chapter.Number, "pages", len(pages))
+	logger.Info("found pages", "source", src.GetName(), "url", series.URL, "chapter", chapter.Number, "pages", len(pages))
 
 	// Step 4: Download pages
-	logger.Info("downloading pages", "source", src.GetName(), "series", series.Slug, "chapter", chapter.Number, "pages", len(pages))
+	logger.Info("downloading pages", "source", src.GetName(), "url", series.URL, "chapter", chapter.Number, "pages", len(pages))
 
 	diskChapter := disk.Chapter{
 		Number:    chapter.Number,
@@ -341,7 +344,7 @@ func testSource(
 		}
 
 		downloader.AddDownload(aria2c.DownloadRequest{
-			SeriesSlug:    series.Slug,
+			SeriesSlug:    series.URL,
 			Chapter:       diskChapter,
 			Page:          page,
 			StorageClient: storageClient,
@@ -349,7 +352,7 @@ func testSource(
 		pagesDownloaded++
 
 		if i%10 == 0 {
-			logger.Info("queued pages", "source", src.GetName(), "series", series.Slug, "chapter", chapter.Number, "queued", i+1, "total", len(pages))
+			logger.Info("queued pages", "source", src.GetName(), "url", series.URL, "chapter", chapter.Number, "queued", i+1, "total", len(pages))
 		}
 	}
 
@@ -358,7 +361,7 @@ func testSource(
 
 	logger.Info("source test completed successfully - pages queued for download",
 		"source", src.GetName(),
-		"series", series.Slug,
+		"url", series.URL,
 		"chapter", chapter.Number,
 		"pages_queued", pagesDownloaded,
 		"note", "Check aria2c logs for download confirmation")
