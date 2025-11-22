@@ -69,7 +69,7 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 			allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
 				MainTitle:    data.Title,
 				ComicPageUrl: data.URL,
-				ComicMuID: -1,
+				MuSeriesId: -1,
 				ComicStatus:  data.Status,
 				Found:        false,
 			})

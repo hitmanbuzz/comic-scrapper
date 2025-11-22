@@ -35,7 +35,7 @@ type MetadataJson struct {
 type ScanSeriesResponse struct {
 	MainTitle      string      `json:"title"`        // Title for the comic from the source provider
 	ComicPageUrl   string      `json:"comic_url"`    // URL to the source provider comic page
-	ComicMuID      int64       `json:"comic_mu_id"`
+	MuSeriesId     int64       `json:"mu_series_id"`
 	Found          bool        `json:"found_mu"`     // This indicates if comic is found in MU or not
 	ComicStatus    string      `json:"status"`       // Ongoing, Hiatus, Completed
 	LastUpdated    int64       `json:"last_updated"` // This is fetch from MU, so we need to run it every 2 times a day so we don't missed the data

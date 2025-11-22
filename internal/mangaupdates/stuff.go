@@ -48,7 +48,7 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
                 fmt.Printf("Found: %s\n", mu.SeriesData.Title)
                 response.Series[i].Found = true
                 response.Series[i].LastUpdated = mu.lastUpdated
-                response.Series[i].ComicMuID = mu.SeriesData.SeriesId
+                response.Series[i].MuSeriesId = mu.SeriesData.SeriesId
                 foundCounter++
                 break
             }
@@ -64,7 +64,7 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
                     fmt.Printf("Found: %s\n", t.Title)
                     response.Series[i].Found = true
                     response.Series[i].LastUpdated = mu.lastUpdated
-                    response.Series[i].ComicMuID = mu.SeriesData.SeriesId
+                    response.Series[i].MuSeriesId = mu.SeriesData.SeriesId
                     foundCounter++
                     breakStatus = true
                     break
