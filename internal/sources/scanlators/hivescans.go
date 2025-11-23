@@ -85,7 +85,7 @@ func (h *HiveScans) ListSeries(ctx context.Context, client *httpclient.HTTPClien
 
 	for _, item := range metadata.Posts {
 		// Store series ID in URL path for later extraction
-		seriesURL := fmt.Sprintf("%s/series/%d/%s", h.GetBaseURL(), item.ID, item.Slug)
+		seriesURL := fmt.Sprintf("%s/series/%s", h.GetBaseURL(), item.Slug)
 		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
 			MainTitle:    item.PostTitle,
 			ComicPageUrl: seriesURL,
