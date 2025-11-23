@@ -23,7 +23,7 @@ type AsuraScans struct {
 
 func NewAsuraScans(logger *slog.Logger) *AsuraScans {
 	return &AsuraScans{
-		BaseSource: sources.NewBaseSource("asura", "https://asuracomic.net", util.ParseSlugToId(util.Asura), logger), // We can put those MU Group ID as a hardcoded value instead of parsing from slug
+		BaseSource: sources.NewBaseSource("asura", "https://asuracomic.net", util.ParseSlugsToIds(util.Asura), logger), // We can put those MU Group ID as a hardcoded value instead of parsing from slug
 	}
 }
 
@@ -31,7 +31,6 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 	a.Logger.Info("fetching series list from AsuraScans")
 
 	var allSeries cstructs.FullSeriesResponse
-	totalSeries := 0
 
 	page := 1
 
@@ -60,16 +59,15 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 		}
 
 		pageSeries := a.parseSeriesData(doc)
-		totalSeries += len(pageSeries)
 		allSeries.GroupName = a.GetName()
-		allSeries.MuGroupId = util.ParseSlugToId(util.Asura)
-		allSeries.TotalSeries = totalSeries
+		allSeries.MuGroupIds = util.ParseSlugsToIds(util.Asura)
+		allSeries.TotalSeries = len(allSeries.Series)
 
 		for _, data := range pageSeries {
 			allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
 				MainTitle:    data.Title,
 				ComicPageUrl: data.URL,
-				MuSeriesId: -1,
+				MuSeriesId:   -1,
 				ComicStatus:  data.Status,
 				Found:        false,
 			})
@@ -104,20 +102,20 @@ func (a *AsuraScans) parseSeriesData(doc *goquery.Document) []sources.Series {
 		if status == "" {
 			status = s.Find("span.status").First().Text()
 		}
-			
+
 		status = strings.TrimSpace(strings.ToLower(status))
 
 		switch status {
 		case "completed", "ongoing", "hiatus":
 		default:
 			// Forecefully putting this status because status like `Season End` doesn't make sense to use
-		    status = "ongoing"
+			status = "ongoing"
 		}
 
 		if title != "" && url != "" {
 			series = append(series, sources.Series{
-				URL: fmt.Sprintf("%s/%s", a.BaseURL, url),
-				Title: strings.TrimSpace(title),
+				URL:    fmt.Sprintf("%s/%s", a.BaseURL, url),
+				Title:  strings.TrimSpace(title),
 				Status: status,
 			})
 		}

@@ -21,7 +21,7 @@ type ThunderScans struct {
 
 func NewThunderScans(logger *slog.Logger) *ThunderScans {
 	return &ThunderScans{
-		BaseSource: sources.NewBaseSource("thunderscans", "https://en-thunderscans.com", util.ParseSlugToId(util.ThunderScans), logger),
+		BaseSource: sources.NewBaseSource("thunderscans", "https://en-thunderscans.com", util.ParseSlugsToIds(util.ThunderScans), logger),
 	}
 }
 
@@ -55,8 +55,8 @@ func (t *ThunderScans) ListSeries(ctx context.Context, client *httpclient.HTTPCl
 
 	pageSeries := t.parseSeriesList(doc)
 	allSeries.GroupName = t.GetName()
-	allSeries.MuGroupId = util.ParseSlugToId(util.ThunderScans)
-	allSeries.TotalSeries = len(pageSeries)
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.ThunderScans)
+	allSeries.TotalSeries = len(allSeries.Series)
 
 	for _, data := range pageSeries {
 		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{

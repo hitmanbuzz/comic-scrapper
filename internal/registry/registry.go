@@ -17,6 +17,6 @@ func AddSources(logger *slog.Logger) []sources.Source {
 		scanlators.NewRizzFables(logger),
 		scanlators.NewHiveScans(logger),
 		scanlators.NewThunderScans(logger),
-		scanlators.NewMadraScans(logger),
+		scanlators.NewMadaraScans(logger),
 	}
 }

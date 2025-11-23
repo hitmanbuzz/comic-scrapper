@@ -24,7 +24,7 @@ type Utoon struct {
 
 func NewUtoon(logger *slog.Logger) *Utoon {
 	return &Utoon{
-		BaseSource: sources.NewBaseSource("utoon", "https://utoon.net", util.ParseSlugToId(util.Utoon), logger),
+		BaseSource: sources.NewBaseSource("utoon", "https://utoon.net", util.ParseSlugsToIds(util.Utoon), logger),
 	}
 }
 
@@ -82,7 +82,7 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 	}
 
 	allSeries.GroupName = u.GetName()
-	allSeries.MuGroupId = util.ParseSlugToId(util.Utoon)
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.Utoon)
 	allSeries.TotalSeries = len(allSeries.Series)
 
 	u.Logger.Info("fetched series from Utoon", "count", len(allSeries.Series))

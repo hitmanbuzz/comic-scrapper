@@ -27,11 +27,11 @@ type Page struct {
 
 type Series struct {
 	// URL to the comic page on scanlator website (a.k.a comic page)
-	URL         string
+	URL string
 	// Title fetch from the scanlator website for the comic
-	Title       string
+	Title string
 	// Current Comic Status from scanlator website
-	Status      string
+	Status string
 }
 
 type Source interface {
@@ -39,8 +39,8 @@ type Source interface {
 	GetName() string
 	// Get the base URL for the source provider site
 	GetBaseURL() string
-	// Get the group (source provider) ID on MU
-	GetMuGroupID() int64
+	// Get the group (source provider) IDs on MU (can have multiple)
+	GetMuGroupIDs() []int64
 	// It will not be use directly in scanlator code but only for generating those series data in a json file
 	ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error)
 	FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series Series) ([]Chapter, error)
@@ -48,18 +48,18 @@ type Source interface {
 }
 
 type BaseSource struct {
-	Name         string
-	BaseURL      string
-	MuGroupID    int64
-	Logger       *slog.Logger
+	Name       string
+	BaseURL    string
+	MuGroupIDs []int64
+	Logger     *slog.Logger
 }
 
-func NewBaseSource(name, baseURL string, muGroupId int64, logger *slog.Logger) *BaseSource {
+func NewBaseSource(name, baseURL string, muGroupIds []int64, logger *slog.Logger) *BaseSource {
 	return &BaseSource{
-		Name:    name,
-		BaseURL: strings.TrimRight(baseURL, "/"),
-		MuGroupID: muGroupId,
-		Logger:  logger,
+		Name:       name,
+		BaseURL:    strings.TrimRight(baseURL, "/"),
+		MuGroupIDs: muGroupIds,
+		Logger:     logger,
 	}
 }
 
@@ -73,9 +73,9 @@ func (b *BaseSource) GetBaseURL() string {
 	return b.BaseURL
 }
 
-// Get the group (source provider) ID on MU
-func (b *BaseSource) GetMuGroupID() int64 {
-	return b.MuGroupID
+// Get the group (source provider) IDs on MU (can have multiple)
+func (b *BaseSource) GetMuGroupIDs() []int64 {
+	return b.MuGroupIDs
 }
 
 // NOTE: NOT NEEDED (will think about it)
@@ -87,13 +87,13 @@ func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
 	// First extract the number using a more sophisticated regex
 	re := regexp.MustCompile(`(\d+(?:\.\d+)?)`)
 	matches := re.FindStringSubmatch(chapterNum)
-	
+
 	if len(matches) == 0 {
 		return "0"
 	}
-	
+
 	normalized := matches[1]
-	
+
 	parts := strings.Split(normalized, ".")
 	if len(parts) > 0 && parts[0] != "" {
 		parts[0] = strings.TrimLeft(parts[0], "0")
@@ -107,18 +107,18 @@ func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
 
 // NOTE: NOT NEEDED (can be update so that it fits with our new codebase)
 func (b *BaseSource) CompareChapters(localChapters []disk.Chapter, remoteChapters []Chapter) (newChapters []Chapter, updatedChapters []Chapter) {
-    localMap := make(map[string]disk.Chapter)
-    for _, chap := range localChapters {
-        localMap[chap.Number] = chap
-    }
-    
-    for _, remoteChap := range remoteChapters {
-        localChap, exists := localMap[remoteChap.Number]
-        if !exists {
-            newChapters = append(newChapters, remoteChap)
-        } else if remoteChap.SourceURL != localChap.SourceURL {
-            updatedChapters = append(updatedChapters, remoteChap)
-        }
-    }
-    return newChapters, updatedChapters
+	localMap := make(map[string]disk.Chapter)
+	for _, chap := range localChapters {
+		localMap[chap.Number] = chap
+	}
+
+	for _, remoteChap := range remoteChapters {
+		localChap, exists := localMap[remoteChap.Number]
+		if !exists {
+			newChapters = append(newChapters, remoteChap)
+		} else if remoteChap.SourceURL != localChap.SourceURL {
+			updatedChapters = append(updatedChapters, remoteChap)
+		}
+	}
+	return newChapters, updatedChapters
 }

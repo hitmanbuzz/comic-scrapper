@@ -24,7 +24,7 @@ type FlameComics struct {
 
 func NewFlameComics(logger *slog.Logger) *FlameComics {
 	return &FlameComics{
-		BaseSource: sources.NewBaseSource("flamecomics", "https://flamecomics.xyz", util.ParseSlugToId(util.FlameComics), logger),
+		BaseSource: sources.NewBaseSource("flamecomics", "https://flamecomics.xyz", util.ParseSlugsToIds(util.FlameComics), logger),
 	}
 }
 
@@ -105,7 +105,7 @@ func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPCli
 	}
 
 	allSeries.GroupName = f.GetName()
-	allSeries.MuGroupId = util.ParseSlugToId(util.FlameComics)
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.FlameComics)
 	allSeries.TotalSeries = len(seriesList)
 
 	for _, item := range seriesList {

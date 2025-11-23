@@ -21,7 +21,7 @@ type DrakeScans struct {
 
 func NewDrakeScans(logger *slog.Logger) *DrakeScans {
 	return &DrakeScans{
-		BaseSource: sources.NewBaseSource("drakescans", "https://drakecomic.org", util.ParseSlugToId(util.Drakescans), logger),
+		BaseSource: sources.NewBaseSource("drakescans", "https://drakecomic.org", util.ParseSlugsToIds(util.Drakescans), logger),
 	}
 }
 
@@ -55,8 +55,8 @@ func (d *DrakeScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 
 	pageSeries := d.parseSeriesList(doc)
 	allSeries.GroupName = d.GetName()
-	allSeries.MuGroupId = util.ParseSlugToId(util.Drakescans)
-	allSeries.TotalSeries = len(pageSeries)
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.Drakescans)
+	allSeries.TotalSeries = len(allSeries.Series)
 
 	for _, data := range pageSeries {
 		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{

@@ -23,7 +23,7 @@ type HiveScans struct {
 
 func NewHiveScans(logger *slog.Logger) *HiveScans {
 	return &HiveScans{
-		BaseSource: sources.NewBaseSource("hivescans", "https://hivetoons.org", util.ParseSlugToId(util.HiveScans), logger),
+		BaseSource: sources.NewBaseSource("hivescans", "https://hivetoons.org", util.ParseSlugsToIds(util.HiveScans), logger),
 	}
 }
 
@@ -80,7 +80,7 @@ func (h *HiveScans) ListSeries(ctx context.Context, client *httpclient.HTTPClien
 	}
 
 	allSeries.GroupName = h.GetName()
-	allSeries.MuGroupId = util.ParseSlugToId(util.HiveScans)
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.HiveScans)
 	allSeries.TotalSeries = len(metadata.Posts)
 
 	for _, item := range metadata.Posts {

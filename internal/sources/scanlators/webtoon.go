@@ -29,7 +29,7 @@ type Webtoon struct {
 
 func NewWebtoon(logger *slog.Logger) *Webtoon {
 	return &Webtoon{
-		BaseSource: sources.NewBaseSource("webtoon", "https://www.webtoons.com", util.ParseSlugToId(util.Webtoon), logger),
+		BaseSource: sources.NewBaseSource("webtoon", "https://www.webtoons.com", util.ParseSlugsToIds(util.Webtoon), logger),
 		langCode:   "en",
 	}
 }
@@ -130,7 +130,7 @@ func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient)
 	}
 
 	allSeries.GroupName = w.GetName()
-	allSeries.MuGroupId = util.ParseSlugToId(util.Webtoon)
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.Webtoon)
 
 	for _, s := range uniqueMap {
 		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{

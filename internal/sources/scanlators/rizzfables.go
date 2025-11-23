@@ -24,7 +24,7 @@ type RizzFables struct {
 
 func NewRizzFables(logger *slog.Logger) *RizzFables {
 	return &RizzFables{
-		BaseSource:   sources.NewBaseSource("rizzfables", "https://rizzfables.com", util.ParseSlugToId(util.RizzFables), logger),
+		BaseSource:   sources.NewBaseSource("rizzfables", "https://rizzfables.com", util.ParseSlugsToIds(util.RizzFables), logger),
 		globalPrefix: "",
 	}
 }
@@ -79,7 +79,7 @@ func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 	}
 
 	allSeries.GroupName = r.GetName()
-	allSeries.MuGroupId = util.ParseSlugToId(util.RizzFables)
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.RizzFables)
 	allSeries.TotalSeries = len(comics)
 
 	for _, comic := range comics {

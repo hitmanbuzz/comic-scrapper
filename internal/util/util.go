@@ -31,6 +31,16 @@ func ParseIdToSlug(id int64) string {
 	return slug
 }
 
+func ParseSlugsToIds(slugs []string) []int64 {
+	ids := make([]int64, 0, len(slugs))
+	for _, slug := range slugs {
+		if id := ParseSlugToId(slug); id != -1 {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
 // Convert Response Body to byte
 func RespToByte(respBody io.ReadCloser) []byte {
 	result, err := io.ReadAll(respBody)
