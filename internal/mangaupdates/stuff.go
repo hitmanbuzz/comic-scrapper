@@ -43,7 +43,7 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 				break
 			}
 
-			ok, _, err := util.IsSimilarEnough(response.Series[i].MainTitle, mu.SeriesData.Title, 0.8)
+			ok, _, err := util.IsComicTitleMatch(response.Series[i].MainTitle, mu.SeriesData.Title)
 
 			if err != nil {
 				fmt.Printf("[ERROR] Couldn't do string comparison | S1: %s | S2: %s\n", response.Series[i].MainTitle, mu.SeriesData.Title)
@@ -59,7 +59,7 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 				break
 			}
 			for _, t := range mu.SeriesData.AltTitles {
-				ok, _, err = util.IsSimilarEnough(response.Series[i].MainTitle, t.Title, 0.8)
+				ok, _, err = util.IsComicTitleMatch(response.Series[i].MainTitle, t.Title)
 
 				if err != nil {
 					fmt.Printf("[ERROR] Couldn't do string comparison | S1: %s | S2: %s\n", response.Series[i].MainTitle, t.Title)

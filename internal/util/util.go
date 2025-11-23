@@ -68,11 +68,6 @@ func FileExists(file_path string) bool {
 	return err == nil
 }
 
-// FIXME: Remove this and directly use the matching, keeping teporarily for compat in testing
-func IsSimilarEnough(a, b string, threshold float32) (bool, float32, error) {
-	return IsComicTitleMatch(a, b)
-}
-
 // NormalizeTitle preprocesses comic titles for better matching by removing punctuation,
 // articles, and normalizing whitespace. This handles common variations in title formatting.
 func NormalizeTitle(title string) string {
