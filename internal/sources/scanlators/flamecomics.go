@@ -9,11 +9,12 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
+	"comicrawl/internal/cstructs"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
+	"comicrawl/internal/util"
 )
 
 type FlameComics struct {
@@ -23,7 +24,7 @@ type FlameComics struct {
 
 func NewFlameComics(logger *slog.Logger) *FlameComics {
 	return &FlameComics{
-		BaseSource: sources.NewBaseSource("flamecomics", "https://flamecomics.xyz", logger),
+		BaseSource: sources.NewBaseSource("flamecomics", "https://flamecomics.xyz", util.ParseSlugsToIds(util.FlameComics), logger),
 	}
 }
 
@@ -79,11 +80,13 @@ func (f *FlameComics) fetchBuildID(ctx context.Context) error {
 	return fmt.Errorf("could not find buildId in homepage")
 }
 
-func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
 	f.Logger.Info("fetching series list from FlameComics")
 
+	var allSeries cstructs.FullSeriesResponse
+
 	if err := f.fetchBuildID(ctx); err != nil {
-		return nil, err
+		return allSeries, err
 	}
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/series", f.GetBaseURL()), nil)
@@ -92,32 +95,36 @@ func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPCli
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch series list: %w", err)
+		return allSeries, fmt.Errorf("failed to fetch series list: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var seriesList []FlameComicsSeriesListItem
 	if err := json.NewDecoder(resp.Body).Decode(&seriesList); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON: %w", err)
+		return allSeries, fmt.Errorf("failed to decode JSON: %w", err)
 	}
 
-	allSeries := make([]sources.Series, 0, len(seriesList))
+	allSeries.GroupName = f.GetName()
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.FlameComics)
+	allSeries.TotalSeries = len(seriesList)
+
 	for _, item := range seriesList {
-		allSeries = append(allSeries, sources.Series{
-			Slug:   fmt.Sprintf("%d - %s", item.ID, item.Label),
-			Title:  item.Label,
-			Status: item.Status,
+		seriesURL := fmt.Sprintf("%s/series/%02d", f.GetBaseURL(), item.ID)
+		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+			MainTitle:    item.Label,
+			ComicPageUrl: seriesURL,
+			MuSeriesId:   -1,
+			ComicStatus:  item.Status,
+			Found:        false,
 		})
 	}
 
-	f.Logger.Info("fetched series from FlameComics", "count", len(allSeries))
+	f.Logger.Info("fetched series from FlameComics", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 
-func (f *FlameComics) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	f.Logger.Info("fetching chapters", "series", series.Slug)
-
-	seriesID, err := f.extractSeriesID(series.Slug)
+func (f *FlameComics) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+	seriesID, err := f.extractSeriesID(series.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +147,7 @@ func (f *FlameComics) ScrapeComicChaptersURL(ctx context.Context, client *httpcl
 	return f.parseChapters(apiResponse.PageProps.Chapters, seriesID), nil
 }
 
-func (f *FlameComics) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (f *FlameComics) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	f.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
@@ -204,10 +211,12 @@ func (f *FlameComics) parsePages(chapterURL string, images map[string]FlameImage
 	return []sources.Page{}
 }
 
-func (f *FlameComics) extractSeriesID(slug string) (int, error) {
-	parts := strings.SplitN(slug, " - ", 2)
-	if len(parts) < 1 {
-		return 0, fmt.Errorf("invalid series slug format: %s", slug)
+func (f *FlameComics) extractSeriesID(seriesURL string) (int, error) {
+	// Extract ID from URL like https://flamecomics.xyz/series/01
+	re := regexp.MustCompile(`/series/(\d+)`)
+	matches := re.FindStringSubmatch(seriesURL)
+	if len(matches) < 2 {
+		return 0, fmt.Errorf("invalid series URL format: %s", seriesURL)
 	}
-	return strconv.Atoi(parts[0])
+	return strconv.Atoi(matches[1])
 }

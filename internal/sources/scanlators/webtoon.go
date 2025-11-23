@@ -1,8 +1,10 @@
 package scanlators
 
 import (
+	"comicrawl/internal/cstructs"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
+	"comicrawl/internal/util"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -27,7 +29,7 @@ type Webtoon struct {
 
 func NewWebtoon(logger *slog.Logger) *Webtoon {
 	return &Webtoon{
-		BaseSource: sources.NewBaseSource("webtoon", "https://www.webtoons.com", logger),
+		BaseSource: sources.NewBaseSource("webtoon", "https://www.webtoons.com", util.ParseSlugsToIds(util.Webtoon), logger),
 		langCode:   "en",
 	}
 }
@@ -84,14 +86,15 @@ func (w *Webtoon) BuildURL(path string) string {
 	return fmt.Sprintf("%s/%s/%s", w.BaseURL, w.langCode, trimmedPath)
 }
 
-func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) ([]sources.Series, error) {
+func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
 	w.Logger.Info("fetching series list from Webtoon")
 
-	var allSeries []sources.Series
+	var allSeries cstructs.FullSeriesResponse
 
 	// Webtoon has different ranking categories
 	rankings := []string{"trending", "popular", "originals", "canvas", "latest"}
 
+	var pageSeries []sources.Series
 	for _, ranking := range rankings {
 		url := fmt.Sprintf("%s/%s/ranking/%s", w.GetBaseURL(), w.langCode, ranking)
 		w.Logger.Debug("fetching ranking page", "ranking", ranking, "url", url)
@@ -102,28 +105,47 @@ func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch ranking page %s: %w", ranking, err)
+			return allSeries, fmt.Errorf("failed to fetch ranking page %s: %w", ranking, err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			return allSeries, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 		}
 
 		doc, err := goquery.NewDocumentFromReader(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse HTML: %w", err)
+			return allSeries, fmt.Errorf("failed to parse HTML: %w", err)
 		}
 
-		pageSeries := w.parseSeriesPage(doc)
-		allSeries = append(allSeries, pageSeries...)
+		pageSeries = append(pageSeries, w.parseSeriesPage(doc)...)
 	}
 
-	// Remove duplicates based on slug
-	uniqueSeries := w.removeDuplicateSeries(allSeries)
+	// Remove duplicates based on URL
+	uniqueMap := make(map[string]sources.Series)
+	for _, s := range pageSeries {
+		if _, exists := uniqueMap[s.URL]; !exists {
+			uniqueMap[s.URL] = s
+		}
+	}
 
-	w.Logger.Info("fetched series from Webtoon", "count", len(uniqueSeries))
-	return uniqueSeries, nil
+	allSeries.GroupName = w.GetName()
+	allSeries.MuGroupIds = util.ParseSlugsToIds(util.Webtoon)
+
+	for _, s := range uniqueMap {
+		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+			MainTitle:    s.Title,
+			ComicPageUrl: s.URL,
+			MuSeriesId:   -1,
+			ComicStatus:  s.Status,
+			Found:        false,
+		})
+	}
+
+	allSeries.TotalSeries = len(allSeries.Series)
+
+	w.Logger.Info("fetched series from Webtoon", "count", len(allSeries.Series))
+	return allSeries, nil
 }
 
 func (w *Webtoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
@@ -137,23 +159,11 @@ func (w *Webtoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 
 		title := s.Find(".title").Text()
 
-		slug, err := w.ExtractSlugFromURL(url)
-		if err != nil {
-			w.Logger.Warn("failed to extract slug from URL", "url", url, "error", err)
-			return
-		}
-
-		// Debug logging to see what series are being fetched
-		w.Logger.Info("found series", "title", title, "slug", slug, "url", url)
-
-		if title != "" && slug != "" {
+		if title != "" && url != "" {
 			series = append(series, sources.Series{
-				Slug:        slug,
-				Title:       strings.TrimSpace(title),
-				Description: "",         // Will be fetched in FetchChapters
-				Author:      "",         // Will be fetched in FetchChapters
-				Status:      "",         // Will be fetched in FetchChapters
-				Genres:      []string{}, // Will be fetched in FetchChapters
+				URL:    url,
+				Title:  strings.TrimSpace(title),
+				Status: "", // Will be fetched in FetchChapters
 			})
 		}
 	})
@@ -166,8 +176,8 @@ func (w *Webtoon) removeDuplicateSeries(series []sources.Series) []sources.Serie
 	var unique []sources.Series
 
 	for _, s := range series {
-		if !seen[s.Slug] {
-			seen[s.Slug] = true
+		if !seen[s.URL] {
+			seen[s.URL] = true
 			unique = append(unique, s)
 		}
 	}
@@ -175,12 +185,9 @@ func (w *Webtoon) removeDuplicateSeries(series []sources.Series) []sources.Serie
 	return unique
 }
 
-func (w *Webtoon) ScrapeComicChaptersURL(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	w.Logger.Info("fetching chapters", "series", series.Slug)
-
+func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	// First fetch series details to get the title_no
-	detailsURL := w.BuildURL(fmt.Sprintf("%s/list", series.Slug))
-	req, _ := http.NewRequestWithContext(ctx, "GET", detailsURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
 	req.Header.Set("Origin", w.GetBaseURL())
 	req.Header.Set("Referer", w.GetBaseURL()+"/")
 
@@ -200,14 +207,14 @@ func (w *Webtoon) ScrapeComicChaptersURL(ctx context.Context, client *httpclient
 	}
 
 	// Extract title_no from the page
-	titleNo := w.extractTitleNo(doc, series.Slug)
+	titleNo := w.extractTitleNo(doc, "")
 	if titleNo == "" {
-		return nil, fmt.Errorf("could not extract title_no for series %s", series.Slug)
+		return nil, fmt.Errorf("could not extract title_no for series %s", series.URL)
 	}
 
 	// Determine if it's webtoon or canvas
 	webtoonType := "webtoon"
-	if strings.Contains(series.Slug, "canvas") {
+	if strings.Contains(series.URL, "/canvas/") {
 		webtoonType = "canvas"
 	}
 
@@ -235,7 +242,6 @@ func (w *Webtoon) ScrapeComicChaptersURL(ctx context.Context, client *httpclient
 	}
 
 	chapters := w.parseChaptersFromAPI(apiResponse.Result.EpisodeList)
-	w.Logger.Info("parsed chapters", "series", series.Slug, "count", len(chapters))
 	return chapters, nil
 }
 
@@ -385,7 +391,7 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []sources.Chapter {
 	return chapters
 }
 
-func (w *Webtoon) ScrapeChapterImagesURL(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+func (w *Webtoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	w.Logger.Info("fetching pages", "chapter", chapter.Number)
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)

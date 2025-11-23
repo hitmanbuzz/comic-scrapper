@@ -18,8 +18,8 @@ import (
 
 // Return (Total Series, Series List with data, error)
 func GetSeriesByGroup(groupId int64, client *httpclient.HTTPClient) (int, cstructs.GroupSeriesResponse, error) {
-	// https://api.mangaupdates.com/v1/groups/{id}/series
-	apiUrl := fmt.Sprintf("https://api.mangaupdates.com/v1/groups/%d/series", groupId)
+	// https://www.mangaupdates.com/api/v1/groups/{id}/series
+	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/groups/%d/series", groupId)
 	var response cstructs.GroupSeriesResponse
 
 	req, err := http.NewRequest("GET", apiUrl, nil)
@@ -53,15 +53,15 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 	type Social struct {
 		Site string `json:"site"`
 	}
-	
+
 	type Response struct {
-		Name     string      `json:"name"`
-		MuUrl    string      `json:"url"`
-		Social   Social      `json:"social"`
+		Name   string `json:"name"`
+		MuUrl  string `json:"url"`
+		Social Social `json:"social"`
 	}
 
-	// https://api.mangaupdates.com/v1/groups/{id}
- 	apiUrl := fmt.Sprintf("https://api.mangaupdates.com/v1/groups/%d", groupId)
+	// https://www.mangaupdates.com/api/v1/groups/{id}
+	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/groups/%d", groupId)
 
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
@@ -76,7 +76,7 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 		fmt.Printf("[ERROR] Request Failed | URL: %s\n", apiUrl)
 		return "", ""
 	}
- 	
+
 	defer resp.Body.Close()
 
 	var group Response
@@ -90,7 +90,7 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 
 func GetSeriesInfo(seriesId int64, client *httpclient.HTTPClient) (cstructs.SeriesResponse, error) {
 	var series cstructs.SeriesResponse
-	apiUrl := fmt.Sprintf("https://api.mangaupdates.com/v1/series/%d", seriesId)		
+	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/series/%d", seriesId)
 
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
@@ -105,17 +105,17 @@ func GetSeriesInfo(seriesId int64, client *httpclient.HTTPClient) (cstructs.Seri
 		fmt.Printf("[ERROR] Request Failed | URL: %s\n", apiUrl)
 		return series, err
 	}
-	
-	defer resp.Body.Close() 
+
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-        return cstructs.SeriesResponse{}, fmt.Errorf("bad status %d for series %d", resp.StatusCode, seriesId)
-    }
+		return cstructs.SeriesResponse{}, fmt.Errorf("bad status %d for series %d", resp.StatusCode, seriesId)
+	}
 
 	err = json.NewDecoder(resp.Body).Decode(&series)
 	if err != nil {
-        return cstructs.SeriesResponse{}, fmt.Errorf("decode failed for series %d: %w", seriesId, err)
-    }
+		return cstructs.SeriesResponse{}, fmt.Errorf("decode failed for series %d: %w", seriesId, err)
+	}
 
 	return series, nil
 }
@@ -141,7 +141,7 @@ func GetSeriesRssFeed(seriesId int64, client *httpclient.HTTPClient) (cstructs.R
 	}
 
 	var customData cstructs.RssSeriesData
-	apiUrl := fmt.Sprintf("https://api.mangaupdates.com/v1/series/%d/rss", seriesId)
+	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/series/%d/rss", seriesId)
 
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
@@ -164,10 +164,9 @@ func GetSeriesRssFeed(seriesId int64, client *httpclient.HTTPClient) (cstructs.R
 		fmt.Printf("[ERROR] Couldnt't parse response body to byte\n")
 		return customData, err
 	}
-	
+
 	var rss RSS
 	err = xml.Unmarshal(data, &rss)
-
 
 	if err != nil {
 		return customData, err
@@ -178,7 +177,7 @@ func GetSeriesRssFeed(seriesId int64, client *httpclient.HTTPClient) (cstructs.R
 	var chapterData []cstructs.RssSeriesChapter
 	for _, item := range rss.Channel.Items {
 		chapterData = append(chapterData, cstructs.RssSeriesChapter{
-			Chapter: item.Title,
+			Chapter:   item.Title,
 			Scanlator: item.Description,
 		})
 	}
@@ -189,29 +188,28 @@ func GetSeriesRssFeed(seriesId int64, client *httpclient.HTTPClient) (cstructs.R
 	return customData, nil
 }
 
-
 // This function will properly parse and extract the exact data from the XML RSS Feed
 //
 // This will be use with `GetSeriesRssFeed` function to properly parse the data
 func parseRSSData(data *cstructs.RssSeriesData) {
-    // Parse Title
-    title := strings.Replace(data.Title, " - Releases on MangaUpdates", "", 1)
-    title = strings.TrimSpace(title)
-    data.Title = title
+	// Parse Title
+	title := strings.Replace(data.Title, " - Releases on MangaUpdates", "", 1)
+	title = strings.TrimSpace(title)
+	data.Title = title
 
-    var newChapter []cstructs.RssSeriesChapter
+	var newChapter []cstructs.RssSeriesChapter
 
-    // Parse Chapter Number
-    for _, a := range data.ChapterData {
-        chapterData := strings.ReplaceAll(a.Chapter, data.Title, "")
-        chapterData = strings.ReplaceAll(chapterData, "c.", "")
-        chapterData = strings.TrimSpace(chapterData)
+	// Parse Chapter Number
+	for _, a := range data.ChapterData {
+		chapterData := strings.ReplaceAll(a.Chapter, data.Title, "")
+		chapterData = strings.ReplaceAll(chapterData, "c.", "")
+		chapterData = strings.TrimSpace(chapterData)
 
-        newChapter = append(newChapter, cstructs.RssSeriesChapter{
-        	Chapter: chapterData,
-        	Scanlator: a.Scanlator,
-        })
-    }
+		newChapter = append(newChapter, cstructs.RssSeriesChapter{
+			Chapter:   chapterData,
+			Scanlator: a.Scanlator,
+		})
+	}
 
 	data.ChapterData = newChapter
 }
