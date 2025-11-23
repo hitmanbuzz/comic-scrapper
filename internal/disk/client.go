@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path"
@@ -124,4 +125,30 @@ func (c *Client) SaveSeriesMetadata(ctx context.Context, seriesSlug string, meta
 	meta.UpdatedAt = time.Now()
 	key := path.Join(seriesSlug, "meta.json")
 	return c.UploadJSON(ctx, key, meta)
+}
+
+func (c *Client) UploadImage(ctx context.Context, seriesSlug, chapterNumber, filename string, data io.Reader) error {
+	filePath := path.Join(c.basePath, seriesSlug, chapterNumber, filename)
+
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(filePath)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	// Copy data to file
+	size, err := io.Copy(file, data)
+	if err != nil {
+		return fmt.Errorf("failed to write to file %s: %w", filePath, err)
+	}
+
+	c.logger.Debug("uploaded image", "path", filePath, "size", size)
+	return nil
 }

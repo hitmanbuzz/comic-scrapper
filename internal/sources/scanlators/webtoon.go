@@ -366,11 +366,17 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []sources.Chapter {
 			chapterTitle += " ♫"
 		}
 
+		// Ensure ViewerLink is a full URL
+		viewerURL := episode.ViewerLink
+		if strings.HasPrefix(viewerURL, "/") {
+			viewerURL = w.GetBaseURL() + viewerURL
+		}
+
 		chapters = append(chapters, sources.Chapter{
 			Number:    w.NormalizeChapterNumber(episode.ChapterNumber),
 			Title:     chapterTitle,
-			URL:       episode.ViewerLink,
-			SourceURL: episode.ViewerLink,
+			URL:       viewerURL,
+			SourceURL: viewerURL,
 		})
 	}
 
