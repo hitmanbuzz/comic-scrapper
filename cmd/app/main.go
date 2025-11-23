@@ -16,13 +16,19 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	newFlags := system.CreateNewFlags()
 
 	// Load configuration
 	cfg, err := config.LoadConfig(*newFlags.ConfigPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("loading config: %w", err)
 	}
 
 	// Parse scrape mode
@@ -35,16 +41,14 @@ func main() {
 	case "single":
 		scrapeMode = scraper.ModeSingle
 	default:
-		fmt.Fprintf(os.Stderr, "Error: invalid mode: %s. Must be 'full', 'incremental', or 'single'\n", *newFlags.ModeFlag)
-		os.Exit(1)
+		return fmt.Errorf("invalid mode: %s. Must be 'full', 'incremental', or 'single'", *newFlags.ModeFlag)
 	}
 	logger := system.SetupLogger(cfg, scrapeMode, newFlags)
 	logger.UpdateConfigFlags()
 
 	// Validate configuration
-	if err := cfg.Validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
-		os.Exit(1)
+	if validationErr := cfg.Validate(); validationErr != nil {
+		return fmt.Errorf("invalid configuration: %w", validationErr)
 	}
 
 	// Create context with cancellation
@@ -63,12 +67,10 @@ func main() {
 	case "disk":
 		storageClient, err = disk.NewClient(ctx, cfg, logger.Logger)
 		if err != nil {
-			logger.Logger.Error("failed to create disk storage client", "error", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to create disk storage client: %w", err)
 		}
 	default:
-		logger.Logger.Error("unsupported storage type", "storage_type", cfg.StorageType)
-		os.Exit(1)
+		return fmt.Errorf("unsupported storage type: %s", cfg.StorageType)
 	}
 
 	// Only create Cloudflare client if configured
@@ -83,8 +85,7 @@ func main() {
 	// Create a new http client
 	httpClient, err := httpclient.NewHTTPClient(cfg, logger.Logger, flareClient)
 	if err != nil {
-		logger.Logger.Error("failed to create HTTP client", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create HTTP client: %w", err)
 	}
 
 	// Create downloader based on configuration
@@ -126,9 +127,9 @@ func main() {
 
 	// Run the scraper with the specified mode
 	if err := scraper.RunScraper(ctx, cfg, storageClient, flareClient, httpClient, downloader, logger.Logger, scrapeMode); err != nil {
-		logger.Logger.Error("scraper failed", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("scraper failed: %w", err)
 	}
 
 	logger.Logger.Info("scraper completed successfully")
+	return nil
 }

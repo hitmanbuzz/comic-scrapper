@@ -11,7 +11,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -82,7 +81,8 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 	var group Response
 	err = json.NewDecoder(resp.Body).Decode(&group)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("[ERROR] Failed to decode response | URL: %s | Error: %v\n", apiUrl, err)
+		return "", ""
 	}
 
 	return group.Name, group.Social.Site

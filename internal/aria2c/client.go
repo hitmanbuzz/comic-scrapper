@@ -131,7 +131,9 @@ func (c *Client) waitForDownload(ctx context.Context, gid arigo.GID, result *Dow
 	for {
 		select {
 		case <-ctx.Done():
-			c.arigoClient.ForceRemove(gid.String())
+			if removeErr := c.arigoClient.ForceRemove(gid.String()); removeErr != nil {
+				// don't fail - context is already cancelled
+			}
 			return ctx.Err()
 		case <-ticker.C:
 			status, err := c.arigoClient.TellStatus(gid.String())

@@ -91,7 +91,7 @@ func (c *Client) UploadJSON(ctx context.Context, key string, v any) error {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	err = os.WriteFile(filePath, data, 0644)
+	err = os.WriteFile(filePath, data, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write JSON file %s: %w", filePath, err)
 	}

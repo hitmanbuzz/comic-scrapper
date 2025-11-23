@@ -171,20 +171,6 @@ func (w *Webtoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 	return series
 }
 
-func (w *Webtoon) removeDuplicateSeries(series []sources.Series) []sources.Series {
-	seen := make(map[string]bool)
-	var unique []sources.Series
-
-	for _, s := range series {
-		if !seen[s.URL] {
-			seen[s.URL] = true
-			unique = append(unique, s)
-		}
-	}
-
-	return unique
-}
-
 func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	// First fetch series details to get the title_no
 	req, _ := http.NewRequestWithContext(ctx, "GET", series.URL, nil)

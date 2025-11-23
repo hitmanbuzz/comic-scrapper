@@ -261,9 +261,7 @@ func (u *Utoon) extractChapterNumber(chapterUrl string) string {
 	// `chapter-` is 7 in length so we will start from index 8 which is the chapter number starting position
 	chapter_num := chapterUrl[lastDash+8 : lastSlash]
 
-	if strings.Contains(chapter_num, "-") {
-		strings.Replace(chapter_num, "-", ".", 1)
-	}
+	chapter_num = strings.Replace(chapter_num, "-", ".", 1)
 
 	return chapter_num
 }

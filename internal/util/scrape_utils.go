@@ -21,15 +21,15 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) {
 
 	dirPath := "series_data"
 
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		err := os.Mkdir(dirPath, 0755)
-		if err != nil {
-			fmt.Println("Error creating directory:", err)
+	if _, statErr := os.Stat(dirPath); os.IsNotExist(statErr) {
+		mkdirErr := os.Mkdir(dirPath, 0755)
+		if mkdirErr != nil {
+			fmt.Println("Error creating directory:", mkdirErr)
 			return
 		}
 		fmt.Println("Directory created:", dirPath)
 	}
-	
+
 	fileName := full_series.GroupName
 	fileName = strings.ToLower(fileName)
 	fileName = strings.ReplaceAll(fileName, "-", "_")
@@ -40,27 +40,27 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) {
 	if FileExists(filePath) {
 		backupDir := "backup_data"
 
-	    // Create backup directory if it doesn't exist
-	    err := os.MkdirAll(backupDir, 0755)
-	    if err != nil {
-	        log.Fatal(err)
-	    }
+		// Create backup directory if it doesn't exist
+		backupErr := os.MkdirAll(backupDir, 0755)
+		if backupErr != nil {
+			log.Fatal(backupErr)
+		}
 
-	    // Generate backup file path with timestamp to avoid collisions
-	    timestamp := time.Now().Format("20060102_150405")
-	    fileName := filepath.Base(filePath)
-	    backupPath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", timestamp, fileName))
+		// Generate backup file path with timestamp to avoid collisions
+		timestamp := time.Now().Format("20060102_150405")
+		fileName := filepath.Base(filePath)
+		backupPath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", timestamp, fileName))
 
-	    // Move existing file to backup directory
-	    err = os.Rename(filePath, backupPath)
-	    if err != nil {
-	        log.Fatal(err)
-	    }
+		// Move existing file to backup directory
+		err = os.Rename(filePath, backupPath)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	    fmt.Printf("[MOVED] Existing file moved to: %s\n", backupPath)
+		fmt.Printf("[MOVED] Existing file moved to: %s\n", backupPath)
 	}
 
-	err = os.WriteFile(filePath, jsonData, 0644)
+	err = os.WriteFile(filePath, jsonData, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func ReadSourceSeriesJson(jsonFile string) cstructs.FullSeriesResponse {
 		fmt.Printf("Could Read Json File | File: %s\n", jsonFile)
 		return sourceSeries
 	}
-	
+
 	err = json.Unmarshal(content, &sourceSeries)
 	if err != nil {
 		fmt.Printf("[ERROR] Couldn't unmarshal\n")
@@ -109,7 +109,7 @@ func GenerateMetadataJson(data *cstructs.MetadataJson, dir_name string) {
 		return
 	}
 
-	err = os.WriteFile(file_path, jsonData, 0644)
+	err = os.WriteFile(file_path, jsonData, 0600)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -117,4 +117,3 @@ func GenerateMetadataJson(data *cstructs.MetadataJson, dir_name string) {
 
 	fmt.Printf("[DONE] Metadata Scrapping | Title: %s\n", data.Title)
 }
-
