@@ -17,7 +17,6 @@ import (
 	"comicrawl/internal/registry"
 	"comicrawl/internal/sources"
 	"comicrawl/internal/system"
-	"comicrawl/internal/worker"
 	"log/slog"
 )
 
@@ -116,13 +115,12 @@ func checkExternalServices(cfg *config.Config, logger *slog.Logger) error {
 	var errors []string
 
 	// Check aria2c
-	if cfg.UseAria2c {
-		logger.Info("checking aria2c service...")
-		if err := checkAria2c(cfg.Aria2cURL); err != nil {
-			errors = append(errors, fmt.Sprintf("aria2c: %v", err))
-		} else {
-			logger.Info("aria2c is running")
-		}
+	// Check aria2c
+	logger.Info("checking aria2c service...")
+	if err := checkAria2c(cfg.Aria2cURL); err != nil {
+		errors = append(errors, fmt.Sprintf("aria2c: %v", err))
+	} else {
+		logger.Info("aria2c is running")
 	}
 
 	// Check FlareSolver
@@ -174,15 +172,8 @@ func createDownloader(cfg *config.Config, logger *slog.Logger) (interface {
 	AddDownload(request aria2c.DownloadRequest)
 	Close() error
 }, error) {
-	if cfg.UseAria2c {
-		logger.Info("using aria2c for integration tests", "aria2c_url", cfg.Aria2cURL)
-		return aria2c.NewDownloader(cfg.Aria2cURL, 10, logger)
-	} else {
-		logger.Info("using worker pool for integration tests")
-		pool := worker.NewPool(10, logger)
-		pool.Start()
-		return pool, nil
-	}
+	logger.Info("using aria2c for integration tests", "aria2c_url", cfg.Aria2cURL)
+	return aria2c.NewDownloader(cfg.Aria2cURL, 10, logger)
 }
 
 func runIntegrationTests(

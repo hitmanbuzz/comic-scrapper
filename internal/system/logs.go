@@ -51,9 +51,6 @@ func (l *Logging) ConfigLogging() {
 	l.Logger.Info(
 		"configuration",
 		"bucket", l.Cfg.Bucket,
-		"storage_type", l.Cfg.StorageType,
-		"use_aria2c", l.Cfg.UseAria2c,
-		"download_workers", l.Cfg.DownloadWorkers,
 		"requests_per_second", l.Cfg.RequestsPerSecond,
 		"limit_series", l.Cfg.LimitSeries,
 		"limit_chapters", l.Cfg.LimitChapters,

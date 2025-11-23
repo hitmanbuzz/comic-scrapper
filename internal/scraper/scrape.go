@@ -60,7 +60,6 @@ func RunScraper(
 
 	logger.Info("starting streaming scraper",
 		"bucket", cfg.Bucket,
-		"use_aria2c", cfg.UseAria2c,
 		"mode", mode)
 
 	// Collect metadata updates for batch processing at the end

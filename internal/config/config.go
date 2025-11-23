@@ -18,12 +18,8 @@ type Config struct {
 	UserAgent         string        `yaml:"user_agent"`
 	HTTPProxy         string        `yaml:"http_proxy"`
 	RequestsPerSecond float64       `yaml:"requests_per_second" default:"100"`
-	DownloadWorkers   int           `yaml:"download_workers" default:"200"`
 	RequestTimeout    time.Duration `yaml:"request_timeout" default:"60s"`
-	MaxRetries        int           `yaml:"max_retries" default:"5"`
 	LogLevel          string        `yaml:"log_level" default:"info"`
-	StorageType       string        `yaml:"storage_type" default:"disk"`
-	UseAria2c         bool          `yaml:"use_aria2c" default:"true"`
 
 	// Enhanced Sources filtering options
 	IncludeSources []string `yaml:"include_sources"`
@@ -111,24 +107,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("bucket path is required")
 	}
 
-	if c.StorageType != "disk" {
-		return fmt.Errorf("unsupported storage type: %s", c.StorageType)
-	}
-
-	if c.RequestsPerSecond <= 0 {
-		return fmt.Errorf("requests_per_second must be positive")
-	}
-
-	if c.DownloadWorkers <= 0 {
-		return fmt.Errorf("download_workers must be positive")
-	}
-
 	if c.RequestTimeout <= 0 {
 		return fmt.Errorf("request_timeout must be positive")
-	}
-
-	if c.MaxRetries < 0 {
-		return fmt.Errorf("max_retries cannot be negative")
 	}
 
 	if c.LimitSeries < 0 {
