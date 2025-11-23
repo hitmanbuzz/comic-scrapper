@@ -3,8 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -14,12 +12,12 @@ import (
 type Config struct {
 	Bucket            string        `yaml:"bucket"`
 	CloudflareURL     string        `yaml:"flaresolverr_url"`
-	Aria2cURL         string        `yaml:"aria2c_url" default:"http://localhost:6800/jsonrpc"`
+	Aria2cURL         string        `yaml:"aria2c_url"`
 	UserAgent         string        `yaml:"user_agent"`
 	HTTPProxy         string        `yaml:"http_proxy"`
-	RequestsPerSecond float64       `yaml:"requests_per_second" default:"100"`
-	RequestTimeout    time.Duration `yaml:"request_timeout" default:"60s"`
-	LogLevel          string        `yaml:"log_level" default:"info"`
+	RequestsPerSecond float64       `yaml:"requests_per_second"`
+	RequestTimeout    time.Duration `yaml:"request_timeout"`
+	LogLevel          string        `yaml:"log_level"`
 
 	// Enhanced Sources filtering options
 	IncludeSources []string `yaml:"include_sources"`
@@ -28,54 +26,24 @@ type Config struct {
 	ExcludeSeries  []string `yaml:"exclude_series"`
 
 	// Testing options
-	LimitSeries   int  `yaml:"limit_series" default:"0"`
-	LimitChapters int  `yaml:"limit_chapters" default:"0"`
-	DryRun        bool `yaml:"dry_run" default:"false"`
+	LimitSeries   int  `yaml:"limit_series"`
+	LimitChapters int  `yaml:"limit_chapters"`
+	DryRun        bool `yaml:"dry_run"`
 
 	// Source configuration
 	EnabledSources []string `yaml:"enabled_sources"`
 }
 
-// jank to apply default values from struct tags w/ reflection
-func setDefaults(cfg *Config) error {
-	val := reflect.ValueOf(cfg).Elem()
-	typ := val.Type()
-
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		fieldType := typ.Field(i)
-		defaultTag := fieldType.Tag.Get("default")
-
-		if defaultTag == "" || !field.IsZero() {
-			continue
-		}
-
-		switch field.Kind() {
-		case reflect.String:
-			field.SetString(defaultTag)
-		case reflect.Int:
-			if v, err := strconv.Atoi(defaultTag); err == nil {
-				field.SetInt(int64(v))
-			}
-		case reflect.Float64:
-			if v, err := strconv.ParseFloat(defaultTag, 64); err == nil {
-				field.SetFloat(v)
-			}
-		case reflect.Bool:
-			if v, err := strconv.ParseBool(defaultTag); err == nil {
-				field.SetBool(v)
-			}
-		case reflect.Int64:
-			// Handle time.Duration
-			if field.Type() == reflect.TypeOf(time.Duration(0)) {
-				if v, err := time.ParseDuration(defaultTag); err == nil {
-					field.SetInt(int64(v))
-				}
-			}
-		}
+func NewDefaultConfig() *Config {
+	return &Config{
+		Aria2cURL:         "http://localhost:6800/jsonrpc",
+		RequestsPerSecond: 100,
+		RequestTimeout:    60 * time.Second,
+		LogLevel:          "info",
+		LimitSeries:       0,
+		LimitChapters:     0,
+		DryRun:            false,
 	}
-
-	return nil
 }
 
 func LoadConfig(configPath string) (*Config, error) {
@@ -88,17 +56,12 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	cfg := NewDefaultConfig()
+	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// Apply defaults from struct tags
-	if err := setDefaults(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to set defaults: %w", err)
-	}
-
-	return &cfg, nil
+	return cfg, nil
 }
 
 // Validate checks if the configuration is valid
