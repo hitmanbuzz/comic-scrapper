@@ -36,7 +36,7 @@ type HiveSeriesItem struct {
 	ID        int    `json:"id"`
 	Slug      string `json:"slug"`
 	PostTitle string `json:"postTitle"`
-	Status    string `json:"status"`
+	Status    string `json:"seriesStatus"`
 }
 
 type HiveChaptersResponse struct {
