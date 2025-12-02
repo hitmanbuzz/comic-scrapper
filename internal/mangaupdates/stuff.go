@@ -13,17 +13,20 @@ import (
 //
 // I recommend to use this function inside a sync.Group and insert scanlator json file as the paramater everytime
 func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
-	if !util.FileExists(jsonFile) {
+	if !util.IsPathExists(jsonFile) {
 		fmt.Printf("%s doesn't exist\n", jsonFile)
 		return
 	}
 
-	response := util.ReadSourceSeriesJson(jsonFile)
+	response, err := util.ReadSourceSeriesJson(jsonFile)
+	if err != nil {
+		return
+	}
 
 	// Collect series from all group IDs
 	var allSeries []AllSeriesData
 	for _, groupId := range response.MuGroupIds {
-		fmt.Printf("Fetching series for group ID: %d\n", groupId)
+		fmt.Printf("Fetching series for group: %s\n", response.GroupName)
 		groupSeries := GetAllGroupSeries(groupId, client)
 		allSeries = append(allSeries, groupSeries...)
 	}
@@ -35,7 +38,6 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 	fmt.Println("Starting Filtering...")
 
 	for i := range response.Series {
-		// fmt.Printf("Checked: %d/%d", counter, total)
 		breakStatus := false
 		for _, mu := range allSeries {
 			// Dumb way but just make it work for now
@@ -46,12 +48,10 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 			ok, _, err := util.IsComicTitleMatch(response.Series[i].MainTitle, mu.SeriesData.Title)
 
 			if err != nil {
-				fmt.Printf("[ERROR] Couldn't do string comparison | S1: %s | S2: %s\n", response.Series[i].MainTitle, mu.SeriesData.Title)
 				continue
 			}
 
 			if ok {
-				fmt.Printf("Found: %s\n", mu.SeriesData.Title)
 				response.Series[i].Found = true
 				response.Series[i].LastUpdated = mu.lastUpdated
 				response.Series[i].MuSeriesId = mu.SeriesData.SeriesId
@@ -62,12 +62,10 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 				ok, _, err = util.IsComicTitleMatch(response.Series[i].MainTitle, t.Title)
 
 				if err != nil {
-					fmt.Printf("[ERROR] Couldn't do string comparison | S1: %s | S2: %s\n", response.Series[i].MainTitle, t.Title)
 					continue
 				}
 
 				if ok {
-					fmt.Printf("Found: %s\n", t.Title)
 					response.Series[i].Found = true
 					response.Series[i].LastUpdated = mu.lastUpdated
 					response.Series[i].MuSeriesId = mu.SeriesData.SeriesId
@@ -80,15 +78,14 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 		counter++
 	}
 
-	// I put these printf code here when I was making this in a testing environment
-	// Will be remove once we setup a proper loggin system
-	// fmt.Printf("Check: %d/%d\n", counter, total)
-	// fmt.Printf("Found: %d\n", foundCounter)
-	// fmt.Printf("Not Found: %d\n", total - foundCounter)
+	response.FoundSeries = foundCounter
 
 	fmt.Printf("[%s] Finished Filtering\n", response.GroupName)
-
-	util.WriteSourceSeriesJson(response)
+	err = util.WriteSourceSeriesJson(response)
+	if err != nil {
+		fmt.Printf("[ERROR] Couldnt' write filter data for source series json | Group: %s\n", response.GroupName)
+		return
+	}
 }
 
 type AllSeriesData struct {
