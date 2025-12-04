@@ -1,4 +1,4 @@
-.PHONY: help fmt lint test build clean install-tools pre-commit all
+.PHONY: help fmt lint test build clean install-tools pre-commit all run test-integration
 
 # Go binary tools path
 GOBIN := $(shell go env GOPATH)/bin
@@ -14,8 +14,9 @@ help:
 	@echo "  make lint-fix      - Run golangci-lint with auto-fix"
 	@echo "  make test          - Run tests"
 	@echo "  make build         - Build the project"
+	@echo "  make run           - Run the application"
 	@echo "  make clean         - Remove build artifacts"
-	@echo "  make install-tools - Install dev dependencies (goimports, golangci-lint, pre-commit)"
+	@echo "  make install-tools - Install dev dependencies (goimports, golangci-lint)"
 	@echo "  make pre-commit    - Set up pre-commit hooks"
 	@echo "  make all           - Format, lint, and test"
 	@echo ""
@@ -47,7 +48,7 @@ test:
 # Build the project
 build:
 	@echo "Building comicrawl..."
-	@go build -o comicrawl ./cmd/main.go
+	@go build -o comicrawl ./cmd/app/main.go
 	@echo "Build complete"
 
 # Clean build artifacts
@@ -55,6 +56,11 @@ clean:
 	@echo "Cleaning build artifacts..."
 	@rm -f comicrawl coverage.out
 	@echo "Clean complete"
+
+# Run the application
+run:
+	@echo "Running comicrawl..."
+	@go run ./cmd/app/main.go
 
 # Install development tools
 install-tools:

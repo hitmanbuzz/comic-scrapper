@@ -23,12 +23,14 @@ for file in $STAGED_GO_FILES; do
 done
 
 echo "Running golangci-lint on staged files..."
-golangci-lint run --fix ./...
-
-# Re-add any auto-fixed files
-for file in $STAGED_GO_FILES; do
-    git add "$file"
-done
+if [ -n "$STAGED_GO_FILES" ]; then
+    golangci-lint run --fix $(echo "$STAGED_GO_FILES" | tr '\n' ' ')
+    
+    # Re-add any auto-fixed files
+    for file in $STAGED_GO_FILES; do
+        git add "$file"
+    done
+fi
 
 echo "Pre-commit checks passed"
 exit 0

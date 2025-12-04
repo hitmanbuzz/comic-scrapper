@@ -22,7 +22,7 @@ import (
 func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 	jsonData, err := json.MarshalIndent(full_series, "", "  ")
 	if err != nil {
-		return fmt.Errorf("[ERROR] Couldn't Json Marshal\n", )
+		return fmt.Errorf("[ERROR] Couldn't Json Marshal")
 	}
 
 	dirPath := "series_data"
