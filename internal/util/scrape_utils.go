@@ -14,15 +14,14 @@ import (
 // NOTE:
 // `seriesIDRootDir` is the path where all our actual series is downloaded
 // and stored in their respective MU series ID folder (and inside each series ID folder
-// it contain `metadata.json` and scanlator comic data) 
-
+// it contain `metadata.json` and scanlator comic data)
 
 // Use to save series from scanlators in a json file (eg: asura_series.json, webtoon_series.json)
 // NOTE: Some Refactor can be done but it works for now (shit code here made by hitman)
 func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 	jsonData, err := json.MarshalIndent(full_series, "", "  ")
 	if err != nil {
-		return fmt.Errorf("[ERROR] Couldn't Json Marshal")
+		return fmt.Errorf("marshal JSON: %w", err)
 	}
 
 	dirPath := "series_data"
@@ -31,7 +30,7 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 		mkdirErr := os.Mkdir(dirPath, 0755)
 		if mkdirErr != nil {
 			// Exiting the program is good since we can't do nothing if the directory can't be created
-			return fmt.Errorf("[ERROR] Couldn't create directory: %s\n", mkdirErr)
+			return fmt.Errorf("create directory %s: %w", dirPath, mkdirErr)
 		}
 	}
 
@@ -49,7 +48,7 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 		backupErr := os.MkdirAll(backupDir, 0755)
 		if backupErr != nil {
 			// Exiting the program is good since we can't do nothing if the directory can't be created
-			return fmt.Errorf("[ERROR] Couldn't create directory: %s\n", backupDir)
+			return fmt.Errorf("create backup directory %s: %w", backupDir, backupErr)
 		}
 
 		// Generate backup file path with timestamp to avoid collisions
@@ -60,7 +59,7 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 		// Move existing file to backup directory
 		err = os.Rename(filePath, backupPath)
 		if err != nil {
-			return fmt.Errorf("[ERROR] Couldn't move %s to %s\n", fileName, backupPath)
+			return fmt.Errorf("move %s to %s: %w", fileName, backupPath, err)
 		}
 
 		fmt.Printf("[MOVED] Path: %s\n", backupPath)
@@ -68,7 +67,7 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 
 	err = os.WriteFile(filePath, jsonData, 0600)
 	if err != nil {
-		return fmt.Errorf("[ERROR] Couldn't Write Data to file: %s\n", filePath)
+		return fmt.Errorf("write file %s: %w", filePath, err)
 	}
 
 	fmt.Printf("[DONE] Source Scrapping | File: %s\n", filePath)
@@ -82,17 +81,17 @@ func ReadSourceSeriesJson(jsonFile string) (cstructs.FullSeriesResponse, error) 
 	var sourceSeries cstructs.FullSeriesResponse
 
 	if !IsPathExists(jsonFile) {
-		return sourceSeries, fmt.Errorf("[ERROR] %s doesn't exist\n", jsonFile)
+		return sourceSeries, fmt.Errorf("file %s does not exist", jsonFile)
 	}
 
 	content, err := os.ReadFile(jsonFile)
 	if err != nil {
-		return sourceSeries, fmt.Errorf("[ERROR] Couldn't Read Json File | Path: %s\n", jsonFile)
+		return sourceSeries, fmt.Errorf("read JSON file %s: %w", jsonFile, err)
 	}
 
 	err = json.Unmarshal(content, &sourceSeries)
 	if err != nil {
-		return sourceSeries, fmt.Errorf("[ERROR] Couldn't Json Unmarshal for Series | Path: %s\n", jsonFile)
+		return sourceSeries, fmt.Errorf("unmarshal JSON from %s: %w", jsonFile, err)
 	}
 
 	return sourceSeries, nil
@@ -100,7 +99,7 @@ func ReadSourceSeriesJson(jsonFile string) (cstructs.FullSeriesResponse, error) 
 
 // The final proper comic metadata in json file that will be use by KomiKura
 //
-// It will update the existing data if there are new data scrapped
+// # It will update the existing data if there are new data scrapped
 //
 // metadata.json
 func GenerateMetadataJson(data cstructs.MetadataJson, seriesIdRootDir string, seriesId int64) error {
@@ -112,7 +111,7 @@ func GenerateMetadataJson(data cstructs.MetadataJson, seriesIdRootDir string, se
 	if IsPathExists(file_path) {
 		existingData, err := ReadMetadataJson(file_path)
 		if err != nil {
-			return fmt.Errorf("[ERROR] Couldn't fetch metadata | Path: %s\n", file_path)
+			return fmt.Errorf("fetch metadata from %s: %w", file_path, err)
 		}
 
 		finalData = existingData
@@ -158,12 +157,12 @@ func GenerateMetadataJson(data cstructs.MetadataJson, seriesIdRootDir string, se
 	jsonData, err := json.MarshalIndent(finalData, "", "  ")
 
 	if err != nil {
-		return fmt.Errorf("[ERROR] Couldn't Json Marshal for MetadataJson | Path: %s\n", file_path)
+		return fmt.Errorf("marshal metadata JSON for %s: %w", file_path, err)
 	}
 
 	err = os.WriteFile(file_path, jsonData, 0600)
 	if err != nil {
-		return fmt.Errorf("[ERROR] Couldn't Write Json Data to file: %s\n", file_path)
+		return fmt.Errorf("write metadata JSON to %s: %w", file_path, err)
 	}
 
 	fmt.Printf("[DONE] Metadata Scrapping | Title: %s\n", data.Title)
@@ -177,17 +176,17 @@ func ReadMetadataJson(metadataJsonPath string) (cstructs.MetadataJson, error) {
 	var data cstructs.MetadataJson
 
 	if !IsPathExists(metadataJsonPath) {
-		return data, fmt.Errorf("[ERROR] Doesn't exist | Path: %s\n", metadataJsonPath)
+		return data, fmt.Errorf("metadata file %s does not exist", metadataJsonPath)
 	}
 
 	content, err := os.ReadFile(metadataJsonPath)
 	if err != nil {
-		return data, fmt.Errorf("[ERROR] Couldn't Read Json File | Path: %s\n", metadataJsonPath)
+		return data, fmt.Errorf("read metadata JSON file %s: %w", metadataJsonPath, err)
 	}
 
 	err = json.Unmarshal(content, &data)
 	if err != nil {
-		return data, fmt.Errorf("[ERROR] Couldn't Json Unmarshal for Series | Path: %s\n", metadataJsonPath)
+		return data, fmt.Errorf("unmarshal metadata JSON from %s: %w", metadataJsonPath, err)
 	}
 
 	return data, nil
@@ -213,7 +212,7 @@ func IsSeriesScraped(seriesId int64, seriesIdRootDir string) bool {
 
 // [Optional]
 //
-// This check if the series is scraped by a specific group
+// # This check if the series is scraped by a specific group
 //
 // The other one `IsSeriesScrapped` only check if the series is already scraped by any group
 func IsSeriesScrapedGroup(seriesId int64, groupName string, seriesIdRootDir string) bool {
@@ -232,7 +231,6 @@ func IsSeriesScrapedGroup(seriesId int64, groupName string, seriesIdRootDir stri
 
 	return false
 }
-
 
 // [Optional]
 //
@@ -260,12 +258,12 @@ func IsChapterScrapped(seriesIDRootDir string, seriesID int64, groupName string,
 			for _, c := range data.ChapterData {
 				if c.ChapterNumber == chapterNum {
 					return true
-				}		
+				}
 			}
 			return false
 		}
 	}
-	
+
 	return false
 }
 
@@ -274,16 +272,16 @@ func IsChapterScrapped(seriesIDRootDir string, seriesID int64, groupName string,
 // Get all the series ID (MU Series ID) from the scrapped data directory
 func LoadAllSeriesID(seriesIdRootDir string) ([]int64, error) {
 	var series []int64
-	
+
 	entries, err := os.ReadDir(seriesIdRootDir)
 	if err != nil {
 		// If we can't read the directory, then simply exiting the program is the best
-		return series, fmt.Errorf("Couldn't read directory: %s\n", seriesIdRootDir)
+		return series, fmt.Errorf("read directory %s: %w", seriesIdRootDir, err)
 	}
 
 	for _, e := range entries {
 		seriesNum := StringToInt64(e.Name())
-		
+
 		if e.IsDir() && seriesNum != -69 {
 			series = append(series, seriesNum)
 		}
@@ -294,13 +292,13 @@ func LoadAllSeriesID(seriesIdRootDir string) ([]int64, error) {
 
 // `sourceSeriesDir` is just the root directory name where all scanlator series json file are located
 //
-// eg: `series_data/utoon_series.json`, here `series_data` is the `sourceSeriesDir` 
+// eg: `series_data/utoon_series.json`, here `series_data` is the `sourceSeriesDir`
 func LoadSourceAllSeriesJson(sourceSeriesDir string) ([]cstructs.FullSeriesResponse, error) {
 	var jsonFiles []cstructs.FullSeriesResponse
 	entries, err := os.ReadDir(sourceSeriesDir)
 	if err != nil {
 		// If we can't read the directory, then simply exiting the program is the best
-		return jsonFiles, fmt.Errorf("Couldn't Read directory: %s\n", sourceSeriesDir)
+		return jsonFiles, fmt.Errorf("read directory %s: %w", sourceSeriesDir, err)
 	}
 
 	for _, e := range entries {
@@ -325,7 +323,7 @@ func LoadSourcesName(sourceSeriesDir string) ([]string, error) {
 	var seriesName []string
 	entries, err := os.ReadDir(sourceSeriesDir)
 	if err != nil {
-		return seriesName, fmt.Errorf("Couldn't Read directory: %s\n", sourceSeriesDir)
+		return seriesName, fmt.Errorf("read directory %s: %w", sourceSeriesDir, err)
 	}
 
 	for _, e := range entries {
@@ -340,9 +338,9 @@ func LoadSourcesName(sourceSeriesDir string) ([]string, error) {
 
 // Check if a json file is series source file
 //
-// Parameter is just the json file path
+// # Parameter is just the json file path
 //
-// It return the series name and a bool if it is a series json file
+// # It return the series name and a bool if it is a series json file
 //
 // series name = webtoon (removing `_series.json`)
 //

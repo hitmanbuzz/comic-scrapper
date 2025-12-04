@@ -43,6 +43,8 @@ func main() {
 	series := scraper.AddSourcesSeries(httpClient, logger.Logger)
 
 	for _, s := range series {
-		util.WriteSourceSeriesJson(s)
+		if err := util.WriteSourceSeriesJson(s); err != nil {
+			logger.Logger.Error("failed to write series JSON", "source", s.GroupName, "error", err)
+		}
 	}
 }

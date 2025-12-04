@@ -1,52 +1,73 @@
 # Comic Crawl
 
-### NOTE:
-- Every process like `scrapping` `update` `filter` should have their own separate process (look `cmd/`)
-
-### Todo
-- [ ] Connect MU with Source Provider (Need to fix the downloading/scrapping part)
-- [ ] Storing those scrapped data in a proper structure
-- [ ] Implement New Update Checker for Comics
-- [ ] Make a small scrapping testing environment
-- [ ] Refactor FlareSolverr and Aria2c Source Code for optimization (optional)
-- [ ] Remove unwanted code from the codebase
-- [ ] Refactor Source Provider Code if needed (Optional)
-- [ ] Make Documentation or Notes to the existing codebase (mostly scrape, scanlator, source, disk)
+Scrape comics from scanlation sites.
 
 ### Prerequisites:
-- [aria2](https://github.com/aria2/aria2)
-- Docker
+- Go 1.24+
+- [aria2](https://github.com/aria2/aria2) (`sudo pacman -S aria2` on Arch, `brew install aria2` on macOS)
+- Docker (optional, for Cloudflare bypass)
 
-### Run (Each Separate Process)
-#### Get All Series from source provider (scanlator)
+### Quick Start
 
-`go run cmd/series/series.go`
-
-#### Filter those series
-
-`go run cmd/filter/filter.go`
-
-### How to run Project? (NOT WORKING)
-> *For now, it only run on Linux*
-
+1. **Clone and build:**
+```bash
+git clone <repository-url>
+cd comicrawl
+go build -o comicrawl ./cmd/app/main.go
 ```
+
+2. **Run the application:**
+```bash
+# Start aria2c RPC server (required)
 chmod +x aria-srv.sh
-./aria-srv.sh
+./aria-srv.sh &
+
+# Run the main application
+./comicrawl
+# or
+go run ./cmd/app/main.go
 ```
 
-Open a new terminal and run this command
+### Individual Components
 
-```
-go run cmd/app/main.go
+#### 1. Fetch series from scanlator sites:
+```bash
+go run cmd/series/series.go
 ```
 
-### Optional: Cloudflare Solver
-Open a new terminal and run this command
+#### 2. Filter series using MangaUpdates data:
+```bash
+go run cmd/filter/filter.go
 ```
+
+#### 3. Run integration tests:
+```bash
+go run cmd/test/main.go
+```
+
+### Development
+
+#### Install tools:
+```bash
+make install-tools
+```
+
+#### Code quality checks:
+```bash
+make fmt      # Format code
+make lint     # Run linters
+make test     # Run tests
+make all      # Format, lint, and test
+```
+
+#### Pre-commit hook:
+```bash
+make pre-commit
+```
+
+### Optional: Cloudflare Bypass
+
+For sites protected by Cloudflare:
+```bash
 docker-compose up
-```
-
-Close Docker
-```
-docker-compose down
 ```

@@ -19,17 +19,17 @@ type SourceProviderScrapedData struct {
 }
 
 type MetadataJson struct {
-	Title          string                       `json:"comic_title"`     // Title of the comic
-	AltTitles      []string                     `json:"alt_titles"`      // Alternative Titles of the comic
-	Description    string                       `json:"description"`     // Description or synopsis of the comic
-	MuUrl          string                       `json:"mu_series_url"`   // URL for the comic on MU
-	MuSeriesId     int64                        `json:"mu_series_id"`    // Series ID of the comic on MU
-	Genres         []string                     `json:"genres"`          // Genres of the comic
-	Authors        []string                     `json:"authors"`         // Authors of the comic (Store empty array if not found)
-	ComicStatus    string                       `json:"comic_status"`    // Current comic status (ongoing, hiatus, completed)
-	ReleaseYear    string                       `json:"release_year"`    // Release Year of the comic (2022, 2024, etc)
-	Thumbnail      string                       `json:"thumnbail_image"` // Thumnbail image of the comic (abc.webp, abc.png, etc)
-	ScrapedData    []SourceProviderScrapedData  `json:"scraped_data"` // Basic Data for each comic for each source provider
+	Title       string                      `json:"comic_title"`     // Title of the comic
+	AltTitles   []string                    `json:"alt_titles"`      // Alternative Titles of the comic
+	Description string                      `json:"description"`     // Description or synopsis of the comic
+	MuUrl       string                      `json:"mu_series_url"`   // URL for the comic on MU
+	MuSeriesId  int64                       `json:"mu_series_id"`    // Series ID of the comic on MU
+	Genres      []string                    `json:"genres"`          // Genres of the comic
+	Authors     []string                    `json:"authors"`         // Authors of the comic (Store empty array if not found)
+	ComicStatus string                      `json:"comic_status"`    // Current comic status (ongoing, hiatus, completed)
+	ReleaseYear string                      `json:"release_year"`    // Release Year of the comic (2022, 2024, etc)
+	Thumbnail   string                      `json:"thumnbail_image"` // Thumnbail image of the comic (abc.webp, abc.png, etc)
+	ScrapedData []SourceProviderScrapedData `json:"scraped_data"`    // Basic Data for each comic for each source provider
 }
 
 // ----------------------------------------- This json data will be stored and only be used by the scrapper to know which comic to scrapped ------------
@@ -47,5 +47,5 @@ type FullSeriesResponse struct {
 	MuGroupIds  []int64              `json:"group_ids"`    // Source Provider IDs from Mangaupdates (can have multiple)
 	TotalSeries int                  `json:"total_series"` // Total Series found in scanlator page
 	FoundSeries int                  `json:"found_series"`
-	Series      []ScanSeriesResponse `json:"series"`       // All the Series data from the source provider
+	Series      []ScanSeriesResponse `json:"series"` // All the Series data from the source provider
 }

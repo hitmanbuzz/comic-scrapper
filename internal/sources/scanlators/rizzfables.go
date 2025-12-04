@@ -30,8 +30,8 @@ func NewRizzFables(logger *slog.Logger) *RizzFables {
 }
 
 type ComicResponse struct {
-	Title   string `json:"title"`
-	Status  string `json:"status"`
+	Title  string `json:"title"`
+	Status string `json:"status"`
 }
 
 func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {

@@ -45,9 +45,9 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 				break
 			}
 
-			ok, _, err := util.IsComicTitleMatch(response.Series[i].MainTitle, mu.SeriesData.Title)
+			ok, _, matchErr := util.IsComicTitleMatch(response.Series[i].MainTitle, mu.SeriesData.Title)
 
-			if err != nil {
+			if matchErr != nil {
 				continue
 			}
 
@@ -103,9 +103,6 @@ func GetAllGroupSeries(groupId int64, client *httpclient.HTTPClient) []AllSeries
 		return allSeries
 	}
 
-	// fmt.Println("Allocate Size:", len(groupSeriesData.SeriesTitles))
-	// fmt.Println("Starting Allocation Series")
-
 	var mu sync.Mutex
 	counter := 0
 
@@ -144,7 +141,6 @@ func GetAllGroupSeries(groupId int64, client *httpclient.HTTPClient) []AllSeries
 					lastUpdated: lastUpdated,
 				})
 				counter++
-				// fmt.Println("Done:", counter)
 				mu.Unlock()
 			}(groupSeries)
 		}
