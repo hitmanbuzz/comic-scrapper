@@ -56,7 +56,6 @@ func NewClient(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*C
 	}, nil
 }
 
-// NOTE: Remove it once after we fix scrape.go code
 func (c *Client) DownloadJSON(ctx context.Context, key string, v any) (bool, error) {
 	filePath := path.Join(c.basePath, key)
 
@@ -76,7 +75,6 @@ func (c *Client) DownloadJSON(ctx context.Context, key string, v any) (bool, err
 	return true, nil
 }
 
-// NOTE: Remove it once after we fix scrape.go code
 func (c *Client) UploadJSON(ctx context.Context, key string, v any) error {
 	filePath := path.Join(c.basePath, key)
 
@@ -101,7 +99,6 @@ func (c *Client) UploadJSON(ctx context.Context, key string, v any) error {
 	return nil
 }
 
-// NOTE: Remove it once after we fix scrape.go code
 func (c *Client) LoadSeriesMetadata(ctx context.Context, seriesSlug string) (*SeriesMetadata, error) {
 	key := path.Join(seriesSlug, "meta.json")
 	var meta SeriesMetadata
@@ -120,7 +117,6 @@ func (c *Client) LoadSeriesMetadata(ctx context.Context, seriesSlug string) (*Se
 	return &meta, nil
 }
 
-// NOTE: Remove it once after we fix scrape.go code
 func (c *Client) SaveSeriesMetadata(ctx context.Context, seriesSlug string, meta *SeriesMetadata) error {
 	meta.UpdatedAt = time.Now()
 	key := path.Join(seriesSlug, "meta.json")

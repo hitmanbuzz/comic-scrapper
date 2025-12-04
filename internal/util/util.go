@@ -13,7 +13,7 @@ import (
 	"github.com/hbollon/go-edlib"
 )
 
-// NOTE: Add any reusable user-defined function that doesn't rely on any part of the scrapper codebase
+// NOTE: Add any reusable user-defined function that doesn't rely on any part of the scraper codebase
 
 // -1 return means fail in parsing the slug
 func ParseSlugToId(slug string) int64 {

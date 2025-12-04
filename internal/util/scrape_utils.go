@@ -70,7 +70,7 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 		return fmt.Errorf("write file %s: %w", filePath, err)
 	}
 
-	fmt.Printf("[DONE] Source Scrapping | File: %s\n", filePath)
+	fmt.Printf("[DONE] Source Scraping | File: %s\n", filePath)
 	return nil
 }
 
@@ -99,7 +99,7 @@ func ReadSourceSeriesJson(jsonFile string) (cstructs.FullSeriesResponse, error) 
 
 // The final proper comic metadata in json file that will be use by KomiKura
 //
-// # It will update the existing data if there are new data scrapped
+// # It will update the existing data if there are new data scraped
 //
 // metadata.json
 func GenerateMetadataJson(data cstructs.MetadataJson, seriesIdRootDir string, seriesId int64) error {
@@ -165,7 +165,7 @@ func GenerateMetadataJson(data cstructs.MetadataJson, seriesIdRootDir string, se
 		return fmt.Errorf("write metadata JSON to %s: %w", file_path, err)
 	}
 
-	fmt.Printf("[DONE] Metadata Scrapping | Title: %s\n", data.Title)
+	fmt.Printf("[DONE] Metadata Scraping | Title: %s\n", data.Title)
 	return nil
 }
 
@@ -194,7 +194,7 @@ func ReadMetadataJson(metadataJsonPath string) (cstructs.MetadataJson, error) {
 
 // [Optional]
 //
-// Check if series is already scrapped (like another different scanlator)
+// Check if series is already scraped (like another different scanlator)
 func IsSeriesScraped(seriesId int64, seriesIdRootDir string) bool {
 	metadataPath := fmt.Sprintf("%s/%d/metadata.json", seriesIdRootDir, seriesId)
 
@@ -214,7 +214,7 @@ func IsSeriesScraped(seriesId int64, seriesIdRootDir string) bool {
 //
 // # This check if the series is scraped by a specific group
 //
-// The other one `IsSeriesScrapped` only check if the series is already scraped by any group
+// The other one `IsSeriesScraped` only check if the series is already scraped by any group
 func IsSeriesScrapedGroup(seriesId int64, groupName string, seriesIdRootDir string) bool {
 	metadataPath := fmt.Sprintf("%s/%d/metadata.json", seriesIdRootDir, seriesId)
 
@@ -242,8 +242,8 @@ func IsMetadataFound(seriesId int64, seriesIdRootDir string) bool {
 
 // [Optional]
 //
-// Check if a chapter from a series is already scrapped by a group or not
-func IsChapterScrapped(seriesIDRootDir string, seriesID int64, groupName string, chapterNum float32) bool {
+// Check if a chapter from a series is already scraped by a group or not
+func IsChapterScraped(seriesIDRootDir string, seriesID int64, groupName string, chapterNum float32) bool {
 	metadata, err := ReadMetadataJson(fmt.Sprintf("%s/%d/metadata.json", seriesIDRootDir, seriesID))
 	if err != nil {
 		return false
@@ -269,7 +269,7 @@ func IsChapterScrapped(seriesIDRootDir string, seriesID int64, groupName string,
 
 // [Optional]
 //
-// Get all the series ID (MU Series ID) from the scrapped data directory
+// Get all the series ID (MU Series ID) from the scraped data directory
 func LoadAllSeriesID(seriesIdRootDir string) ([]int64, error) {
 	var series []int64
 

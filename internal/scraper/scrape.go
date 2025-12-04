@@ -7,7 +7,7 @@ package scraper
 //
 // God knows WTF is happening, it is connected to every single part of the codebase
 //
-// That `runScrapper` function is ~300 lines of code.
+// That `runScraper` function is ~300 lines of code.
 // I would recommend every function to be less 80-100 lines of code
 
 import (

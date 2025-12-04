@@ -32,7 +32,7 @@ type MetadataJson struct {
 	ScrapedData []SourceProviderScrapedData `json:"scraped_data"`    // Basic Data for each comic for each source provider
 }
 
-// ----------------------------------------- This json data will be stored and only be used by the scrapper to know which comic to scrapped ------------
+// ----------------------------------------- This json data will be stored and only be used by the scraper to know which comic to scrape ------------
 type ScanSeriesResponse struct {
 	MainTitle    string `json:"title"`     // Title for the comic from the source provider
 	ComicPageUrl string `json:"comic_url"` // URL to the source provider comic page

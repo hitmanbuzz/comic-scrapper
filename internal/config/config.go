@@ -30,8 +30,7 @@ type Config struct {
 	LimitChapters int  `yaml:"limit_chapters"`
 	DryRun        bool `yaml:"dry_run"`
 
-	// Source configuration
-	EnabledSources []string `yaml:"enabled_sources"`
+	
 }
 
 func NewDefaultConfig() *Config {

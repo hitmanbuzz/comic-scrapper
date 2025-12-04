@@ -1,7 +1,6 @@
-// This file contains the API functions for the MangaUpdates API
-//
-// Every `http` request create doesn't use Context (http.NewRequest is used for now)
+// Provides a client for the MangaUpdates API.
 
+// Note: HTTP requests currently use http.NewRequest without context.
 package mangaupdates
 
 import (
