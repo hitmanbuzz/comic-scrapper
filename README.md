@@ -4,7 +4,7 @@ Scrape comics from scanlation sites.
 
 ### Prerequisites:
 - Go 1.24+
-- [aria2](https://github.com/aria2/aria2) (`sudo pacman -S aria2` on Arch, `brew install aria2` on macOS)
+- [aria2](https://github.com/aria2/aria2) RPC server
 - Docker (optional, for Cloudflare bypass)
 
 ### Quick Start

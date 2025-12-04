@@ -1,4 +1,4 @@
-.PHONY: help fmt lint test build clean install-tools pre-commit all run test-integration
+.PHONY: help fmt lint test build clean install-tools pre-commit all run
 
 # Go binary tools path
 GOBIN := $(shell go env GOPATH)/bin
