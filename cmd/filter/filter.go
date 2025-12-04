@@ -42,7 +42,7 @@ func main() {
 
 	// Check if series_data directory exists
 	seriesDataDir := "series_data"
-	if _, err := os.Stat(seriesDataDir); os.IsNotExist(err) {
+	if _, statErr := os.Stat(seriesDataDir); os.IsNotExist(statErr) {
 		fmt.Printf("Directory '%s' doesn't exist\n", seriesDataDir)
 		os.Exit(1)
 	}

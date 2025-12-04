@@ -1,7 +1,6 @@
-// This file contains the API functions for the MangaUpdates API
-//
-// Every `http` request create doesn't use Context (http.NewRequest is used for now)
+// Provides a client for the MangaUpdates API.
 
+// Note: HTTP requests currently use http.NewRequest without context.
 package mangaupdates
 
 import (
@@ -11,7 +10,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -82,7 +80,8 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 	var group Response
 	err = json.NewDecoder(resp.Body).Decode(&group)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("[ERROR] Failed to decode response | URL: %s | Error: %v\n", apiUrl, err)
+		return "", ""
 	}
 
 	return group.Name, group.Social.Site

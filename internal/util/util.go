@@ -13,7 +13,7 @@ import (
 	"github.com/hbollon/go-edlib"
 )
 
-// NOTE: Add any reusable user-defined function that doesn't rely on any part of the scrapper codebase
+// NOTE: Add any reusable user-defined function that doesn't rely on any part of the scraper codebase
 
 // -1 return means fail in parsing the slug
 func ParseSlugToId(slug string) int64 {
@@ -63,7 +63,29 @@ func StringToFloat(s string) float64 {
 	return float64Value
 }
 
-func FileExists(file_path string) bool {
+// -69 result mean it failed to parse
+func StringToInt64(s string) int64 {
+	num, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return -69
+	}
+
+	return num
+}
+
+// Use for converting chapter number which is in float to string
+//
+// eg: 12.5 = 12_5
+func FloatToString(f float32) string {
+	a := fmt.Sprintf("%.1f", f)
+
+	a = strings.Replace(a, ".", "_", 1)
+	return a
+}
+
+// Check if directory or file exist
+func IsPathExists(file_path string) bool {
 	_, err := os.Stat(file_path)
 	return err == nil
 }

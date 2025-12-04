@@ -10,36 +10,36 @@ import (
 
 // Logging
 type Logging struct {
-	Logger      *slog.Logger
-	Cfg         *config.Config
-	ScrapMode   scraper.ScrapeMode
-	FlagLog     *LogFlagConfig
+	Logger    *slog.Logger
+	Cfg       *config.Config
+	ScrapMode scraper.ScrapeMode
+	FlagLog   *LogFlagConfig
 }
 
 // Create a new logger
 func SetupLogger(cfg *config.Config, scrapMode scraper.ScrapeMode, flagLog *LogFlagConfig) *Logging {
 	var logLevel slog.Level
-	
+
 	switch cfg.LogLevel {
-		case "debug":
-			logLevel = slog.LevelDebug
-		case "info":
-			logLevel = slog.LevelInfo
-		case "warn":
-			logLevel = slog.LevelWarn
-		case "error":
-			logLevel = slog.LevelError
-		default:
-			logLevel = slog.LevelInfo
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "info":
+		logLevel = slog.LevelInfo
+	case "warn":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
 	}
 
 	return &Logging{
 		Logger: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: logLevel,
 		})),
-		Cfg: cfg,
+		Cfg:       cfg,
 		ScrapMode: scrapMode,
-		FlagLog: flagLog,
+		FlagLog:   flagLog,
 	}
 }
 
@@ -50,15 +50,12 @@ func (l *Logging) ConfigLogging() {
 	// Log configuration
 	l.Logger.Info(
 		"configuration",
-		"bucket",              l.Cfg.Bucket,
-		"storage_type",        l.Cfg.StorageType,
-		"use_aria2c",          l.Cfg.UseAria2c,
-		"download_workers",    l.Cfg.DownloadWorkers,
+		"bucket", l.Cfg.Bucket,
 		"requests_per_second", l.Cfg.RequestsPerSecond,
-		"limit_series",        l.Cfg.LimitSeries,
-		"limit_chapters",      l.Cfg.LimitChapters,
-		"dry_run",             l.Cfg.DryRun,
-		"mode",                l.ScrapMode,
+		"limit_series", l.Cfg.LimitSeries,
+		"limit_chapters", l.Cfg.LimitChapters,
+		"dry_run", l.Cfg.DryRun,
+		"mode", l.ScrapMode,
 	)
 
 	if l.Cfg.HasSourceFilters() {

@@ -248,7 +248,7 @@ func (a *AsuraScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 
 	err := json.Unmarshal([]byte(pagesJSON), &pageData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse pages JSON: %v", err)
+		return nil, fmt.Errorf("failed to parse pages JSON: %w", err)
 	}
 
 	sort.Slice(pageData, func(i, j int) bool {

@@ -12,17 +12,22 @@ import (
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/scraper"
 	"comicrawl/internal/system"
-	"comicrawl/internal/worker"
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	newFlags := system.CreateNewFlags()
 
 	// Load configuration
 	cfg, err := config.LoadConfig(*newFlags.ConfigPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("loading config: %w", err)
 	}
 
 	// Parse scrape mode
@@ -35,16 +40,14 @@ func main() {
 	case "single":
 		scrapeMode = scraper.ModeSingle
 	default:
-		fmt.Fprintf(os.Stderr, "Error: invalid mode: %s. Must be 'full', 'incremental', or 'single'\n", *newFlags.ModeFlag)
-		os.Exit(1)
+		return fmt.Errorf("invalid mode: %s. Must be 'full', 'incremental', or 'single'", *newFlags.ModeFlag)
 	}
 	logger := system.SetupLogger(cfg, scrapeMode, newFlags)
 	logger.UpdateConfigFlags()
 
 	// Validate configuration
-	if err := cfg.Validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
-		os.Exit(1)
+	if validationErr := cfg.Validate(); validationErr != nil {
+		return fmt.Errorf("invalid configuration: %w", validationErr)
 	}
 
 	// Create context with cancellation
@@ -59,16 +62,9 @@ func main() {
 
 	// Initialize storage client
 	var storageClient *disk.Client
-	switch cfg.StorageType {
-	case "disk":
-		storageClient, err = disk.NewClient(ctx, cfg, logger.Logger)
-		if err != nil {
-			logger.Logger.Error("failed to create disk storage client", "error", err)
-			os.Exit(1)
-		}
-	default:
-		logger.Logger.Error("unsupported storage type", "storage_type", cfg.StorageType)
-		os.Exit(1)
+	storageClient, err = disk.NewClient(ctx, cfg, logger.Logger)
+	if err != nil {
+		return fmt.Errorf("failed to create disk storage client: %w", err)
 	}
 
 	// Only create Cloudflare client if configured
@@ -83,52 +79,32 @@ func main() {
 	// Create a new http client
 	httpClient, err := httpclient.NewHTTPClient(cfg, logger.Logger, flareClient)
 	if err != nil {
-		logger.Logger.Error("failed to create HTTP client", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to create HTTP client: %w", err)
 	}
 
 	// Create downloader based on configuration
 	var downloader scraper.Downloader
 
 	// Use aria2 from the config
-	if cfg.UseAria2c {
-		logger.Logger.Info("using aria2c for streaming downloads", "aria2c_url", cfg.Aria2cURL)
-		aria2cDownloader, err := aria2c.NewDownloader(cfg.Aria2cURL, cfg.DownloadWorkers*2, logger.Logger)
-		if err != nil {
-			logger.Logger.Error("failed to create aria2c downloader, falling back to regular pool", "error", err)
-			workerPool := worker.NewPool(cfg.DownloadWorkers, logger.Logger)
-			workerPool.Start()
-			downloader = workerPool
-			defer func() {
-				if err := workerPool.Close(); err != nil {
-					logger.Logger.Error("failed to close worker pool", "error", err)
-				}
-			}()
-		} else {
-			downloader = aria2cDownloader
-			defer func() {
-				if err := aria2cDownloader.Close(); err != nil {
-					logger.Logger.Error("failed to close aria2c downloader", "error", err)
-				}
-			}()
-		}
-	} else {
-		logger.Logger.Info("using regular worker pool for downloads")
-		workerPool := worker.NewPool(cfg.DownloadWorkers, logger.Logger)
-		workerPool.Start()
-		downloader = workerPool
-		defer func() {
-			if err := workerPool.Close(); err != nil {
-				logger.Logger.Error("failed to close worker pool", "error", err)
-			}
-		}()
+	logger.Logger.Info("using aria2c for streaming downloads", "aria2c_url", cfg.Aria2cURL)
+	// Default to 400 workers
+	const defaultAria2cWorkers = 400
+	aria2cDownloader, err := aria2c.NewDownloader(cfg.Aria2cURL, defaultAria2cWorkers, logger.Logger)
+	if err != nil {
+		return fmt.Errorf("failed to create aria2c downloader: %w", err)
 	}
+	downloader = aria2cDownloader
+	defer func() {
+		if err := aria2cDownloader.Close(); err != nil {
+			logger.Logger.Error("failed to close aria2c downloader", "error", err)
+		}
+	}()
 
 	// Run the scraper with the specified mode
 	if err := scraper.RunScraper(ctx, cfg, storageClient, flareClient, httpClient, downloader, logger.Logger, scrapeMode); err != nil {
-		logger.Logger.Error("scraper failed", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("scraper failed: %w", err)
 	}
 
 	logger.Logger.Info("scraper completed successfully")
+	return nil
 }

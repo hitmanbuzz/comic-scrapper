@@ -7,7 +7,7 @@ package scraper
 //
 // God knows WTF is happening, it is connected to every single part of the codebase
 //
-// That `runScrapper` function is ~300 lines of code.
+// That `runScraper` function is ~300 lines of code.
 // I would recommend every function to be less 80-100 lines of code
 
 import (
@@ -60,7 +60,6 @@ func RunScraper(
 
 	logger.Info("starting streaming scraper",
 		"bucket", cfg.Bucket,
-		"use_aria2c", cfg.UseAria2c,
 		"mode", mode)
 
 	// Collect metadata updates for batch processing at the end
@@ -125,7 +124,7 @@ func RunScraper(
 			// NOTE: I don't think we need this anymore
 			// Probably we can make something that can scrape specific titles only but for now not needed
 			// If really needed just change all `found_mu` to false and only change the one you need to true
-			
+
 			// Check if we should process this series
 			// if !cfg.IsSeriesIncluded(series.Slug) {
 			// 	logger.Debug("skipping series", "series", series.Slug)
@@ -286,7 +285,6 @@ func RunScraper(
 					metadata:   localMeta,
 				})
 				updatesMutex.Unlock()
-
 			}(sourceSeries)
 		}
 	}
@@ -343,11 +341,9 @@ func RunScraper(
 	return nil
 }
 
-
 // processSeriesChapters processes chapters and streams downloads immediately
 func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *httpclient.HTTPClient,
 	series sources.Series, remoteChapters []sources.Chapter, downloader Downloader, storageClient *disk.Client, logger *slog.Logger) error {
-
 	var wg sync.WaitGroup
 	var processedCount int64
 	var errorCount int64
@@ -405,7 +401,6 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 				"pages", len(pages),
 				"processed", atomic.LoadInt64(&processedCount),
 				"total", len(remoteChapters))
-
 		}(chapter)
 	}
 
@@ -426,4 +421,3 @@ func processSeriesChapters(ctx context.Context, src sources.Source, httpClient *
 
 	return nil
 }
-

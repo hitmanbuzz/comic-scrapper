@@ -17,7 +17,6 @@ import (
 	"comicrawl/internal/registry"
 	"comicrawl/internal/sources"
 	"comicrawl/internal/system"
-	"comicrawl/internal/worker"
 	"log/slog"
 )
 
@@ -40,9 +39,13 @@ type TestStats struct {
 }
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <config-file>\n", os.Args[0])
-		os.Exit(1)
+		return 1
 	}
 
 	configPath := os.Args[1]
@@ -51,7 +54,7 @@ func main() {
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	// Override config for testing
@@ -74,19 +77,19 @@ func main() {
 	storageClient, err := disk.NewClient(ctx, cfg, logger)
 	if err != nil {
 		logger.Error("failed to create disk storage client", "error", err)
-		os.Exit(1)
+		return 1
 	}
 
 	// Check external services
-	if err := checkExternalServices(cfg, logger); err != nil {
-		logger.Warn("external services check failed", "error", err)
+	if checkErr := checkExternalServices(cfg, logger); checkErr != nil {
+		logger.Warn("external services check failed", "error", checkErr)
 	}
 
 	// Create downloader
 	downloader, err := createDownloader(cfg, logger)
 	if err != nil {
 		logger.Error("failed to create downloader", "error", err)
-		os.Exit(1)
+		return 1
 	}
 	defer downloader.Close()
 
@@ -101,23 +104,23 @@ func main() {
 		logger.Warn("cleanup failed", "error", err)
 	}
 
-	// Exit with error code if any tests failed
+	// Return error code if any tests failed
 	if stats.Failed > 0 {
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
 
 func checkExternalServices(cfg *config.Config, logger *slog.Logger) error {
 	var errors []string
 
 	// Check aria2c
-	if cfg.UseAria2c {
-		logger.Info("checking aria2c service...")
-		if err := checkAria2c(cfg.Aria2cURL); err != nil {
-			errors = append(errors, fmt.Sprintf("aria2c: %v", err))
-		} else {
-			logger.Info("aria2c is running")
-		}
+	// Check aria2c
+	logger.Info("checking aria2c service...")
+	if err := checkAria2c(cfg.Aria2cURL); err != nil {
+		errors = append(errors, fmt.Sprintf("aria2c: %v", err))
+	} else {
+		logger.Info("aria2c is running")
 	}
 
 	// Check FlareSolver
@@ -151,6 +154,7 @@ func checkAria2c(url string) error {
 
 func checkFlareSolver(url string) error {
 	// Simple HTTP check
+	// #nosec G107 - URL is from configuration, not input
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -168,15 +172,8 @@ func createDownloader(cfg *config.Config, logger *slog.Logger) (interface {
 	AddDownload(request aria2c.DownloadRequest)
 	Close() error
 }, error) {
-	if cfg.UseAria2c {
-		logger.Info("using aria2c for integration tests", "aria2c_url", cfg.Aria2cURL)
-		return aria2c.NewDownloader(cfg.Aria2cURL, 10, logger)
-	} else {
-		logger.Info("using worker pool for integration tests")
-		pool := worker.NewPool(10, logger)
-		pool.Start()
-		return pool, nil
-	}
+	logger.Info("using aria2c for integration tests", "aria2c_url", cfg.Aria2cURL)
+	return aria2c.NewDownloader(cfg.Aria2cURL, 10, logger)
 }
 
 func runIntegrationTests(
@@ -263,8 +260,8 @@ func testSource(
 	if cfg.CloudflareURL != "" {
 		flareClient = cloudflare.NewClient(cfg, logger)
 	}
-	if err := httpClient.ConfigureForDomain(ctx, src.GetBaseURL(), flareClient, cfg.HTTPProxy); err != nil {
-		result.Error = fmt.Sprintf("failed to configure HTTP client: %v", err)
+	if configErr := httpClient.ConfigureForDomain(ctx, src.GetBaseURL(), flareClient, cfg.HTTPProxy); configErr != nil {
+		result.Error = fmt.Sprintf("failed to configure HTTP client: %v", configErr)
 		return result
 	}
 

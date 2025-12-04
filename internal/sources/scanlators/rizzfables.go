@@ -30,7 +30,8 @@ func NewRizzFables(logger *slog.Logger) *RizzFables {
 }
 
 type ComicResponse struct {
-	Title string `json:"title"`
+	Title  string `json:"title"`
+	Status string `json:"status"`
 }
 
 func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
@@ -89,7 +90,7 @@ func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 			MainTitle:    comic.Title,
 			ComicPageUrl: seriesURL,
 			MuSeriesId:   -1,
-			ComicStatus:  "", // Status not provided in response
+			ComicStatus:  comic.Status, // Status not provided in response
 			Found:        false,
 		})
 	}

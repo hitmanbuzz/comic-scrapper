@@ -4,16 +4,16 @@ import "flag"
 
 // Local Flag configs field
 type LogFlagConfig struct {
-	ConfigPath          *string
-	ModeFlag            *string
+	ConfigPath *string
+	ModeFlag   *string
 
 	// CLI override flags
-	SourcesFlag         *string
-	IncludeSeriesFlag   *string
-	ExcludeSeriesFlag   *string
-	LimitSeriesFlag     *int
-	LimitChaptersFlag   *int
-	DryRunFlag          *bool
+	SourcesFlag       *string
+	IncludeSeriesFlag *string
+	ExcludeSeriesFlag *string
+	LimitSeriesFlag   *int
+	LimitChaptersFlag *int
+	DryRunFlag        *bool
 }
 
 // Add new flags here (Update the above struct and return type struct field also)
@@ -30,8 +30,8 @@ func CreateNewFlags() *LogFlagConfig {
 	dryRunFlag := flag.Bool("dry-run", false, "Perform a dry run without downloading")
 
 	flag.Parse()
-	
-	return &LogFlagConfig {
+
+	return &LogFlagConfig{
 		ConfigPath:        configPath,
 		ModeFlag:          modeFlag,
 		SourcesFlag:       sourcesFlag,

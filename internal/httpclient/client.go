@@ -33,6 +33,7 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudfl
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: false,
+			MinVersion:         tls.VersionTLS12,
 		},
 		MaxIdleConns:        1000,
 		MaxIdleConnsPerHost: 200,

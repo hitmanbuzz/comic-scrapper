@@ -92,12 +92,13 @@ func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient)
 	var allSeries cstructs.FullSeriesResponse
 
 	// Webtoon has different ranking categories
-	rankings := []string{"trending", "popular", "originals", "canvas", "latest"}
+	// rankings := []string{"trending", "popular", "originals", "canvas", "latest"}
+	genres := []string{"drama", "fantasy", "comedy", "action", "slice_of_life", "romance", "super_hero", "sf", "thriller", "supernatural", "mystery", "sports", "historical", "heartwarming", "horror", "graphic_novel", "tiptoon"}
 
 	var pageSeries []sources.Series
-	for _, ranking := range rankings {
-		url := fmt.Sprintf("%s/%s/ranking/%s", w.GetBaseURL(), w.langCode, ranking)
-		w.Logger.Debug("fetching ranking page", "ranking", ranking, "url", url)
+	for _, genre := range genres {
+		url := fmt.Sprintf("%s/%s/genres/%s", w.GetBaseURL(), w.langCode, genre)
+		w.Logger.Debug("fetching ranking page", "genre", genre, "url", url)
 
 		req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
 		req.Header.Set("Origin", w.GetBaseURL())
@@ -105,7 +106,7 @@ func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return allSeries, fmt.Errorf("failed to fetch ranking page %s: %w", ranking, err)
+			return allSeries, fmt.Errorf("failed to fetch ranking page %s: %w", genre, err)
 		}
 		defer resp.Body.Close()
 
@@ -169,20 +170,6 @@ func (w *Webtoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 	})
 
 	return series
-}
-
-func (w *Webtoon) removeDuplicateSeries(series []sources.Series) []sources.Series {
-	seen := make(map[string]bool)
-	var unique []sources.Series
-
-	for _, s := range series {
-		if !seen[s.URL] {
-			seen[s.URL] = true
-			unique = append(unique, s)
-		}
-	}
-
-	return unique
 }
 
 func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
@@ -380,11 +367,17 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []sources.Chapter {
 			chapterTitle += " ♫"
 		}
 
+		// Ensure ViewerLink is a full URL
+		viewerURL := episode.ViewerLink
+		if strings.HasPrefix(viewerURL, "/") {
+			viewerURL = w.GetBaseURL() + viewerURL
+		}
+
 		chapters = append(chapters, sources.Chapter{
 			Number:    w.NormalizeChapterNumber(episode.ChapterNumber),
 			Title:     chapterTitle,
-			URL:       episode.ViewerLink,
-			SourceURL: episode.ViewerLink,
+			URL:       viewerURL,
+			SourceURL: viewerURL,
 		})
 	}
 

@@ -1,0 +1,72 @@
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    # Default linters
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    
+    # Additional recommended linters
+    - gofmt
+    - goimports
+    - revive
+    - gosec
+    - misspell
+    - unconvert
+    - gocritic
+    - nolintlint
+    - whitespace
+    - errorlint
+    
+  disable:
+    - gocyclo  
+    - prealloc 
+    - unparam  
+
+linters-settings:
+  govet:
+    enable:
+      - shadow
+  
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: package-comments
+        disabled: true
+  
+  gosec:
+    excludes:
+      - G104
+  
+  errorlint:
+    errorf: true
+    asserts: true
+    comparison: true
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+    
+    - linters:
+        - staticcheck
+      text: "SA9003:"  
+    
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
