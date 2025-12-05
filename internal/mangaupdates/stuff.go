@@ -5,6 +5,7 @@ import (
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/util"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -13,8 +14,10 @@ import (
 //
 // I recommend to use this function inside a sync.Group and insert scanlator json file as the paramater everytime
 func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
+	logger := slog.Default()
+
 	if !util.IsPathExists(jsonFile) {
-		fmt.Printf("%s doesn't exist\n", jsonFile)
+		logger.Error("json file doesn't exist", "file", jsonFile)
 		return
 	}
 
@@ -26,7 +29,7 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 	// Collect series from all group IDs
 	var allSeries []AllSeriesData
 	for _, groupId := range response.MuGroupIds {
-		fmt.Printf("Fetching series for group: %s\n", response.GroupName)
+		logger.Info("fetching series for group", "group", response.GroupName, "group_id", groupId)
 		groupSeries := GetAllGroupSeries(groupId, client)
 		allSeries = append(allSeries, groupSeries...)
 	}
@@ -35,7 +38,7 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 	foundCounter := 0
 	counter := 0
 
-	fmt.Println("Starting Filtering...")
+	logger.Info("starting filtering", "total_series", response.TotalSeries, "group", response.GroupName)
 
 	for i := range response.Series {
 		breakStatus := false
@@ -80,10 +83,10 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 
 	response.FoundSeries = foundCounter
 
-	fmt.Printf("[%s] Finished Filtering\n", response.GroupName)
+	logger.Info("finished filtering", "group", response.GroupName, "found_series", foundCounter, "total_series", response.TotalSeries)
 	err = util.WriteSourceSeriesJson(response)
 	if err != nil {
-		fmt.Printf("[ERROR] Couldnt' write filter data for source series json | Group: %s\n", response.GroupName)
+		logger.Error("couldn't write filter data for source series json", "group", response.GroupName, "error", err)
 		return
 	}
 }
@@ -95,11 +98,12 @@ type AllSeriesData struct {
 
 // This function is just a wrapper in top of `GetSeriesByGroup` function to get all series from the group using their group id
 func GetAllGroupSeries(groupId int64, client *httpclient.HTTPClient) []AllSeriesData {
+	logger := slog.Default()
 	var allSeries []AllSeriesData
 	_, groupSeriesData, err := GetSeriesByGroup(groupId, client)
 
 	if err != nil {
-		fmt.Printf("ERROR getting group series: %v\n", err)
+		logger.Error("error getting group series", "group_id", groupId, "error", err)
 		return allSeries
 	}
 
@@ -117,7 +121,7 @@ func GetAllGroupSeries(groupId int64, client *httpclient.HTTPClient) []AllSeries
 		batch := groupSeriesData.SeriesTitles[i:end]
 		var wg sync.WaitGroup
 
-		fmt.Printf("Processing batch: %d to %d\n", i, end)
+		logger.Info("processing batch", "start", i, "end", end, "batch_size", len(batch))
 
 		for _, groupSeries := range batch {
 			wg.Add(1)
@@ -129,7 +133,7 @@ func GetAllGroupSeries(groupId int64, client *httpclient.HTTPClient) []AllSeries
 				series, err := GetSeriesInfo(ss.SeriesId, client)
 
 				if err != nil {
-					fmt.Printf("[WARNING]: Skipping series %d: %v\n", ss.SeriesId, err)
+					logger.Warn("skipping series", "series_id", ss.SeriesId, "error", err)
 					// 1 second sleep after getting ratelimit or any error from the API
 					time.Sleep(1000 * time.Millisecond)
 					return
@@ -149,13 +153,11 @@ func GetAllGroupSeries(groupId int64, client *httpclient.HTTPClient) []AllSeries
 
 		// Sleep between batches (except after the last batch)
 		if end < totalSeries {
-			fmt.Printf("Process: %d/%d\n", counter, totalSeries)
-			fmt.Println("Batch complete. Sleeping before next batch...")
-			fmt.Printf("\n")
+			logger.Info("batch complete", "processed", counter, "total", totalSeries, "progress", fmt.Sprintf("%.1f%%", float64(counter)/float64(totalSeries)*100))
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
 
-	fmt.Println("Finished Getting All Group Series")
+	logger.Info("finished getting all group series", "total_series", len(allSeries), "group_id", groupId)
 	return allSeries
 }

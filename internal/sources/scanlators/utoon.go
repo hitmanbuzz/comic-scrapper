@@ -156,7 +156,7 @@ func (u *Utoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 				imageNum, err := strconv.Atoi(imageNumStr)
 
 				if err != nil {
-					fmt.Printf("Failed to convert `%s` to int\n", imageNumStr)
+					u.Logger.Warn("failed to convert image number to int", "image_number", imageNumStr, "error", err)
 					return
 				}
 
@@ -273,7 +273,7 @@ func (u *Utoon) extractChapterNumber(chapterUrl string) string {
 func (u *Utoon) decodePercentEncoded(encoded_text string) string {
 	decoded_text, err := url.PathUnescape(encoded_text)
 	if err != nil {
-		fmt.Println("Couldn't decode this string:", encoded_text)
+		u.Logger.Warn("couldn't decode percent-encoded string", "encoded_text", encoded_text, "error", err)
 		return ""
 	}
 

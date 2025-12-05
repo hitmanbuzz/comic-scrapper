@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -41,7 +42,8 @@ func GetSeriesByGroup(groupId int64, client *httpclient.HTTPClient) (int, cstruc
 
 	total_series := len(response.SeriesTitles)
 
-	fmt.Println("GetSeriesByGroup Done")
+	logger := slog.Default()
+	logger.Debug("GetSeriesByGroup completed", "group_id", groupId, "total_series", total_series)
 
 	return total_series, response, nil
 }
@@ -61,9 +63,11 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 	// https://www.mangaupdates.com/api/v1/groups/{id}
 	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/groups/%d", groupId)
 
+	logger := slog.Default()
+
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
-		fmt.Printf("[ERROR] Failed to create request | URL: %s\n", apiUrl)
+		logger.Warn("failed to create request for group info", "url", apiUrl, "error", err)
 		return "", ""
 	}
 
@@ -71,7 +75,7 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("[ERROR] Request Failed | URL: %s\n", apiUrl)
+		logger.Warn("request failed for group info", "url", apiUrl, "error", err)
 		return "", ""
 	}
 
@@ -80,7 +84,7 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 	var group Response
 	err = json.NewDecoder(resp.Body).Decode(&group)
 	if err != nil {
-		fmt.Printf("[ERROR] Failed to decode response | URL: %s | Error: %v\n", apiUrl, err)
+		logger.Warn("failed to decode response for group info", "url", apiUrl, "error", err)
 		return "", ""
 	}
 
@@ -88,12 +92,13 @@ func GetGroupInfo(groupId int64, client *httpclient.HTTPClient) (string, string)
 }
 
 func GetSeriesInfo(seriesId int64, client *httpclient.HTTPClient) (cstructs.SeriesResponse, error) {
+	logger := slog.Default()
 	var series cstructs.SeriesResponse
 	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/series/%d", seriesId)
 
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
-		fmt.Printf("[ERROR] Failed to create request | URL: %s\n", apiUrl)
+		logger.Warn("failed to create request for series info", "url", apiUrl, "series_id", seriesId, "error", err)
 		return series, err
 	}
 
@@ -101,7 +106,7 @@ func GetSeriesInfo(seriesId int64, client *httpclient.HTTPClient) (cstructs.Seri
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("[ERROR] Request Failed | URL: %s\n", apiUrl)
+		logger.Warn("request failed for series info", "url", apiUrl, "series_id", seriesId, "error", err)
 		return series, err
 	}
 
@@ -142,9 +147,11 @@ func GetSeriesRssFeed(seriesId int64, client *httpclient.HTTPClient) (cstructs.R
 	var customData cstructs.RssSeriesData
 	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/series/%d/rss", seriesId)
 
+	logger := slog.Default()
+
 	req, err := http.NewRequest("GET", apiUrl, nil)
 	if err != nil {
-		fmt.Printf("[ERROR] Failed to create request | URL: %s\n", apiUrl)
+		logger.Warn("failed to create request for series RSS feed", "url", apiUrl, "series_id", seriesId, "error", err)
 		return customData, err
 	}
 
@@ -152,7 +159,7 @@ func GetSeriesRssFeed(seriesId int64, client *httpclient.HTTPClient) (cstructs.R
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("[ERROR] Request Failed | URL: %s\n", apiUrl)
+		logger.Warn("request failed for series RSS feed", "url", apiUrl, "series_id", seriesId, "error", err)
 		return customData, err
 	}
 
@@ -160,7 +167,7 @@ func GetSeriesRssFeed(seriesId int64, client *httpclient.HTTPClient) (cstructs.R
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("[ERROR] Couldnt't parse response body to byte\n")
+		logger.Warn("couldn't parse response body to bytes for series RSS feed", "series_id", seriesId, "error", err)
 		return customData, err
 	}
 

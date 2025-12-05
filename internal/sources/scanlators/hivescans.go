@@ -60,7 +60,10 @@ func (h *HiveScans) ListSeries(ctx context.Context, client *httpclient.HTTPClien
 
 	url := "https://api.hivetoons.org/api/query?page=1&perPage=100000"
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return allSeries, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Origin", h.GetBaseURL())
 	req.Header.Set("Referer", h.GetBaseURL()+"/")
 
@@ -108,7 +111,10 @@ func (h *HiveScans) FetchChapters(ctx context.Context, client *httpclient.HTTPCl
 
 	url := fmt.Sprintf("https://api.hivetoons.org/api/chapters?postId=%d", seriesID)
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Origin", h.GetBaseURL())
 	req.Header.Set("Referer", h.GetBaseURL()+"/")
 

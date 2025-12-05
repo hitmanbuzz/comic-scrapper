@@ -59,7 +59,10 @@ func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 		"page":         {"1"},
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/Index/filter_series", r.GetBaseURL()), strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/Index/filter_series", r.GetBaseURL()), strings.NewReader(form.Encode()))
+	if err != nil {
+		return allSeries, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-Requested-With", "XMLHttpRequest")
 	req.Header.Set("X-API-Request", "1")
@@ -85,7 +88,7 @@ func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 
 	for _, comic := range comics {
 		slug := r.slugify(comic.Title)
-		seriesURL := r.BuildURL(fmt.Sprintf("series/%s%s", r.globalPrefix, slug))
+		seriesURL := fmt.Sprintf("%s/series/%s%s", r.GetBaseURL(), r.globalPrefix, slug)
 		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
 			MainTitle:    comic.Title,
 			ComicPageUrl: seriesURL,
@@ -100,7 +103,10 @@ func (r *RizzFables) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 }
 
 func (r *RizzFables) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	req, _ := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chapters page: %w", err)
@@ -136,14 +142,20 @@ func (r *RizzFables) FetchChapters(ctx context.Context, client *httpclient.HTTPC
 }
 
 func (r *RizzFables) fetchGlobalPrefix(ctx context.Context, client *httpclient.HTTPClient) (string, error) {
-	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/series/", r.GetBaseURL()), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/series/", r.GetBaseURL()), nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch series listing: %w", err)
 	}
 	defer resp.Body.Close()
 
-	doc, _ := goquery.NewDocumentFromReader(resp.Body)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML: %w", err)
+	}
 
 	var prefix string
 	doc.Find("a").EachWithBreak(func(_ int, s *goquery.Selection) bool {
@@ -164,7 +176,10 @@ func (r *RizzFables) fetchGlobalPrefix(ctx context.Context, client *httpclient.H
 func (r *RizzFables) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	r.Logger.Info("fetching pages", "chapter", chapter.Number)
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch pages: %w", err)

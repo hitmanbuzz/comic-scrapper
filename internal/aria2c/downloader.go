@@ -88,7 +88,11 @@ func (d *Downloader) worker(id int) {
 		cancel()
 
 		if err != nil {
-			chapterNum, _ := getChapterNumber(task.Chapter)
+			chapterNum, chapterErr := getChapterNumber(task.Chapter)
+			if chapterErr != nil {
+				chapterNum = "unknown"
+				d.logger.Warn("failed to get chapter number for error logging", "error", chapterErr)
+			}
 			d.logger.Error("download failed",
 				"error", err,
 				"series", task.SeriesSlug,

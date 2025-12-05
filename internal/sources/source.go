@@ -2,7 +2,6 @@ package sources
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -78,11 +77,6 @@ func (b *BaseSource) GetMuGroupIDs() []int64 {
 	return b.MuGroupIDs
 }
 
-// NOTE: NOT NEEDED (will think about it)
-func (b *BaseSource) BuildURL(path string) string {
-	return fmt.Sprintf("%s/%s", b.BaseURL, strings.TrimLeft(path, "/"))
-}
-
 func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
 	// First extract the number using a more sophisticated regex
 	re := regexp.MustCompile(`(\d+(?:\.\d+)?)`)
@@ -105,7 +99,6 @@ func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
 	return strings.Join(parts, ".")
 }
 
-// NOTE: NOT NEEDED (can be update so that it fits with our new codebase)
 func (b *BaseSource) CompareChapters(localChapters []disk.Chapter, remoteChapters []Chapter) (newChapters []Chapter, updatedChapters []Chapter) {
 	localMap := make(map[string]disk.Chapter)
 	for _, chap := range localChapters {

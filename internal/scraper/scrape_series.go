@@ -5,7 +5,6 @@ import (
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/registry"
 	"context"
-	"fmt"
 	"log/slog"
 )
 
@@ -17,9 +16,9 @@ func AddSourcesSeries(client *httpclient.HTTPClient, logger *slog.Logger) []cstr
 
 	for _, s := range sources {
 		seriesList, err := s.ListSeries(context.TODO(), client)
-		fmt.Println("Total Series:", len(seriesList.Series))
+		logger.Info("fetched series from source", "source", s.GetName(), "count", len(seriesList.Series))
 		if err != nil {
-			fmt.Printf("[ERROR] Source: %s couldn't fetch list of series | [SKIPPING]\n", s.GetName())
+			logger.Error("failed to fetch series from source", "source", s.GetName(), "error", err)
 			continue
 		}
 

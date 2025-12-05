@@ -205,7 +205,12 @@ func RunScraper(
 					// In incremental mode, only process new chapters
 					// Try to use CompareChapters if available
 					if comparator, ok := src.(ChapterComparator); ok {
-						chaptersToProcess, _ = comparator.CompareChapters(localMeta.Chapters, remoteChapters)
+						newChapters, updatedChapters := comparator.CompareChapters(localMeta.Chapters, remoteChapters)
+						chaptersToProcess = newChapters
+						// Note: updatedChapters could be used for other purposes if needed
+						if len(updatedChapters) > 0 {
+							logger.Debug("found updated chapters", "count", len(updatedChapters), "series", s.URL)
+						}
 					} else {
 						// Fallback: process all chapters
 						logger.Debug("source doesn't implement ChapterComparator, processing all chapters", "source", src.GetName())

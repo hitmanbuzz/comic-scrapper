@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"comicrawl/internal/aria2c"
@@ -373,45 +372,46 @@ func cleanupTestData(bucket string, logger *slog.Logger) error {
 }
 
 func printResults(stats TestStats) {
-	fmt.Println("\n" + strings.Repeat("=", 50))
-	fmt.Println("TEST RESULTS")
-	fmt.Println(strings.Repeat("=", 50))
+	logger := system.SetupTestLogger(slog.LevelInfo)
 
-	fmt.Printf("\nSummary:\n")
-	fmt.Printf("  Total Sources:    %d\n", stats.TotalSources)
-	fmt.Printf("  Successful:       %d ✓\n", stats.Successful)
-	fmt.Printf("  Failed:           %d ✗\n", stats.Failed)
-	fmt.Printf("  Success Rate:     %.1f%%\n", float64(stats.Successful)/float64(stats.TotalSources)*100)
-	fmt.Printf("  Total Pages:      %d\n", stats.TotalPages)
-	fmt.Printf("  Total Duration:   %v\n", stats.TotalDuration)
-	fmt.Printf("  Avg Duration:     %v\n", stats.TotalDuration/time.Duration(stats.TotalSources))
+	logger.Info("TEST RESULTS")
+	logger.Info("test summary",
+		"total_sources", stats.TotalSources,
+		"successful", stats.Successful,
+		"failed", stats.Failed,
+		"success_rate", fmt.Sprintf("%.1f%%", float64(stats.Successful)/float64(stats.TotalSources)*100),
+		"total_pages", stats.TotalPages,
+		"total_duration", stats.TotalDuration,
+		"avg_duration", stats.TotalDuration/time.Duration(stats.TotalSources),
+	)
 
 	if stats.Failed > 0 {
-		fmt.Printf("\n[!] FAILED SOURCES:\n")
+		logger.Warn("failed sources", "count", stats.Failed)
 		for _, result := range stats.Results {
 			if !result.Success {
-				fmt.Printf("  [X] %s: %s\n", result.SourceName, result.Error)
+				logger.Error("source test failed",
+					"source", result.SourceName,
+					"error", result.Error,
+				)
 			}
 		}
 	}
 
-	fmt.Printf("\n[✓] SUCCESSFUL SOURCES:\n")
+	logger.Info("successful sources", "count", stats.Successful)
 	for _, result := range stats.Results {
 		if result.Success {
-			fmt.Printf("  [✓] %s (%s) - %d pages in %v\n",
-				result.SourceName,
-				result.SeriesSlug,
-				result.PagesDownloaded,
-				result.Duration)
+			logger.Info("source test passed",
+				"source", result.SourceName,
+				"series", result.SeriesSlug,
+				"pages_downloaded", result.PagesDownloaded,
+				"duration", result.Duration,
+			)
 		}
 	}
 
-	fmt.Println("\n" + strings.Repeat("=", 80))
-
 	if stats.Failed > 0 {
-		fmt.Printf("\n[X] %d source(s) failed test\n", stats.Failed)
+		logger.Error("test completed with failures", "failed_count", stats.Failed)
 	} else {
-		fmt.Printf("\n[✓] All sources passed test!\n")
+		logger.Info("all tests passed successfully")
 	}
-	fmt.Println(strings.Repeat("=", 80) + "\n")
 }

@@ -29,8 +29,6 @@ type Config struct {
 	LimitSeries   int  `yaml:"limit_series"`
 	LimitChapters int  `yaml:"limit_chapters"`
 	DryRun        bool `yaml:"dry_run"`
-
-	
 }
 
 func NewDefaultConfig() *Config {

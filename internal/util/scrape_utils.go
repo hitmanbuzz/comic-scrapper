@@ -4,6 +4,7 @@ import (
 	"comicrawl/internal/cstructs"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -62,7 +63,8 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 			return fmt.Errorf("move %s to %s: %w", fileName, backupPath, err)
 		}
 
-		fmt.Printf("[MOVED] Path: %s\n", backupPath)
+		logger := slog.Default()
+		logger.Info("moved existing file to backup", "backup_path", backupPath, "original_path", filePath)
 	}
 
 	err = os.WriteFile(filePath, jsonData, 0600)
@@ -70,7 +72,8 @@ func WriteSourceSeriesJson(full_series cstructs.FullSeriesResponse) error {
 		return fmt.Errorf("write file %s: %w", filePath, err)
 	}
 
-	fmt.Printf("[DONE] Source Scraping | File: %s\n", filePath)
+	logger := slog.Default()
+	logger.Info("source scraping completed", "file", filePath, "group", full_series.GroupName, "series_count", full_series.TotalSeries)
 	return nil
 }
 
@@ -165,7 +168,8 @@ func GenerateMetadataJson(data cstructs.MetadataJson, seriesIdRootDir string, se
 		return fmt.Errorf("write metadata JSON to %s: %w", file_path, err)
 	}
 
-	fmt.Printf("[DONE] Metadata Scraping | Title: %s\n", data.Title)
+	logger := slog.Default()
+	logger.Info("metadata scraping completed", "title", data.Title, "series_id", seriesId, "file", file_path)
 	return nil
 }
 
