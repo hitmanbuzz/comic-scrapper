@@ -4,24 +4,24 @@ import (
 	"comicrawl/internal/cstructs"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/util"
+	"comicrawl/internal/util/fileio"
+	"context"
 	"fmt"
 	"log/slog"
-	"sync"
-	"time"
 )
 
 // This will filter those comics found in MU (using MuGroupSeries & MuSeriesInfo APIs) from the series.json file
 //
 // I recommend to use this function inside a sync.Group and insert scanlator json file as the paramater everytime
-func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
+func FilterScanlatorsFromMu(ctx context.Context, jsonFile string, client *httpclient.HTTPClient) {
 	logger := slog.Default()
 
-	if !util.IsPathExists(jsonFile) {
+	if !fileio.PathExists(jsonFile) {
 		logger.Error("json file doesn't exist", "file", jsonFile)
 		return
 	}
 
-	response, err := util.ReadSourceSeriesJson(jsonFile)
+	response, err := fileio.ReadSourceSeries(jsonFile)
 	if err != nil {
 		return
 	}
@@ -30,7 +30,10 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 	var allSeries []AllSeriesData
 	for _, groupId := range response.MuGroupIds {
 		logger.Info("fetching series for group", "group", response.GroupName, "group_id", groupId)
-		groupSeries := GetAllGroupSeries(groupId, client)
+		groupSeries, err := GetAllGroupSeries(ctx, groupId, client)
+		if err != nil {
+			logger.Warn("error getting group series, continuing with partial results", "group_id", groupId, "error", err)
+		}
 		allSeries = append(allSeries, groupSeries...)
 	}
 
@@ -84,7 +87,7 @@ func FilterScanlatorsFromMu(jsonFile string, client *httpclient.HTTPClient) {
 	response.FoundSeries = foundCounter
 
 	logger.Info("finished filtering", "group", response.GroupName, "found_series", foundCounter, "total_series", response.TotalSeries)
-	err = util.WriteSourceSeriesJson(response)
+	err = fileio.WriteSourceSeries(response)
 	if err != nil {
 		logger.Error("couldn't write filter data for source series json", "group", response.GroupName, "error", err)
 		return
@@ -97,67 +100,21 @@ type AllSeriesData struct {
 }
 
 // This function is just a wrapper in top of `GetSeriesByGroup` function to get all series from the group using their group id
-func GetAllGroupSeries(groupId int64, client *httpclient.HTTPClient) []AllSeriesData {
+func GetAllGroupSeries(ctx context.Context, groupId int64, client *httpclient.HTTPClient, opts ...BatchOption) ([]AllSeriesData, error) {
 	logger := slog.Default()
-	var allSeries []AllSeriesData
-	_, groupSeriesData, err := GetSeriesByGroup(groupId, client)
+	_, groupSeriesData, err := GetSeriesByGroup(ctx, groupId, client)
 
 	if err != nil {
-		logger.Error("error getting group series", "group_id", groupId, "error", err)
-		return allSeries
+		return nil, fmt.Errorf("error getting group series: %w", err)
 	}
 
-	var mu sync.Mutex
-	counter := 0
-
-	// Batch Size = Number of concurrent process running before putting to sleep timer
-	batchSize := 10
-	totalSeries := len(groupSeriesData.SeriesTitles)
-
-	// God knows what I did here, I was literally blind  and didn't use much brain when I did this (hitman)
-	for i := 0; i < totalSeries; i += batchSize {
-		end := min(i+batchSize, totalSeries)
-
-		batch := groupSeriesData.SeriesTitles[i:end]
-		var wg sync.WaitGroup
-
-		logger.Info("processing batch", "start", i, "end", end, "batch_size", len(batch))
-
-		for _, groupSeries := range batch {
-			wg.Add(1)
-
-			go func(ss cstructs.TitlesStruct) {
-				defer wg.Done()
-
-				lastUpdated := ss.LastUpdated.TimeStamp
-				series, err := GetSeriesInfo(ss.SeriesId, client)
-
-				if err != nil {
-					logger.Warn("skipping series", "series_id", ss.SeriesId, "error", err)
-					// 1 second sleep after getting ratelimit or any error from the API
-					time.Sleep(1000 * time.Millisecond)
-					return
-				}
-
-				mu.Lock()
-				allSeries = append(allSeries, AllSeriesData{
-					SeriesData:  series,
-					lastUpdated: lastUpdated,
-				})
-				counter++
-				mu.Unlock()
-			}(groupSeries)
-		}
-
-		wg.Wait()
-
-		// Sleep between batches (except after the last batch)
-		if end < totalSeries {
-			logger.Info("batch complete", "processed", counter, "total", totalSeries, "progress", fmt.Sprintf("%.1f%%", float64(counter)/float64(totalSeries)*100))
-			time.Sleep(100 * time.Millisecond)
-		}
+	logger.Info("starting to process group series", "group_id", groupId, "total_series", len(groupSeriesData.SeriesTitles))
+	
+	allSeries, err := ProcessSeriesTitles(ctx, client, groupSeriesData.SeriesTitles, opts...)
+	if err != nil {
+		return allSeries, fmt.Errorf("error processing group series: %w", err)
 	}
 
 	logger.Info("finished getting all group series", "total_series", len(allSeries), "group_id", groupId)
-	return allSeries
+	return allSeries, nil
 }

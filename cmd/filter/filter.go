@@ -6,6 +6,7 @@ import (
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/mangaupdates"
 	"comicrawl/internal/system"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -73,6 +74,6 @@ func main() {
 	// Process each matching file
 	for _, filePath := range matchingFiles {
 		logger.Logger.Info("processing file", "file", filePath)
-		mangaupdates.FilterScanlatorsFromMu(filePath, httpClient)
+		mangaupdates.FilterScanlatorsFromMu(context.Background(), filePath, httpClient)
 	}
 }

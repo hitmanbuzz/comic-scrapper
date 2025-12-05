@@ -6,7 +6,7 @@ import (
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/scraper"
 	"comicrawl/internal/system"
-	"comicrawl/internal/util"
+	"comicrawl/internal/util/fileio"
 	"fmt"
 	"os"
 )
@@ -43,7 +43,7 @@ func main() {
 	series := scraper.AddSourcesSeries(httpClient, logger.Logger)
 
 	for _, s := range series {
-		if err := util.WriteSourceSeriesJson(s); err != nil {
+		if err := fileio.WriteSourceSeries(s); err != nil {
 			logger.Logger.Error("failed to write series JSON", "source", s.GroupName, "error", err)
 		}
 	}
