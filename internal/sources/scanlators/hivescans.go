@@ -59,20 +59,16 @@ func (h *HiveScans) ListSeries(ctx context.Context, client *httpclient.HTTPClien
 	var allSeries cstructs.FullSeriesResponse
 
 	url := "https://api.hivetoons.org/api/query?page=1&perPage=100000"
+	headers := map[string]string{
+		"Origin":  h.GetBaseURL(),
+		"Referer": h.GetBaseURL() + "/",
+	}
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
-	req.Header.Set("Origin", h.GetBaseURL())
-	req.Header.Set("Referer", h.GetBaseURL()+"/")
-
-	resp, err := client.Do(req)
+	resp, err := sources.FetchWithContextAndHeaders(ctx, client, h.Logger, url, "fetching series metadata", headers)
 	if err != nil {
-		return allSeries, fmt.Errorf("failed to fetch series metadata: %w", err)
+		return allSeries, err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return allSeries, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
 
 	var metadata HiveSeriesMetadata
 	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
@@ -108,7 +104,10 @@ func (h *HiveScans) FetchChapters(ctx context.Context, client *httpclient.HTTPCl
 
 	url := fmt.Sprintf("https://api.hivetoons.org/api/chapters?postId=%d", seriesID)
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Origin", h.GetBaseURL())
 	req.Header.Set("Referer", h.GetBaseURL()+"/")
 

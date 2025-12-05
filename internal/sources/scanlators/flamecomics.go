@@ -61,7 +61,10 @@ type FlameComicsChapterResponse struct {
 }
 
 func (f *FlameComics) fetchBuildID(ctx context.Context) error {
-	req, _ := http.NewRequestWithContext(ctx, "GET", f.GetBaseURL()+"/", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", f.GetBaseURL()+"/", nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
 	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
@@ -70,7 +73,10 @@ func (f *FlameComics) fetchBuildID(ctx context.Context) error {
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
 
 	re := regexp.MustCompile(`"buildId":"([^"]+)"`)
 	if matches := re.FindSubmatch(body); len(matches) >= 2 {
@@ -89,7 +95,10 @@ func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPCli
 		return allSeries, err
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/series", f.GetBaseURL()), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/series", f.GetBaseURL()), nil)
+	if err != nil {
+		return allSeries, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Origin", f.GetBaseURL())
 	req.Header.Set("Referer", f.GetBaseURL()+"/")
 
@@ -129,7 +138,10 @@ func (f *FlameComics) FetchChapters(ctx context.Context, client *httpclient.HTTP
 		return nil, err
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/_next/data/%s/series/%02d.json", f.GetBaseURL(), f.dataToken, seriesID), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/_next/data/%s/series/%02d.json", f.GetBaseURL(), f.dataToken, seriesID), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Origin", f.GetBaseURL())
 	req.Header.Set("Referer", f.GetBaseURL()+"/")
 
@@ -150,7 +162,10 @@ func (f *FlameComics) FetchChapters(ctx context.Context, client *httpclient.HTTP
 func (f *FlameComics) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	f.Logger.Info("fetching pages", "chapter", chapter.Number)
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Origin", f.GetBaseURL())
 	req.Header.Set("Referer", f.GetBaseURL()+"/")
 

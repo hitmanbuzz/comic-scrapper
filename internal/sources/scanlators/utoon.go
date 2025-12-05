@@ -41,21 +41,9 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 		}
 
 		page_url := fmt.Sprintf("%s/manga/page/%d/", u.BaseURL, page)
-		u.Logger.Debug("fetching series page", "page", page, "url", page_url)
-
-		req, err := http.NewRequestWithContext(ctx, "GET", page_url, nil)
+		resp, err := sources.FetchWithContext(ctx, client, u.Logger, page_url, "fetching series page")
 		if err != nil {
-			return allSeries, fmt.Errorf("failed to create request: %w", err)
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			return allSeries, fmt.Errorf("failed to fetch series page %d: %w", page, err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return allSeries, fmt.Errorf("unexpected status code; %d", resp.StatusCode)
+			return allSeries, err
 		}
 
 		doc, err := goquery.NewDocumentFromReader(resp.Body)
@@ -156,7 +144,7 @@ func (u *Utoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 				imageNum, err := strconv.Atoi(imageNumStr)
 
 				if err != nil {
-					fmt.Printf("Failed to convert `%s` to int\n", imageNumStr)
+					u.Logger.Warn("failed to convert image number to int", "image_number", imageNumStr, "error", err)
 					return
 				}
 
@@ -273,7 +261,7 @@ func (u *Utoon) extractChapterNumber(chapterUrl string) string {
 func (u *Utoon) decodePercentEncoded(encoded_text string) string {
 	decoded_text, err := url.PathUnescape(encoded_text)
 	if err != nil {
-		fmt.Println("Couldn't decode this string:", encoded_text)
+		u.Logger.Warn("couldn't decode percent-encoded string", "encoded_text", encoded_text, "error", err)
 		return ""
 	}
 

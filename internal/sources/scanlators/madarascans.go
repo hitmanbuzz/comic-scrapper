@@ -31,22 +31,11 @@ func (m *MadaraScans) ListSeries(ctx context.Context, client *httpclient.HTTPCli
 	var allSeries cstructs.FullSeriesResponse
 
 	url := fmt.Sprintf("%s/series/list-mode/", m.GetBaseURL())
-	m.Logger.Debug("fetching series list", "url", url)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	resp, err := sources.FetchWithContext(ctx, client, m.Logger, url, "fetching series list")
 	if err != nil {
-		return allSeries, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return allSeries, fmt.Errorf("failed to fetch series: %w", err)
+		return allSeries, err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return allSeries, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {

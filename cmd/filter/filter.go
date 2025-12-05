@@ -6,6 +6,7 @@ import (
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/mangaupdates"
 	"comicrawl/internal/system"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -43,7 +44,7 @@ func main() {
 	// Check if series_data directory exists
 	seriesDataDir := "series_data"
 	if _, statErr := os.Stat(seriesDataDir); os.IsNotExist(statErr) {
-		fmt.Printf("Directory '%s' doesn't exist\n", seriesDataDir)
+		logger.Logger.Error("series_data directory doesn't exist", "directory", seriesDataDir)
 		os.Exit(1)
 	}
 
@@ -66,13 +67,13 @@ func main() {
 	}
 
 	if len(matchingFiles) == 0 {
-		fmt.Printf("No files matching pattern '*_series.json' found in '%s'\n", seriesDataDir)
+		logger.Logger.Error("no files matching pattern '*_series.json' found", "directory", seriesDataDir)
 		os.Exit(1)
 	}
 
 	// Process each matching file
 	for _, filePath := range matchingFiles {
-		fmt.Printf("Processing: %s\n", filePath)
-		mangaupdates.FilterScanlatorsFromMu(filePath, httpClient)
+		logger.Logger.Info("processing file", "file", filePath)
+		mangaupdates.FilterScanlatorsFromMu(context.Background(), filePath, httpClient)
 	}
 }

@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"math"
 	"os"
 	"regexp"
@@ -45,7 +45,8 @@ func ParseSlugsToIds(slugs []string) []int64 {
 func RespToByte(respBody io.ReadCloser) []byte {
 	result, err := io.ReadAll(respBody)
 	if err != nil {
-		log.Printf("Error reading response body\n")
+		logger := slog.Default()
+		logger.Warn("error reading response body", "error", err)
 		return nil
 	}
 
@@ -56,7 +57,8 @@ func RespToByte(respBody io.ReadCloser) []byte {
 func StringToFloat(s string) float64 {
 	float64Value, err := strconv.ParseFloat(s, 32)
 	if err != nil {
-		fmt.Println("Error parsing string to float:", err)
+		logger := slog.Default()
+		logger.Warn("error parsing string to float", "string", s, "error", err)
 		return -69
 	}
 
@@ -67,7 +69,8 @@ func StringToFloat(s string) float64 {
 func StringToInt64(s string) int64 {
 	num, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		fmt.Println("Error:", err)
+		logger := slog.Default()
+		logger.Warn("error parsing string to int64", "string", s, "error", err)
 		return -69
 	}
 

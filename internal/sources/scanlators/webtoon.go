@@ -76,8 +76,7 @@ func (w *Webtoon) ExtractSlugFromURL(urlStr string) (string, error) {
 	return "", fmt.Errorf("could not extract slug from URL: %s", urlStr)
 }
 
-// BuildURL overrides the base implementation with Webtoon-specific logic
-func (w *Webtoon) BuildURL(path string) string {
+func (w *Webtoon) buildURL(path string) string {
 	// For Webtoon, we need to include the language code in the path
 	trimmedPath := strings.TrimLeft(path, "/")
 	if trimmedPath == "" {
@@ -100,7 +99,10 @@ func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient)
 		url := fmt.Sprintf("%s/%s/genres/%s", w.GetBaseURL(), w.langCode, genre)
 		w.Logger.Debug("fetching ranking page", "genre", genre, "url", url)
 
-		req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return allSeries, fmt.Errorf("failed to create request: %w", err)
+		}
 		req.Header.Set("Origin", w.GetBaseURL())
 		req.Header.Set("Referer", w.GetBaseURL()+"/")
 
@@ -174,7 +176,10 @@ func (w *Webtoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 
 func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
 	// First fetch series details to get the title_no
-	req, _ := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Origin", w.GetBaseURL())
 	req.Header.Set("Referer", w.GetBaseURL()+"/")
 
@@ -209,7 +214,10 @@ func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClie
 	apiURL := fmt.Sprintf("https://m.webtoons.com/api/v1/%s/%s/episodes?pageSize=99999", webtoonType, titleNo)
 	w.Logger.Debug("fetching chapters via API", "url", apiURL)
 
-	req, _ = http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	req, err = http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Referer", "https://m.webtoons.com/")
 
 	resp, err = client.Do(req)
@@ -241,8 +249,8 @@ func (w *Webtoon) extractTitleNo(doc *goquery.Document, seriesSlug string) strin
 			return // Already found, skip
 		}
 
-		href, _ := s.Attr("href")
-		if href != "" {
+		href, exists := s.Attr("href")
+		if exists && href != "" {
 			parsed, err := url.Parse(href)
 			if err == nil {
 				if tn := parsed.Query().Get("title_no"); tn != "" {
@@ -262,8 +270,8 @@ func (w *Webtoon) extractTitleNo(doc *goquery.Document, seriesSlug string) strin
 	}
 
 	// Try to extract from data attributes
-	titleNo, _ = doc.Find("[data-title-no]").Attr("data-title-no")
-	if titleNo != "" {
+	titleNo, exists := doc.Find("[data-title-no]").Attr("data-title-no")
+	if exists && titleNo != "" {
 		return titleNo
 	}
 
@@ -341,15 +349,19 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []sources.Chapter {
 				}
 
 				episode.ChapterNumber = fmt.Sprintf("%.2f", seasonOffset+originalNumber)
-				if num, _ := strconv.ParseFloat(episode.ChapterNumber, 64); num > maxChapterNumber {
+				if num, err := strconv.ParseFloat(episode.ChapterNumber, 64); err == nil && num > maxChapterNumber {
 					maxChapterNumber = num
 				}
 			} else {
 				if i == 0 {
 					episode.ChapterNumber = "0"
 				} else {
-					prevNum, _ := strconv.ParseFloat(episodes[i-1].ChapterNumber, 64)
-					episode.ChapterNumber = fmt.Sprintf("%.2f", prevNum+0.01)
+					prevNum, err := strconv.ParseFloat(episodes[i-1].ChapterNumber, 64)
+					if err == nil {
+						episode.ChapterNumber = fmt.Sprintf("%.2f", prevNum+0.01)
+					} else {
+						episode.ChapterNumber = fmt.Sprintf("%.2f", float64(i)+0.01)
+					}
 				}
 			}
 		}
@@ -387,7 +399,10 @@ func (w *Webtoon) parseChaptersFromAPI(episodes []Episode) []sources.Chapter {
 func (w *Webtoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	w.Logger.Info("fetching pages", "chapter", chapter.Number)
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Origin", w.GetBaseURL())
 	req.Header.Set("Referer", w.GetBaseURL()+"/")
 
@@ -414,8 +429,8 @@ func (w *Webtoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 
 	// Try to find regular image pages first
 	doc.Find("div#_imageList > img").Each(func(i int, s *goquery.Selection) {
-		imageURL, _ := s.Attr("data-url")
-		if imageURL != "" {
+		imageURL, exists := s.Attr("data-url")
+		if exists && imageURL != "" {
 			// Remove quality parameter for max quality
 			parsed, err := url.Parse(imageURL)
 			if err == nil && parsed.Query().Get("type") == "q90" {
