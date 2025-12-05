@@ -133,7 +133,7 @@ func checkExternalServices(cfg *config.Config, logger *slog.Logger) error {
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("external service checks failed: %v", errors)
+		return fmt.Errorf("external service checks failed: %w", errors[0])
 	}
 	return nil
 }
