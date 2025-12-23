@@ -2,7 +2,7 @@
 
 Scrape comics from scanlation sites.
 
-### STATUS: NOT TESTED
+### STATUS: NOT TESTED (WILL HAVE ERRORS)
 
 ### Prerequisites:
 - Go 1.24+
