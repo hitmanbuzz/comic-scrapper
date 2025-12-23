@@ -2,6 +2,8 @@
 
 Scrape comics from scanlation sites.
 
+### STATUS: NOT TESTED
+
 ### Prerequisites:
 - Go 1.24+
 - [aria2](https://github.com/aria2/aria2) RPC server

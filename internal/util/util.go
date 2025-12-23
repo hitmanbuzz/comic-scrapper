@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"io"
 	"log/slog"
 	"math"
@@ -77,20 +76,21 @@ func StringToInt64(s string) int64 {
 	return num
 }
 
-// Use for converting chapter number which is in float to string
-//
-// eg: 12.5 = 12_5
-func FloatToString(f float32) string {
-	a := fmt.Sprintf("%.1f", f)
-
-	a = strings.Replace(a, ".", "_", 1)
-	return a
-}
-
 // Check if directory or file exist
 func IsPathExists(file_path string) bool {
 	_, err := os.Stat(file_path)
 	return err == nil
+}
+
+func ChapterFloatToString(chapterNum float32) string {
+	s := strconv.FormatFloat(float64(chapterNum), 'f', -1, 32)
+	firstDot := strings.Index(s, ".")
+	nextPart := s[firstDot:] 
+	if nextPart[:1] != "0" {
+		return strings.Replace(s, ".", "_", 1)
+	}
+
+	return s[:firstDot] 
 }
 
 // NormalizeTitle preprocesses comic titles for better matching by removing punctuation,

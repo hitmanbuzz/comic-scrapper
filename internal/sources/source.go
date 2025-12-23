@@ -3,20 +3,21 @@ package sources
 import (
 	"context"
 	"log/slog"
-	"regexp"
 	"strings"
 
 	"comicrawl/internal/cstructs"
-	"comicrawl/internal/disk"
 	"comicrawl/internal/httpclient"
 )
 
 type Chapter struct {
-	Number    string
+	// Chapter Number
+	Number    float32
+	// Chapter Title (optional)
 	Title     string
+	// Chapter URL
 	URL       string
+	// Contain the images page data
 	Pages     []Page
-	SourceURL string
 }
 
 type Page struct {
@@ -75,43 +76,4 @@ func (b *BaseSource) GetBaseURL() string {
 // Get the group (source provider) IDs on MU (can have multiple)
 func (b *BaseSource) GetMuGroupIDs() []int64 {
 	return b.MuGroupIDs
-}
-
-func (b *BaseSource) NormalizeChapterNumber(chapterNum string) string {
-	// First extract the number using a more sophisticated regex
-	re := regexp.MustCompile(`(\d+(?:\.\d+)?)`)
-	matches := re.FindStringSubmatch(chapterNum)
-
-	if len(matches) == 0 {
-		return "0"
-	}
-
-	normalized := matches[1]
-
-	parts := strings.Split(normalized, ".")
-	if len(parts) > 0 && parts[0] != "" {
-		parts[0] = strings.TrimLeft(parts[0], "0")
-		if parts[0] == "" {
-			parts[0] = "0"
-		}
-	}
-
-	return strings.Join(parts, ".")
-}
-
-func (b *BaseSource) CompareChapters(localChapters []disk.Chapter, remoteChapters []Chapter) (newChapters []Chapter, updatedChapters []Chapter) {
-	localMap := make(map[string]disk.Chapter)
-	for _, chap := range localChapters {
-		localMap[chap.Number] = chap
-	}
-
-	for _, remoteChap := range remoteChapters {
-		localChap, exists := localMap[remoteChap.Number]
-		if !exists {
-			newChapters = append(newChapters, remoteChap)
-		} else if remoteChap.SourceURL != localChap.SourceURL {
-			updatedChapters = append(updatedChapters, remoteChap)
-		}
-	}
-	return newChapters, updatedChapters
 }
