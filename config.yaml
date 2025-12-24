@@ -1,4 +1,4 @@
-bucket: '/home/hitmanbuzz/comicrawl_data'
+bucket: '~/comicrawl_data'
 local_dir: './data'
 series_list_dir: 'series_list'
 series_data_dir: 'series_data'
