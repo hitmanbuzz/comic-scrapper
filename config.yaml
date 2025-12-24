@@ -1,9 +1,11 @@
-bucket: '/tmp/comicrawl-data'
+bucket: '/home/hitmanbuzz/comicrawl_data'
+local_dir: './data'
+series_list_dir: 'series_list'
+series_data_dir: 'series_data'
+backup_data_dir: 'backup'
 
 # Comment out the below flaresolverr field to ignore cloudflare stuff
 # flaresolverr_url: "http://localhost:8191/v1"
-
-aria2c_url: 'http://localhost:6800/jsonrpc'
 
 user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 http_proxy: ''
@@ -13,15 +15,15 @@ request_timeout: '60s'
 log_level: 'info'
 
 include_sources:
-  - utoon
-  - flamecomics
+  # - utoon
+  # - flamecomics
   - asurascans
-  - drakescans
-  - thunderscans
-  - madarascans
-  - hivescans
-  - webtoon
-  - rizzfables
+  # - drakescans
+  # - thunderscans
+  # - madarascans
+  # - hivescans
+  # - webtoon
+  # - rizzfables
 
 # include_sources:
 #   - asura

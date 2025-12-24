@@ -10,9 +10,17 @@ import (
 )
 
 type Config struct {
+	// Where to store comic data (chapter, images, metadata, etc)
 	Bucket            string        `yaml:"bucket"`
+	// Local Directory to store scrapper data
+	LocalDir          string        `yaml:"local_dir"`
+	// Store inside `LocalDir`
+	SeriesListDir     string        `yaml:"series_list_dir"`
+	// Store inside `LocalDir`
+	SeriesDataDir     string        `yaml:"series_data_dir"`
+	// Store inside `LocalDir`
+	BackupDataDir     string        `yaml:"backup_data_dir"`
 	CloudflareURL     string        `yaml:"flaresolverr_url"`
-	Aria2cURL         string        `yaml:"aria2c_url"`
 	UserAgent         string        `yaml:"user_agent"`
 	HTTPProxy         string        `yaml:"http_proxy"`
 	RequestsPerSecond float64       `yaml:"requests_per_second"`
@@ -33,7 +41,6 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		Aria2cURL:         "http://localhost:6800/jsonrpc",
 		RequestsPerSecond: 100,
 		RequestTimeout:    60 * time.Second,
 		LogLevel:          "info",

@@ -4,7 +4,7 @@ import (
 	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/config"
 	"comicrawl/internal/httpclient"
-	"comicrawl/internal/scraper"
+	"comicrawl/internal/registry"
 	"comicrawl/internal/system"
 	"comicrawl/internal/util/fileio"
 	"fmt"
@@ -20,7 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := system.SetupLogger(cfg, "", newFlags)
+	logger := system.SetupLogger(cfg, newFlags)
 	logger.UpdateConfigFlags()
 
 	// Only create Cloudflare client if configured
@@ -40,10 +40,10 @@ func main() {
 	}
 
 	// These part is the main thing, the rest above are just copy-pasta from `cmd/app/main.go`
-	series := scraper.AddSourcesSeries(httpClient, logger.Logger)
+	series := registry.AddSourcesSeries(httpClient, logger.Logger)
 
 	for _, s := range series {
-		if err := fileio.WriteSourceSeries(s); err != nil {
+		if err := fileio.WriteSourceSeries(s, cfg); err != nil {
 			logger.Logger.Error("failed to write series JSON", "source", s.GroupName, "error", err)
 		}
 	}

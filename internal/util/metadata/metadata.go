@@ -1,22 +1,22 @@
 package metadata
 
 import (
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/cstructs/scrape_data"
+	"comicrawl/internal/util"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 )
 
 // GenerateMetadata creates or updates a metadata.json file for a series.
 // If metadata already exists, it merges new data with existing data.
-func GenerateMetadata(data cstructs.MetadataJson, seriesIdRootDir string, seriesId int64) error {
-	file_path := fmt.Sprintf("%s/%d/metadata.json", seriesIdRootDir, seriesId)
+func GenerateMetadata(data scrape_data.MetadataJson, seriesIdRootDir string, seriesId string) error {
+	file_path := fmt.Sprintf("%s/%s/metadata.json", seriesIdRootDir, seriesId)
 
 	finalData := data
 
 	// If metadata already exists, merge with existing data
-	if PathExists(file_path) {
+	if util.IsPathExists(file_path) {
 		existingData, err := ReadMetadata(file_path)
 		if err != nil {
 			return fmt.Errorf("fetch metadata from %s: %w", file_path, err)
@@ -73,16 +73,19 @@ func GenerateMetadata(data cstructs.MetadataJson, seriesIdRootDir string, series
 		return fmt.Errorf("write metadata JSON to %s: %w", file_path, err)
 	}
 
-	logger := slog.Default()
-	logger.Info("metadata scraping completed", "title", data.Title, "series_id", seriesId, "file", file_path)
+	fmt.Printf("\n[SUCCESS METADATE GENERATED]\n")
+	fmt.Printf("Series Title: %s\n", data.Title)
+	fmt.Printf("Series ID: %s\n", seriesId)
+	fmt.Printf("Metadata Json Path: %s\n", file_path)
+	fmt.Printf("\n")
 	return nil
 }
 
 // ReadMetadata reads and parses a metadata.json file.
-func ReadMetadata(metadataJsonPath string) (cstructs.MetadataJson, error) {
-	var data cstructs.MetadataJson
+func ReadMetadata(metadataJsonPath string) (scrape_data.MetadataJson, error) {
+	var data scrape_data.MetadataJson
 
-	if !PathExists(metadataJsonPath) {
+	if !util.IsPathExists(metadataJsonPath) {
 		return data, fmt.Errorf("metadata file %s does not exist", metadataJsonPath)
 	}
 
@@ -97,10 +100,4 @@ func ReadMetadata(metadataJsonPath string) (cstructs.MetadataJson, error) {
 	}
 
 	return data, nil
-}
-
-// PathExists checks if a file or directory exists at the given path.
-func PathExists(filePath string) bool {
-	_, err := os.Stat(filePath)
-	return err == nil
 }

@@ -1,7 +1,8 @@
 package mangaupdates
 
 import (
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/config"
+	"comicrawl/internal/cstructs/mu_data"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/util"
 	"comicrawl/internal/util/fileio"
@@ -13,10 +14,10 @@ import (
 // This will filter those comics found in MU (using MuGroupSeries & MuSeriesInfo APIs) from the series.json file
 //
 // I recommend to use this function inside a sync.Group and insert scanlator json file as the paramater everytime
-func FilterScanlatorsFromMu(ctx context.Context, jsonFile string, client *httpclient.HTTPClient) {
+func FilterScanlatorsFromMu(ctx context.Context, cfg *config.Config, jsonFile string, client *httpclient.HTTPClient) {
 	logger := slog.Default()
 
-	if !fileio.PathExists(jsonFile) {
+	if !util.IsPathExists(jsonFile) {
 		logger.Error("json file doesn't exist", "file", jsonFile)
 		return
 	}
@@ -87,7 +88,7 @@ func FilterScanlatorsFromMu(ctx context.Context, jsonFile string, client *httpcl
 	response.FoundSeries = foundCounter
 
 	logger.Info("finished filtering", "group", response.GroupName, "found_series", foundCounter, "total_series", response.TotalSeries)
-	err = fileio.WriteSourceSeries(response)
+	err = fileio.WriteSourceSeries(response, cfg)
 	if err != nil {
 		logger.Error("couldn't write filter data for source series json", "group", response.GroupName, "error", err)
 		return
@@ -95,7 +96,7 @@ func FilterScanlatorsFromMu(ctx context.Context, jsonFile string, client *httpcl
 }
 
 type AllSeriesData struct {
-	SeriesData  cstructs.SeriesResponse
+	SeriesData  mu_data.SeriesResponse
 	lastUpdated int64
 }
 

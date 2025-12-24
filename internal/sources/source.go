@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/cstructs/scrape_data"
 	"comicrawl/internal/httpclient"
 )
 
@@ -16,8 +16,6 @@ type Chapter struct {
 	Title     string
 	// Chapter URL
 	URL       string
-	// Contain the images page data
-	Pages     []Page
 }
 
 type Page struct {
@@ -42,7 +40,7 @@ type Source interface {
 	// Get the group (source provider) IDs on MU (can have multiple)
 	GetMuGroupIDs() []int64
 	// It will not be use directly in scanlator code but only for generating those series data in a json file
-	ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error)
+	ListSeries(ctx context.Context, client *httpclient.HTTPClient) (scrape_data.FullSeriesResponse, error)
 	FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series Series) ([]Chapter, error)
 	FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter Chapter) ([]Page, error)
 }

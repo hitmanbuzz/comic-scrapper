@@ -47,8 +47,12 @@ test:
 
 # Build the project
 build:
-	@echo "Building comicrawl..."
-	@go build -o comicrawl ./cmd/app/main.go
+	@echo "Building all main go files..."
+	@go build -o ./build/series ./cmd/series/main.go
+	@go build -o ./build/filter ./cmd/filter/main.go
+	@go build -o ./build/scrape ./cmd/scrape_source_series/main.go
+	@go build -o ./build/download ./cmd/download_series/main.go
+	@go build -o ./build/metadata ./cmd/metadata_gen/main.go
 	@echo "Build complete"
 
 # Clean build artifacts
@@ -58,9 +62,25 @@ clean:
 	@echo "Clean complete"
 
 # Run the application
-run:
-	@echo "Running comicrawl..."
-	@go run ./cmd/app/main.go
+series:
+	@echo "Running series scrape..."
+	@go run ./cmd/series/main.go
+
+filter:
+	@echo "Running filtering series..."
+	@go run ./cmd/filter/main.go
+
+scrape:
+	@echo "Running scraping sources series..."
+	@go run ./cmd/scrape_source_series/main.go
+
+download:
+	@echo "Running downloading series..."
+	@go run ./cmd/download_series/main.go
+
+metadata:
+	@echo "Running metadata process..."
+	@go run ./cmd/metadata_gen/main.go
 
 # Install development tools
 install-tools:

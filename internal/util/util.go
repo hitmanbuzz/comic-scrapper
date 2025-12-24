@@ -1,7 +1,7 @@
 package util
 
 import (
-	"io"
+	"fmt"
 	"log/slog"
 	"math"
 	"os"
@@ -24,12 +24,6 @@ func ParseSlugToId(slug string) int64 {
 	return id
 }
 
-// Parse ID back to slug (to be honest not needed but keep it there)
-func ParseIdToSlug(id int64) string {
-	slug := strconv.FormatInt(id, 36)
-	return slug
-}
-
 func ParseSlugsToIds(slugs []string) []int64 {
 	ids := make([]int64, 0, len(slugs))
 	for _, slug := range slugs {
@@ -38,18 +32,6 @@ func ParseSlugsToIds(slugs []string) []int64 {
 		}
 	}
 	return ids
-}
-
-// Convert Response Body to byte
-func RespToByte(respBody io.ReadCloser) []byte {
-	result, err := io.ReadAll(respBody)
-	if err != nil {
-		logger := slog.Default()
-		logger.Warn("error reading response body", "error", err)
-		return nil
-	}
-
-	return result
 }
 
 // -69 result mean it failed to parse
@@ -82,15 +64,14 @@ func IsPathExists(file_path string) bool {
 	return err == nil
 }
 
-func ChapterFloatToString(chapterNum float32) string {
-	s := strconv.FormatFloat(float64(chapterNum), 'f', -1, 32)
-	firstDot := strings.Index(s, ".")
-	nextPart := s[firstDot:] 
-	if nextPart[:1] != "0" {
-		return strings.Replace(s, ".", "_", 1)
+func ChapterFloatToString(chapterNum float64) string {
+	if chapterNum == float64(int64(chapterNum)) {
+		return strconv.FormatInt(int64(chapterNum), 10)
 	}
 
-	return s[:firstDot] 
+	s := fmt.Sprintf("%.1f", chapterNum)
+
+	return strings.Replace(s, ".", "_", 1)
 }
 
 // NormalizeTitle preprocesses comic titles for better matching by removing punctuation,
@@ -99,8 +80,8 @@ func NormalizeTitle(title string) string {
 	normalized := strings.ToLower(title)
 
 	for _, article := range []string{"the ", "a ", "an "} {
-		if strings.HasPrefix(normalized, article) {
-			normalized = strings.TrimPrefix(normalized, article)
+		if after, ok :=strings.CutPrefix(normalized, article); ok  {
+			normalized = after
 			break
 		}
 	}

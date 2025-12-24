@@ -2,7 +2,6 @@ package system
 
 import (
 	"comicrawl/internal/config"
-	"comicrawl/internal/scraper"
 	"log/slog"
 	"os"
 	"strings"
@@ -12,12 +11,11 @@ import (
 type Logging struct {
 	Logger    *slog.Logger
 	Cfg       *config.Config
-	ScrapMode scraper.ScrapeMode
 	FlagLog   *LogFlagConfig
 }
 
 // Create a new logger
-func SetupLogger(cfg *config.Config, scrapMode scraper.ScrapeMode, flagLog *LogFlagConfig) *Logging {
+func SetupLogger(cfg *config.Config, flagLog *LogFlagConfig) *Logging {
 	var logLevel slog.Level
 
 	switch cfg.LogLevel {
@@ -38,7 +36,6 @@ func SetupLogger(cfg *config.Config, scrapMode scraper.ScrapeMode, flagLog *LogF
 			Level: logLevel,
 		})),
 		Cfg:       cfg,
-		ScrapMode: scrapMode,
 		FlagLog:   flagLog,
 	}
 }
@@ -55,7 +52,6 @@ func (l *Logging) ConfigLogging() {
 		"limit_series", l.Cfg.LimitSeries,
 		"limit_chapters", l.Cfg.LimitChapters,
 		"dry_run", l.Cfg.DryRun,
-		"mode", l.ScrapMode,
 	)
 
 	if l.Cfg.HasSourceFilters() {

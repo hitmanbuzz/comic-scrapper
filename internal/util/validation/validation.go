@@ -1,18 +1,19 @@
 package validation
 
 import (
-	"comicrawl/internal/cstructs"
-	"encoding/json"
+	"comicrawl/internal/util"
+	"comicrawl/internal/util/metadata"
 	"fmt"
-	"os"
 )
+
+// NOTE: NEED TO REFACTOR
 
 // IsSeriesScraped checks if a series has been scraped by any group.
 // Returns true if the series has metadata with at least one source provider.
 func IsSeriesScraped(seriesId int64, seriesIdRootDir string) (bool, error) {
 	metadataPath := fmt.Sprintf("%s/%d/metadata.json", seriesIdRootDir, seriesId)
 
-	metadata, err := ReadMetadata(metadataPath)
+	metadata, err := metadata.ReadMetadata(metadataPath)
 	if err != nil {
 		return false, fmt.Errorf("read metadata: %w", err)
 	}
@@ -25,7 +26,7 @@ func IsSeriesScraped(seriesId int64, seriesIdRootDir string) (bool, error) {
 func IsSeriesScrapedByGroup(seriesId int64, groupName string, seriesIdRootDir string) (bool, error) {
 	metadataPath := fmt.Sprintf("%s/%d/metadata.json", seriesIdRootDir, seriesId)
 
-	metadata, err := ReadMetadata(metadataPath)
+	metadata, err := metadata.ReadMetadata(metadataPath)
 	if err != nil {
 		return false, fmt.Errorf("read metadata: %w", err)
 	}
@@ -42,13 +43,13 @@ func IsSeriesScrapedByGroup(seriesId int64, groupName string, seriesIdRootDir st
 // IsMetadataFound checks if a metadata.json file exists for a series.
 func IsMetadataFound(seriesId int64, seriesIdRootDir string) (bool, error) {
 	mPath := fmt.Sprintf("%s/%d/metadata.json", seriesIdRootDir, seriesId)
-	return PathExists(mPath), nil
+	return util.IsPathExists(mPath), nil
 }
 
 // IsChapterScraped checks if a specific chapter from a series has been scraped by a group.
 // Returns true if the chapter number exists in the group's chapter data.
 func IsChapterScraped(seriesIDRootDir string, seriesID int64, groupName string, chapterNum float32) (bool, error) {
-	metadata, err := ReadMetadata(fmt.Sprintf("%s/%d/metadata.json", seriesIDRootDir, seriesID))
+	metadata, err := metadata.ReadMetadata(fmt.Sprintf("%s/%d/metadata.json", seriesIDRootDir, seriesID))
 	if err != nil {
 		return false, fmt.Errorf("read metadata: %w", err)
 	}
@@ -70,31 +71,3 @@ func IsChapterScraped(seriesIDRootDir string, seriesID int64, groupName string, 
 
 	return false, nil
 }
-
-// PathExists checks if a file or directory exists at the given path.
-func PathExists(filePath string) bool {
-	_, err := os.Stat(filePath)
-	return err == nil
-}
-
-// ReadMetadata reads and parses a metadata.json file.
-func ReadMetadata(metadataJsonPath string) (cstructs.MetadataJson, error) {
-	var data cstructs.MetadataJson
-
-	if !PathExists(metadataJsonPath) {
-		return data, fmt.Errorf("metadata file %s does not exist", metadataJsonPath)
-	}
-
-	content, err := os.ReadFile(metadataJsonPath)
-	if err != nil {
-		return data, fmt.Errorf("read metadata JSON file %s: %w", metadataJsonPath, err)
-	}
-
-	err = json.Unmarshal(content, &data)
-	if err != nil {
-		return data, fmt.Errorf("unmarshal metadata JSON from %s: %w", metadataJsonPath, err)
-	}
-
-	return data, nil
-}
-

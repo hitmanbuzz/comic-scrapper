@@ -2,7 +2,7 @@
 package mangaupdates
 
 import (
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/cstructs/mu_data"
 	"comicrawl/internal/httpclient"
 	"context"
 	"encoding/json"
@@ -15,10 +15,10 @@ import (
 )
 
 // Return (Total Series, Series List with data, error)
-func GetSeriesByGroup(ctx context.Context, groupId int64, client *httpclient.HTTPClient) (int, cstructs.GroupSeriesResponse, error) {
+func GetSeriesByGroup(ctx context.Context, groupId int64, client *httpclient.HTTPClient) (int, mu_data.GroupSeriesResponse, error) {
 	// https://www.mangaupdates.com/api/v1/groups/{id}/series
 	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/groups/%d/series", groupId)
-	var response cstructs.GroupSeriesResponse
+	var response mu_data.GroupSeriesResponse
 
 	req, err := http.NewRequestWithContext(ctx, "GET", apiUrl, nil)
 	if err != nil {
@@ -89,9 +89,9 @@ func GetGroupInfo(ctx context.Context, groupId int64, client *httpclient.HTTPCli
 	return group.Name, group.Social.Site, nil
 }
 
-func GetSeriesInfo(ctx context.Context, seriesId int64, client *httpclient.HTTPClient) (cstructs.SeriesResponse, error) {
+func GetSeriesInfo(ctx context.Context, seriesId int64, client *httpclient.HTTPClient) (mu_data.SeriesResponse, error) {
 	logger := slog.Default()
-	var series cstructs.SeriesResponse
+	var series mu_data.SeriesResponse
 	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/series/%d", seriesId)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", apiUrl, nil)
@@ -111,19 +111,19 @@ func GetSeriesInfo(ctx context.Context, seriesId int64, client *httpclient.HTTPC
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return cstructs.SeriesResponse{}, fmt.Errorf("bad status %d for series %d", resp.StatusCode, seriesId)
+		return mu_data.SeriesResponse{}, fmt.Errorf("bad status %d for series %d", resp.StatusCode, seriesId)
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&series)
 	if err != nil {
-		return cstructs.SeriesResponse{}, fmt.Errorf("decode failed for series %d: %w", seriesId, err)
+		return mu_data.SeriesResponse{}, fmt.Errorf("decode failed for series %d: %w", seriesId, err)
 	}
 
 	return series, nil
 }
 
 // Will be use to check new series update
-func GetSeriesRssFeed(ctx context.Context, seriesId int64, client *httpclient.HTTPClient) (cstructs.RssSeriesData, error) {
+func GetSeriesRssFeed(ctx context.Context, seriesId int64, client *httpclient.HTTPClient) (mu_data.RssSeriesData, error) {
 	type Item struct {
 		Title       string `xml:"title"`
 		Description string `xml:"description"`
@@ -142,7 +142,7 @@ func GetSeriesRssFeed(ctx context.Context, seriesId int64, client *httpclient.HT
 		Channel Channel  `xml:"channel"`
 	}
 
-	var customData cstructs.RssSeriesData
+	var customData mu_data.RssSeriesData
 	apiUrl := fmt.Sprintf("https://www.mangaupdates.com/api/v1/series/%d/rss", seriesId)
 
 	logger := slog.Default()
@@ -178,9 +178,9 @@ func GetSeriesRssFeed(ctx context.Context, seriesId int64, client *httpclient.HT
 
 	customData.Title = rss.Channel.Title
 
-	var chapterData []cstructs.RssSeriesChapter
+	var chapterData []mu_data.RssSeriesChapter
 	for _, item := range rss.Channel.Items {
-		chapterData = append(chapterData, cstructs.RssSeriesChapter{
+		chapterData = append(chapterData, mu_data.RssSeriesChapter{
 			Chapter:   item.Title,
 			Scanlator: item.Description,
 		})
@@ -195,13 +195,13 @@ func GetSeriesRssFeed(ctx context.Context, seriesId int64, client *httpclient.HT
 // This function will properly parse and extract the exact data from the XML RSS Feed
 //
 // This will be use with `GetSeriesRssFeed` function to properly parse the data
-func parseRSSData(data *cstructs.RssSeriesData) {
+func parseRSSData(data *mu_data.RssSeriesData) {
 	// Parse Title
 	title := strings.Replace(data.Title, " - Releases on MangaUpdates", "", 1)
 	title = strings.TrimSpace(title)
 	data.Title = title
 
-	var newChapter []cstructs.RssSeriesChapter
+	var newChapter []mu_data.RssSeriesChapter
 
 	// Parse Chapter Number
 	for _, a := range data.ChapterData {
@@ -209,7 +209,7 @@ func parseRSSData(data *cstructs.RssSeriesData) {
 		chapterData = strings.ReplaceAll(chapterData, "c.", "")
 		chapterData = strings.TrimSpace(chapterData)
 
-		newChapter = append(newChapter, cstructs.RssSeriesChapter{
+		newChapter = append(newChapter, mu_data.RssSeriesChapter{
 			Chapter:   chapterData,
 			Scanlator: a.Scanlator,
 		})

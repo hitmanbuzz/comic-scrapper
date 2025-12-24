@@ -1,7 +1,7 @@
 package mangaupdates
 
 import (
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/cstructs/mu_data"
 	"comicrawl/internal/httpclient"
 	"context"
 	"fmt"
@@ -67,7 +67,7 @@ type BatchResult struct {
 }
 
 // processSeriesWorker processes a single series and sends the result to the appropriate channel.
-func processSeriesWorker(ctx context.Context, client *httpclient.HTTPClient, series cstructs.TitlesStruct, results chan<- AllSeriesData, errors chan<- error, errorSleep time.Duration) {
+func processSeriesWorker(ctx context.Context, client *httpclient.HTTPClient, series mu_data.TitlesStruct, results chan<- AllSeriesData, errors chan<- error, errorSleep time.Duration) {
 	lastUpdated := series.LastUpdated.TimeStamp
 	seriesData, err := GetSeriesInfo(ctx, series.SeriesId, client)
 
@@ -84,7 +84,7 @@ func processSeriesWorker(ctx context.Context, client *httpclient.HTTPClient, ser
 }
 
 // processBatch processes a batch of series titles concurrently.
-func processBatch(ctx context.Context, client *httpclient.HTTPClient, batch []cstructs.TitlesStruct, opts BatchOptions) BatchResult {
+func processBatch(ctx context.Context, client *httpclient.HTTPClient, batch []mu_data.TitlesStruct, opts BatchOptions) BatchResult {
 	var wg sync.WaitGroup
 	results := make(chan AllSeriesData, len(batch))
 	errors := make(chan error, len(batch))
@@ -92,7 +92,7 @@ func processBatch(ctx context.Context, client *httpclient.HTTPClient, batch []cs
 	// Process each series in the batch
 	for _, series := range batch {
 		wg.Add(1)
-		go func(s cstructs.TitlesStruct) {
+		go func(s mu_data.TitlesStruct) {
 			defer wg.Done()
 			processSeriesWorker(ctx, client, s, results, errors, opts.ErrorSleep)
 		}(series)
@@ -122,7 +122,7 @@ func processBatch(ctx context.Context, client *httpclient.HTTPClient, batch []cs
 }
 
 // ProcessSeriesTitles processes all series titles using batched concurrent processing.
-func ProcessSeriesTitles(ctx context.Context, client *httpclient.HTTPClient, titles []cstructs.TitlesStruct, opts ...BatchOption) ([]AllSeriesData, error) {
+func ProcessSeriesTitles(ctx context.Context, client *httpclient.HTTPClient, titles []mu_data.TitlesStruct, opts ...BatchOption) ([]AllSeriesData, error) {
 	logger := slog.Default()
 	options := DefaultBatchOptions()
 	for _, opt := range opts {

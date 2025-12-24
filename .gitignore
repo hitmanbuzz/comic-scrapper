@@ -1,5 +1,5 @@
 # ignore config.yaml (Remove this if you want to commit)
-config.yaml
+# config.yaml
 
 # Binaries
 comicrawl
@@ -12,6 +12,7 @@ comicrawl
 *.test
 
 # Output of go build
+/build/*
 /dist/
 
 # Dependency directories
@@ -43,10 +44,8 @@ Thumbs.db
 /test-data/
 
 # Data directories (ignore files but keep directory structure)
-/backup_data/*
-!/backup_data/.gitkeep
-/series_data/*
-!/series_data/.gitkeep
+/data/*
+!/data/.gitkeep
 
 # Downloaded comics
 /downloads/

@@ -1,50 +1,40 @@
 # Comic Crawl
 
-Scrape comics from scanlation sites.
+###### Scrape comics from scanlation sites.
 
-### STATUS: NOT TESTED (WILL HAVE ERRORS)
+### STATUS: *TESTED (NEED TO TEST WITH OTHER SOURCES)*
 
 ### Prerequisites:
-- Go 1.24+
-- [aria2](https://github.com/aria2/aria2) RPC server
+- Makefile
+- Go Version >= 1.24
 - Docker (optional, for Cloudflare bypass)
 
-### Quick Start
-
-1. **Clone and build:**
-```bash
-git clone <repository-url>
-cd comicrawl
-go build -o comicrawl ./cmd/app/main.go
-```
-
-2. **Run the application:**
-```bash
-# Start aria2c RPC server (required)
-chmod +x aria-srv.sh
-./aria-srv.sh &
-
-# Run the main application
-./comicrawl
-# or
-go run ./cmd/app/main.go
-```
-
-### Individual Components
+### Individual Components:
+> Run from step 1 to last (if wanted to run the whole project)
 
 #### 1. Fetch series from scanlator sites:
 ```bash
-go run cmd/series/series.go
+make series
 ```
 
 #### 2. Filter series using MangaUpdates data:
 ```bash
-go run cmd/filter/filter.go
+make filter
 ```
 
-#### 3. Run integration tests:
+#### 3. Fetch All Series Chapter & Images URL (From Scanlator)
 ```bash
-go run cmd/test/main.go
+make scrape
+```
+
+#### 4. Download All series in proper format (need to have Series Chapter & Image URL)
+```bash
+make download
+```
+
+#### 5. Generate Metadata for download series
+```bash
+make metadata
 ```
 
 ### Development

@@ -1,7 +1,7 @@
 package scanlators
 
 import (
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/cstructs/scrape_data"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
 	"comicrawl/internal/util"
@@ -27,10 +27,10 @@ func NewAsuraScans(logger *slog.Logger) *AsuraScans {
 	}
 }
 
-func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
+func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (scrape_data.FullSeriesResponse, error) {
 	a.Logger.Info("fetching series list from AsuraScans")
 
-	var allSeries cstructs.FullSeriesResponse
+	var allSeries scrape_data.FullSeriesResponse
 
 	page := 1
 
@@ -52,7 +52,7 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 		allSeries.TotalSeries = len(allSeries.Series)
 
 		for _, data := range pageSeries {
-			allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+			allSeries.Series = append(allSeries.Series, scrape_data.ScanSeriesResponse{
 				MainTitle:    data.Title,
 				ComicPageUrl: data.URL,
 				MuSeriesId:   -1,
@@ -163,10 +163,9 @@ func (a *AsuraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter
 		chapterTitle := strings.Join(titleParts, " ")
 
 		chapters = append(chapters, sources.Chapter{
-			Number:    a.NormalizeChapterNumber(chapterNumber),
+			Number:    float32(util.StringToFloat(chapterNumber)),
 			Title:     strings.TrimSpace(chapterTitle),
 			URL:       a.ensureAbsoluteURL(url),
-			SourceURL: a.ensureAbsoluteURL(url),
 		})
 	})
 
@@ -251,7 +250,7 @@ func (a *AsuraScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 		}
 	}
 
-	a.Logger.Info("parsed pages", "count", len(pages))
+	a.Logger.Info("parsed pages", "pages count", len(pages))
 	return pages, nil
 }
 

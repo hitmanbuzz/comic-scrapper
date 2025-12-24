@@ -1,300 +1,300 @@
 package scanlators
 
-import (
-	"comicrawl/internal/cstructs"
-	"comicrawl/internal/httpclient"
-	"comicrawl/internal/sources"
-	"comicrawl/internal/util"
-	"context"
-	"fmt"
-	"log/slog"
-	"net/http"
-	"regexp"
-	"strings"
+// import (
+// 	"comicrawl/internal/cstructs"
+// 	"comicrawl/internal/httpclient"
+// 	"comicrawl/internal/sources"
+// 	"comicrawl/internal/util"
+// 	"context"
+// 	"fmt"
+// 	"log/slog"
+// 	"net/http"
+// 	"regexp"
+// 	"strings"
 
-	"github.com/PuerkitoBio/goquery"
-)
+// 	"github.com/PuerkitoBio/goquery"
+// )
 
-type MadaraScans struct {
-	*sources.BaseSource
-}
+// type MadaraScans struct {
+// 	*sources.BaseSource
+// }
 
-func NewMadaraScans(logger *slog.Logger) *MadaraScans {
-	return &MadaraScans{
-		BaseSource: sources.NewBaseSource("madarascans", "https://madarascans.com", util.ParseSlugsToIds(util.MadaraScans), logger),
-	}
-}
+// func NewMadaraScans(logger *slog.Logger) *MadaraScans {
+// 	return &MadaraScans{
+// 		BaseSource: sources.NewBaseSource("madarascans", "https://madarascans.com", util.ParseSlugsToIds(util.MadaraScans), logger),
+// 	}
+// }
 
-func (m *MadaraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
-	m.Logger.Info("fetching series list from MadaraScans")
+// func (m *MadaraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
+// 	m.Logger.Info("fetching series list from MadaraScans")
 
-	var allSeries cstructs.FullSeriesResponse
+// 	var allSeries cstructs.FullSeriesResponse
 
-	url := fmt.Sprintf("%s/series/list-mode/", m.GetBaseURL())
-	resp, err := sources.FetchWithContext(ctx, client, m.Logger, url, "fetching series list")
-	if err != nil {
-		return allSeries, err
-	}
-	defer resp.Body.Close()
+// 	url := fmt.Sprintf("%s/series/list-mode/", m.GetBaseURL())
+// 	resp, err := sources.FetchWithContext(ctx, client, m.Logger, url, "fetching series list")
+// 	if err != nil {
+// 		return allSeries, err
+// 	}
+// 	defer resp.Body.Close()
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return allSeries, fmt.Errorf("failed to parse HTML: %w", err)
-	}
+// 	doc, err := goquery.NewDocumentFromReader(resp.Body)
+// 	if err != nil {
+// 		return allSeries, fmt.Errorf("failed to parse HTML: %w", err)
+// 	}
 
-	pageSeries := m.parseSeriesList(doc)
-	allSeries.GroupName = m.GetName()
-	allSeries.MuGroupIds = util.ParseSlugsToIds(util.MadaraScans)
-	allSeries.TotalSeries = len(allSeries.Series)
+// 	pageSeries := m.parseSeriesList(doc)
+// 	allSeries.GroupName = m.GetName()
+// 	allSeries.MuGroupIds = util.ParseSlugsToIds(util.MadaraScans)
+// 	allSeries.TotalSeries = len(allSeries.Series)
 
-	for _, data := range pageSeries {
-		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
-			MainTitle:    data.Title,
-			ComicPageUrl: data.URL,
-			MuSeriesId:   -1,
-			ComicStatus:  data.Status,
-			Found:        false,
-		})
-	}
+// 	for _, data := range pageSeries {
+// 		allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+// 			MainTitle:    data.Title,
+// 			ComicPageUrl: data.URL,
+// 			MuSeriesId:   -1,
+// 			ComicStatus:  data.Status,
+// 			Found:        false,
+// 		})
+// 	}
 
-	m.Logger.Info("fetched series from MadaraScans", "count", len(allSeries.Series))
-	return allSeries, nil
-}
+// 	m.Logger.Info("fetched series from MadaraScans", "count", len(allSeries.Series))
+// 	return allSeries, nil
+// }
 
-func (m *MadaraScans) parseSeriesList(doc *goquery.Document) []sources.Series {
-	var series []sources.Series
+// func (m *MadaraScans) parseSeriesList(doc *goquery.Document) []sources.Series {
+// 	var series []sources.Series
 
-	// Find all li elements containing a.series.tip links
-	doc.Find("li a.series.tip").Each(func(i int, s *goquery.Selection) {
-		url, exists := s.Attr("href")
-		if !exists {
-			return
-		}
+// 	// Find all li elements containing a.series.tip links
+// 	doc.Find("li a.series.tip").Each(func(i int, s *goquery.Selection) {
+// 		url, exists := s.Attr("href")
+// 		if !exists {
+// 			return
+// 		}
 
-		title := strings.TrimSpace(s.Text())
+// 		title := strings.TrimSpace(s.Text())
 
-		if title != "" && url != "" {
-			series = append(series, sources.Series{
-				URL:    url,
-				Title:  title,
-				Status: "", // Status not available on list page
-			})
-		}
-	})
+// 		if title != "" && url != "" {
+// 			series = append(series, sources.Series{
+// 				URL:    url,
+// 				Title:  title,
+// 				Status: "", // Status not available on list page
+// 			})
+// 		}
+// 	})
 
-	return series
-}
+// 	return series
+// }
 
-func (m *MadaraScans) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
+// func (m *MadaraScans) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+// 	req, err := http.NewRequestWithContext(ctx, "GET", series.URL, nil)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to create request: %w", err)
+// 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch chapters: %w", err)
-	}
-	defer resp.Body.Close()
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to fetch chapters: %w", err)
+// 	}
+// 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+// 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse HTML: %w", err)
-	}
+// 	doc, err := goquery.NewDocumentFromReader(resp.Body)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+// 	}
 
-	return m.parseChaptersPage(doc)
-}
+// 	return m.parseChaptersPage(doc)
+// }
 
-func (m *MadaraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter, error) {
-	var chapters []sources.Chapter
+// func (m *MadaraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter, error) {
+// 	var chapters []sources.Chapter
 
-	// MangaThemesia chapter list selector: div.bxcl li, div.cl li, #chapterlist li, ul li:has(div.chbox):has(div.eph-num)
-	doc.Find("div.bxcl li, div.cl li, #chapterlist li, ul li:has(div.chbox):has(div.eph-num)").Each(func(i int, s *goquery.Selection) {
-		link := s.Find("a")
-		url, exists := link.Attr("href")
-		if !exists {
-			return
-		}
+// 	// MangaThemesia chapter list selector: div.bxcl li, div.cl li, #chapterlist li, ul li:has(div.chbox):has(div.eph-num)
+// 	doc.Find("div.bxcl li, div.cl li, #chapterlist li, ul li:has(div.chbox):has(div.eph-num)").Each(func(i int, s *goquery.Selection) {
+// 		link := s.Find("a")
+// 		url, exists := link.Attr("href")
+// 		if !exists {
+// 			return
+// 		}
 
-		chapterText := link.Text()
-		chapterNumber := m.extractChapterNumber(chapterText)
+// 		chapterText := link.Text()
+// 		chapterNumber := m.extractChapterNumber(chapterText)
 
-		var titleParts []string
-		s.Find("span, .chapter-title").Each(func(j int, span *goquery.Selection) {
-			if text := span.Text(); text != "" {
-				titleParts = append(titleParts, text)
-			}
-		})
+// 		var titleParts []string
+// 		s.Find("span, .chapter-title").Each(func(j int, span *goquery.Selection) {
+// 			if text := span.Text(); text != "" {
+// 				titleParts = append(titleParts, text)
+// 			}
+// 		})
 
-		chapterTitle := strings.Join(titleParts, " ")
+// 		chapterTitle := strings.Join(titleParts, " ")
 
-		chapters = append(chapters, sources.Chapter{
-			Number:    m.NormalizeChapterNumber(chapterNumber),
-			Title:     strings.TrimSpace(chapterTitle),
-			URL:       m.ensureAbsoluteURL(url),
-			SourceURL: m.ensureAbsoluteURL(url),
-		})
-	})
+// 		chapters = append(chapters, sources.Chapter{
+// 			Number:    m.NormalizeChapterNumber(chapterNumber),
+// 			Title:     strings.TrimSpace(chapterTitle),
+// 			URL:       m.ensureAbsoluteURL(url),
+// 			SourceURL: m.ensureAbsoluteURL(url),
+// 		})
+// 	})
 
-	return chapters, nil
-}
+// 	return chapters, nil
+// }
 
-func (m *MadaraScans) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
-	m.Logger.Info("fetching pages", "chapter", chapter.Number)
+// func (m *MadaraScans) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
+// 	m.Logger.Info("fetching pages", "chapter", chapter.Number)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
+// 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to create request: %w", err)
+// 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch pages: %w", err)
-	}
-	defer resp.Body.Close()
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to fetch pages: %w", err)
+// 	}
+// 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+// 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse HTML: %w", err)
-	}
+// 	doc, err := goquery.NewDocumentFromReader(resp.Body)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+// 	}
 
-	return m.parsePages(doc)
-}
+// 	return m.parsePages(doc)
+// }
 
-func (m *MadaraScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
-	var pages []sources.Page
+// func (m *MadaraScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
+// 	var pages []sources.Page
 
-	// MangaThemesia page selector: div#readerarea img, div#ts_reader img, div.ts_reader img
-	doc.Find("div#readerarea img, div#ts_reader img, div.ts_reader img").Each(func(i int, s *goquery.Selection) {
-		imageURL := s.AttrOr("src", "")
-		if imageURL == "" {
-			imageURL = s.AttrOr("data-src", "")
-		}
-		if imageURL == "" {
-			imageURL = s.AttrOr("data-lazy-src", "")
-		}
+// 	// MangaThemesia page selector: div#readerarea img, div#ts_reader img, div.ts_reader img
+// 	doc.Find("div#readerarea img, div#ts_reader img, div.ts_reader img").Each(func(i int, s *goquery.Selection) {
+// 		imageURL := s.AttrOr("src", "")
+// 		if imageURL == "" {
+// 			imageURL = s.AttrOr("data-src", "")
+// 		}
+// 		if imageURL == "" {
+// 			imageURL = s.AttrOr("data-lazy-src", "")
+// 		}
 
-		// Transform Jetpack CDN URLs: remove the i[0-9].wp.com prefix
-		imageURL = m.transformJetpackCDNURL(imageURL)
+// 		// Transform Jetpack CDN URLs: remove the i[0-9].wp.com prefix
+// 		imageURL = m.transformJetpackCDNURL(imageURL)
 
-		if imageURL != "" {
-			pages = append(pages, sources.Page{
-				Number: i,
-				URL:    imageURL,
-			})
-		}
-	})
+// 		if imageURL != "" {
+// 			pages = append(pages, sources.Page{
+// 				Number: i,
+// 				URL:    imageURL,
+// 			})
+// 		}
+// 	})
 
-	// If no images found, try to parse from script content (JSON-based image loading)
-	if len(pages) == 0 {
-		pages = m.parsePagesFromScript(doc)
-	}
+// 	// If no images found, try to parse from script content (JSON-based image loading)
+// 	if len(pages) == 0 {
+// 		pages = m.parsePagesFromScript(doc)
+// 	}
 
-	m.Logger.Info("parsed pages", "count", len(pages))
-	return pages, nil
-}
+// 	m.Logger.Info("parsed pages", "count", len(pages))
+// 	return pages, nil
+// }
 
-// transformJetpackCDNURL replaces Jetpack CDN URLs with direct HTTPS
-// Example: https://i0.wp.com/example.com/image.jpg -> https://example.com/image.jpg
-func (m *MadaraScans) transformJetpackCDNURL(url string) string {
-	if url == "" {
-		return url
-	}
+// // transformJetpackCDNURL replaces Jetpack CDN URLs with direct HTTPS
+// // Example: https://i0.wp.com/example.com/image.jpg -> https://example.com/image.jpg
+// func (m *MadaraScans) transformJetpackCDNURL(url string) string {
+// 	if url == "" {
+// 		return url
+// 	}
 
-	// Match and replace i[0-9].wp.com prefix
-	re := regexp.MustCompile(`^https://i[0-9]\.wp\.com/`)
-	return re.ReplaceAllString(url, "https://")
-}
+// 	// Match and replace i[0-9].wp.com prefix
+// 	re := regexp.MustCompile(`^https://i[0-9]\.wp\.com/`)
+// 	return re.ReplaceAllString(url, "https://")
+// }
 
-// parsePagesFromScript attempts to extract page URLs from JavaScript content
-// This handles sites that load images via JSON in script tags
-func (m *MadaraScans) parsePagesFromScript(doc *goquery.Document) []sources.Page {
-	var pages []sources.Page
+// // parsePagesFromScript attempts to extract page URLs from JavaScript content
+// // This handles sites that load images via JSON in script tags
+// func (m *MadaraScans) parsePagesFromScript(doc *goquery.Document) []sources.Page {
+// 	var pages []sources.Page
 
-	// Look for JSON data in script tags
-	var scriptContent strings.Builder
-	doc.Find("script").Each(func(i int, s *goquery.Selection) {
-		content := s.Text()
-		if strings.Contains(content, "images") {
-			scriptContent.WriteString(content)
-		}
-	})
+// 	// Look for JSON data in script tags
+// 	var scriptContent strings.Builder
+// 	doc.Find("script").Each(func(i int, s *goquery.Selection) {
+// 		content := s.Text()
+// 		if strings.Contains(content, "images") {
+// 			scriptContent.WriteString(content)
+// 		}
+// 	})
 
-	combinedContent := scriptContent.String()
-	if combinedContent == "" {
-		return pages
-	}
+// 	combinedContent := scriptContent.String()
+// 	if combinedContent == "" {
+// 		return pages
+// 	}
 
-	// Try to find JSON array with image URLs
-	// Pattern: "images":[...] or pages":[...]
-	re1 := regexp.MustCompile(`"images"\s*:\s*(\[.*?\])`)
-	matches1 := re1.FindStringSubmatch(combinedContent)
+// 	// Try to find JSON array with image URLs
+// 	// Pattern: "images":[...] or pages":[...]
+// 	re1 := regexp.MustCompile(`"images"\s*:\s*(\[.*?\])`)
+// 	matches1 := re1.FindStringSubmatch(combinedContent)
 
-	re2 := regexp.MustCompile(`"pages"\s*:\s*(\[.*?\])`)
-	matches2 := re2.FindStringSubmatch(combinedContent)
+// 	re2 := regexp.MustCompile(`"pages"\s*:\s*(\[.*?\])`)
+// 	matches2 := re2.FindStringSubmatch(combinedContent)
 
-	matches := matches1
-	if len(matches) < 2 && len(matches2) >= 2 {
-		matches = matches2
-	}
+// 	matches := matches1
+// 	if len(matches) < 2 && len(matches2) >= 2 {
+// 		matches = matches2
+// 	}
 
-	if len(matches) >= 2 {
-		pagesJSON := matches[1]
-		// Extract URLs from JSON array
-		urlRegex := regexp.MustCompile(`"([^"]+\.(?:jpg|jpeg|png|webp|gif))"`)
-		urlMatches := urlRegex.FindAllStringSubmatch(pagesJSON, -1)
+// 	if len(matches) >= 2 {
+// 		pagesJSON := matches[1]
+// 		// Extract URLs from JSON array
+// 		urlRegex := regexp.MustCompile(`"([^"]+\.(?:jpg|jpeg|png|webp|gif))"`)
+// 		urlMatches := urlRegex.FindAllStringSubmatch(pagesJSON, -1)
 
-		for i, match := range urlMatches {
-			if len(match) > 1 {
-				url := match[1]
-				url = m.transformJetpackCDNURL(url)
-				pages = append(pages, sources.Page{
-					Number: i,
-					URL:    url,
-				})
-			}
-		}
-	}
+// 		for i, match := range urlMatches {
+// 			if len(match) > 1 {
+// 				url := match[1]
+// 				url = m.transformJetpackCDNURL(url)
+// 				pages = append(pages, sources.Page{
+// 					Number: i,
+// 					URL:    url,
+// 				})
+// 			}
+// 		}
+// 	}
 
-	return pages
-}
+// 	return pages
+// }
 
-func (m *MadaraScans) extractChapterNumber(text string) string {
-	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)Chapter[\s:]*(\d+(?:\.\d+)?)`),
-		regexp.MustCompile(`(?i)Ch\.\s*(\d+(?:\.\d+)?)`),
-		regexp.MustCompile(`(?i)Ep(isode)?[\s:]*(\d+(?:\.\d+)?)`),
-		regexp.MustCompile(`(\d+(?:\.\d+)?)`),
-	}
+// func (m *MadaraScans) extractChapterNumber(text string) string {
+// 	patterns := []*regexp.Regexp{
+// 		regexp.MustCompile(`(?i)Chapter[\s:]*(\d+(?:\.\d+)?)`),
+// 		regexp.MustCompile(`(?i)Ch\.\s*(\d+(?:\.\d+)?)`),
+// 		regexp.MustCompile(`(?i)Ep(isode)?[\s:]*(\d+(?:\.\d+)?)`),
+// 		regexp.MustCompile(`(\d+(?:\.\d+)?)`),
+// 	}
 
-	for _, re := range patterns {
-		matches := re.FindStringSubmatch(text)
-		if len(matches) > 1 {
-			return matches[len(matches)-1]
-		}
-	}
+// 	for _, re := range patterns {
+// 		matches := re.FindStringSubmatch(text)
+// 		if len(matches) > 1 {
+// 			return matches[len(matches)-1]
+// 		}
+// 	}
 
-	return "0"
-}
+// 	return "0"
+// }
 
-func (m *MadaraScans) ensureAbsoluteURL(url string) string {
-	if strings.HasPrefix(url, "http") {
-		return url
-	}
-	if strings.HasPrefix(url, "//") {
-		return "https:" + url
-	}
-	if strings.HasPrefix(url, "/") {
-		return m.GetBaseURL() + url
-	}
+// func (m *MadaraScans) ensureAbsoluteURL(url string) string {
+// 	if strings.HasPrefix(url, "http") {
+// 		return url
+// 	}
+// 	if strings.HasPrefix(url, "//") {
+// 		return "https:" + url
+// 	}
+// 	if strings.HasPrefix(url, "/") {
+// 		return m.GetBaseURL() + url
+// 	}
 
-	return m.GetBaseURL() + "/" + url
-}
+// 	return m.GetBaseURL() + "/" + url
+// }

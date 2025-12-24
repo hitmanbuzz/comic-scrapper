@@ -1,7 +1,7 @@
 package scanlators
 
 import (
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/cstructs/scrape_data"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/sources"
 	"comicrawl/internal/util"
@@ -28,10 +28,10 @@ func NewUtoon(logger *slog.Logger) *Utoon {
 	}
 }
 
-func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (cstructs.FullSeriesResponse, error) {
+func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (scrape_data.FullSeriesResponse, error) {
 	u.Logger.Info("fetching series list from Utoon")
 
-	var allSeries cstructs.FullSeriesResponse
+	var allSeries scrape_data.FullSeriesResponse
 	page := 1
 	last_page := 0
 
@@ -57,7 +57,7 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 
 		pageSeries := u.parseSeriesPage(doc)
 		for _, data := range pageSeries {
-			allSeries.Series = append(allSeries.Series, cstructs.ScanSeriesResponse{
+			allSeries.Series = append(allSeries.Series, scrape_data.ScanSeriesResponse{
 				MainTitle:    data.Title,
 				ComicPageUrl: data.URL,
 				MuSeriesId:   -1,
@@ -195,7 +195,6 @@ func (u *Utoon) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter, err
 					Number:    u.extractChapterNumber(chapterUrl),
 					Title:     "",
 					URL:       chapterUrl,
-					SourceURL: chapterUrl,
 				})
 			}
 		}
@@ -234,7 +233,7 @@ func (u *Utoon) getLastPage(doc *goquery.Document) int {
 }
 
 // Extract chapter number from chapter url
-func (u *Utoon) extractChapterNumber(chapterUrl string) string {
+func (u *Utoon) extractChapterNumber(chapterUrl string) float32 {
 	// example: https://utoon.net/manga/the-return-of-a-crazy-genius-composer/chapter-76/
 	// lastDash = `chapter-` before the chapter number (76)
 	// The reason is that we have url like this https://utoon.net/manga/the-return-of-a-crazy-genius-composer/chapter-0-5/
@@ -248,10 +247,10 @@ func (u *Utoon) extractChapterNumber(chapterUrl string) string {
 
 	// `chapter-` is 7 in length so we will start from index 8 which is the chapter number starting position
 	chapter_num := chapterUrl[lastDash+8 : lastSlash]
-
 	chapter_num = strings.Replace(chapter_num, "-", ".", 1)
+	chapter_num_float := util.StringToFloat(chapter_num)
 
-	return chapter_num
+	return float32(chapter_num_float)
 }
 
 // Decode those percent-encoded string

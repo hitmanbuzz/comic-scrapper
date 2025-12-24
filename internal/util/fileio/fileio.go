@@ -1,14 +1,19 @@
 package fileio
 
 import (
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/config"
+	"comicrawl/internal/cstructs/download_data"
+	"comicrawl/internal/cstructs/scrape_data"
+	"comicrawl/internal/httpclient"
+	"comicrawl/internal/util"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -16,13 +21,13 @@ import (
 // WriteSourceSeries writes series data from a source provider to a JSON file.
 // The file is saved in the series_data directory with the format: {groupname}_series.json
 // If a file with the same name already exists, it's moved to backup_data with a timestamp.
-func WriteSourceSeries(fullSeries cstructs.FullSeriesResponse) error {
+func WriteSourceSeries(fullSeries scrape_data.FullSeriesResponse, cfg *config.Config) error {
 	jsonData, err := json.MarshalIndent(fullSeries, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal JSON: %w", err)
 	}
 
-	dirPath := "series_data"
+	dirPath := fmt.Sprintf("%s/%s", cfg.LocalDir, cfg.SeriesListDir)
 
 	if _, statErr := os.Stat(dirPath); os.IsNotExist(statErr) {
 		mkdirErr := os.Mkdir(dirPath, 0755)
@@ -38,8 +43,8 @@ func WriteSourceSeries(fullSeries cstructs.FullSeriesResponse) error {
 	filePath := fmt.Sprintf("%s/%s_series.json", dirPath, fileName)
 
 	// Move the existing to a backup directory with a timestamp in the name
-	if PathExists(filePath) {
-		backupDir := "backup_data"
+	if util.IsPathExists(filePath) {
+		backupDir := fmt.Sprintf("%s/%s", cfg.LocalDir, cfg.BackupDataDir)
 
 		// Create backup directory if it doesn't exist
 		backupErr := os.MkdirAll(backupDir, 0755)
@@ -74,10 +79,10 @@ func WriteSourceSeries(fullSeries cstructs.FullSeriesResponse) error {
 
 // ReadSourceSeries reads series data from a source provider JSON file.
 // The file should be in the format: {groupname}_series.json
-func ReadSourceSeries(jsonFile string) (cstructs.FullSeriesResponse, error) {
-	var sourceSeries cstructs.FullSeriesResponse
+func ReadSourceSeries(jsonFile string) (scrape_data.FullSeriesResponse, error) {
+	var sourceSeries scrape_data.FullSeriesResponse
 
-	if !PathExists(jsonFile) {
+	if !util.IsPathExists(jsonFile) {
 		return sourceSeries, fmt.Errorf("file %s does not exist", jsonFile)
 	}
 
@@ -94,101 +99,88 @@ func ReadSourceSeries(jsonFile string) (cstructs.FullSeriesResponse, error) {
 	return sourceSeries, nil
 }
 
-// PathExists checks if a file or directory exists at the given path.
-func PathExists(filePath string) bool {
-	_, err := os.Stat(filePath)
-	return err == nil
-}
-
-// LoadSourceAllSeries loads all source provider series JSON files from a directory.
-// It reads all files matching the pattern *_series.json in the given directory.
-func LoadSourceAllSeries(sourceSeriesDir string) ([]cstructs.FullSeriesResponse, error) {
-	var jsonFiles []cstructs.FullSeriesResponse
-	entries, err := os.ReadDir(sourceSeriesDir)
+func WriteSeriesData(allSeriesData download_data.DownloadData, cfg *config.Config) error {
+	jsonData, err := json.MarshalIndent(allSeriesData, "", "  ")
 	if err != nil {
-		return jsonFiles, fmt.Errorf("read directory %s: %w", sourceSeriesDir, err)
+		return fmt.Errorf("marshal JSON: %w", err)
 	}
 
-	for _, e := range entries {
-		_, isSeries := IsSourceSeriesJsonFile(e.Name())
-		if !e.IsDir() && isSeries {
-			sourceData, err := ReadSourceSeries(fmt.Sprintf("%s/%s", sourceSeriesDir, e.Name()))
-			if err != nil {
-				continue
-			}
+	dirPath := fmt.Sprintf("%s/%s", cfg.LocalDir, cfg.SeriesDataDir)
 
-			jsonFiles = append(jsonFiles, sourceData)
+	if _, statErr := os.Stat(dirPath); os.IsNotExist(statErr) {
+		mkdirErr := os.Mkdir(dirPath, 0755)
+		if mkdirErr != nil {
+			return fmt.Errorf("create directory %s: %w", dirPath, mkdirErr)
 		}
 	}
 
-	return jsonFiles, nil
-}
-
-// LoadSourcesName loads all source provider names from their series JSON files.
-// Returns a list of source names (e.g., ["asura", "webtoon"]).
-func LoadSourcesName(sourceSeriesDir string) ([]string, error) {
-	var seriesName []string
-	entries, err := os.ReadDir(sourceSeriesDir)
+	fPath := fmt.Sprintf("%s/%s_series_data.json", dirPath, allSeriesData.ScanName)
+	err = os.WriteFile(fPath, jsonData, 0600)
 	if err != nil {
-		return seriesName, fmt.Errorf("read directory %s: %w", sourceSeriesDir, err)
+		return fmt.Errorf("write file %s: %w", fPath, err)
 	}
 
-	for _, e := range entries {
-		name, isSeries := IsSourceSeriesJsonFile(e.Name())
-		if !e.IsDir() && isSeries {
-			seriesName = append(seriesName, strings.TrimSpace(name))
-		}
-	}
+	fmt.Printf("Successfully Save All Series Data | Source Name: %s | Total Series: %d\n", allSeriesData.ScanName, allSeriesData.TotalSeries)
 
-	return seriesName, nil
+	return nil
 }
 
-// IsSourceSeriesJsonFile checks if a filename matches the pattern for source series JSON files.
-// Pattern: {name}_series.json
-// Returns the series name and true if it matches the pattern.
-func IsSourceSeriesJsonFile(filename string) (string, bool) {
-	fileName := filepath.Base(filename)
-	pattern := `^(.+)_series\.json$`
-	re := regexp.MustCompile(pattern)
+func ReadSeriesData(jsonFile string) (download_data.DownloadData, error) {
+	var sourceDataSeries download_data.DownloadData
 
-	matches := re.FindStringSubmatch(fileName)
-	if matches != nil && len(matches) > 1 {
-		return matches[1], true
+	if !util.IsPathExists(jsonFile) {
+		return sourceDataSeries, fmt.Errorf("file %s does not exist", jsonFile)
 	}
 
-	return "", false
-}
-
-// LoadAllSeriesID loads all series IDs from the scraped data directory.
-// It reads all directory names that can be parsed as int64 from the given root directory.
-func LoadAllSeriesID(seriesIdRootDir string) ([]int64, error) {
-	var series []int64
-
-	entries, err := os.ReadDir(seriesIdRootDir)
+	content, err := os.ReadFile(jsonFile)
 	if err != nil {
-		return series, fmt.Errorf("read directory %s: %w", seriesIdRootDir, err)
+		return sourceDataSeries, fmt.Errorf("read JSON file %s: %w", jsonFile, err)
 	}
 
-	for _, e := range entries {
-		seriesNum := stringToInt64(e.Name())
-
-		if e.IsDir() && seriesNum != -69 {
-			series = append(series, seriesNum)
-		}
+	err = json.Unmarshal(content, &sourceDataSeries)
+	if err != nil {
+		return sourceDataSeries, fmt.Errorf("unmarshal JSON from %s: %w", jsonFile, err)
 	}
 
-	return series, nil
+	return sourceDataSeries, nil
 }
 
-// stringToInt64 converts a string to int64, returning -69 on failure.
-func stringToInt64(s string) int64 {
-	num, err := strconv.ParseInt(s, 10, 64)
+func DownloadImage(ctx context.Context, logger *slog.Logger, client *httpclient.HTTPClient, url string, dirPath string, fileName string) error {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		logger := slog.Default()
-		logger.Warn("error parsing string to int64", "string", s, "error", err)
-		return -69
+		return err
 	}
 
-	return num
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %d\n", resp.StatusCode)
+	}
+
+	err = os.MkdirAll(dirPath, 0755)
+	if err != nil {
+		return err
+	}
+
+	fullPath := fmt.Sprintf("%s/%s", dirPath, fileName)
+	if util.IsPathExists(fullPath) {
+		return fmt.Errorf("file already exist")
+	}
+	
+	file, err := os.Create(fullPath)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	_, err = io.Copy(file, resp.Body)
+	logger.Info("image download", "path", fullPath)
+	return err
 }
 

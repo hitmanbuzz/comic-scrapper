@@ -1,103 +1,106 @@
 package downloader
 
 import (
-	"comicrawl/internal/cstructs"
+	"comicrawl/internal/cloudflare"
+	"comicrawl/internal/config"
+	"comicrawl/internal/cstructs/download_data"
+	"comicrawl/internal/httpclient"
 	"comicrawl/internal/util"
 	"comicrawl/internal/util/fileio"
+	"context"
 	"fmt"
-	"io"
+	"log/slog"
 	"os"
+	"path/filepath"
+	"regexp"
 	"sync"
 )
 
-type Downloader struct {
-    *cstructs.Downloader
-}
+var sem = make(chan struct{}, 50)
 
-func NewCustomDownloader(base_dir string) *Downloader {
-    return &Downloader{
-        &cstructs.Downloader{
-            BaseDownloadDir: base_dir,
-        },
-    }
-}
-
-func (d *Downloader) StartDownload(seriesData cstructs.DownloadSeriesData) {
-    var wg sync.WaitGroup
-    jobData := d.DownloadBatch
-
-    for _, data := range jobData {
-        wg.Add(1)
-
-        go func(ds cstructs.DownloadSeriesData) {
-            wg.Done()
-
-            for _, chapter := range ds.ChapterData {
-                limit := make(chan struct{}, cstructs.MAX_PAGES)
-
-                var pg sync.WaitGroup
-                for _, page := range chapter.ImagesData {
-                     pg.Add(1)   
-                     limit <- struct{}{}
-
-                     go func(p cstructs.DownloadPageData) {
-                         defer pg.Done()
-                         defer func() { <- limit }()
-
-                         chapterStr := util.ChapterFloatToString(chapter.ChapterNumber)
-                         err := d.SaveImage(p.ImageBody, ds.SeriesID, ds.SourceProvider, chapterStr, p.PageNumber, p.ImageExt)
-                         if err != nil {
-                             fmt.Printf("Couldn't download image page | chapter num: %f | Image Number: %d \n", chapter.ChapterNumber, p.PageNumber)
-                         }
-                     }(page)
-                }
-                pg.Wait()
-            }
-        }(data)
-    }
-
-    wg.Wait()
-    fmt.Println("Done!!!")
-}
-
-func (d *Downloader) AddToQueue(seriesData cstructs.DownloadSeriesData) {
-    d.QueueBatch = append(d.QueueBatch, seriesData)
-}
-
-func (d *Downloader) UpdateDownloadBatch() bool {
-    if len(d.QueueBatch) == 0 {
-        return false
-    }
-
-    d.DownloadBatch = [cstructs.MAX_SERIES]cstructs.DownloadSeriesData{}
-    count := min(len(d.QueueBatch), cstructs.MAX_SERIES)
-    copy(d.DownloadBatch[:], d.QueueBatch[:count])
-    d.QueueBatch = d.QueueBatch[count:]
-
-    return true
-}
-
-// The main image data is the image Response Body
-func (d *Downloader) SaveImage(
-    imageBody io.Reader,
-    seriesID int64,
-    sourceProvider string,
-    chapterNum string,
-    pageNum int,
-    imageExt string,
+func RunDownload(
+	ctx context.Context,
+	logger *slog.Logger,
+	client *httpclient.HTTPClient,
+	cfg *config.Config,
+	flareClient *cloudflare.Client,
 ) error {
-    filePath := fmt.Sprintf("%s/%d/%s/chap_%s/page_%d%s", d.BaseDownloadDir, seriesID, sourceProvider, chapterNum, pageNum, imageExt)
-    if fileio.PathExists(filePath) {
-        return fmt.Errorf("File already exist\n")
-    }
-    out, err := os.Create(filePath)
-    if err != nil {
-        return err
-    }
+	pattern := regexp.MustCompile(`^.+_series_data\.json$`)
+	var matchingFiles []string
 
-    defer out.Close()
+	seriesDataDir := fmt.Sprintf("%s/%s", cfg.LocalDir, cfg.SeriesDataDir)
 
-    _, err = io.Copy(out, imageBody)
-    fmt.Printf("Image Saved: %s\n", filePath)
-    return nil
+	entries, err := os.ReadDir(seriesDataDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() && pattern.MatchString(entry.Name()) {
+			filePath := filepath.Join(seriesDataDir, entry.Name())
+			matchingFiles = append(matchingFiles, filePath)
+		}
+	}
+
+	if len(matchingFiles) == 0 {
+		logger.Error("no files matching pattern '*_series_data.json' found", "directory", seriesDataDir)
+		os.Exit(1)
+	}
+
+	for _, jsonFile := range matchingFiles {
+		data, err := fileio.ReadSeriesData(jsonFile)
+		if err != nil {
+			logger.Error("failed to read series data json file", "json file", jsonFile)
+			continue
+		}
+
+		var wg sync.WaitGroup
+		if err := client.ConfigureForDomain(ctx, data.ScanURL, flareClient, cfg.HTTPProxy); err != nil {
+			logger.Warn("failed to configure HTTP client for source domain",
+				"source", data.ScanName,
+				"domain", data.ScanURL,
+				"error", err,
+			)
+			continue
+		}
+		for _, series := range data.Series {
+			wg.Add(1)
+			go func(s download_data.SeriesData) {
+				defer wg.Done()
+				var cg sync.WaitGroup
+				for _, chapter := range series.Chapter {
+					cg.Add(1)
+					sem <- struct{}{}
+					go func(c download_data.ChapterData) {
+						defer func() { <-sem }()
+
+						for _, image := range chapter.Image {
+							dirPath := fmt.Sprintf(
+								"%s/%d/%s/chap_%s",
+								cfg.Bucket,
+								series.SeriesID,
+								data.ScanName,
+								util.ChapterFloatToString(float64(c.ChapterNumber)),
+							)
+							imageFile := fmt.Sprintf("img_%d%s", image.ImagerNumber, filepath.Ext(image.ImageURL))
+
+							err := fileio.DownloadImage(ctx, logger, client, image.ImageURL, dirPath, imageFile)
+							if err != nil {
+								logger.Error("failed to download image", "url", image.ImageURL, "error", err)
+								return
+							}
+						}
+					}(chapter)
+				}
+
+				cg.Wait()
+			}(series)
+		}
+
+		wg.Wait()
+	}
+
+	return nil
 }
+

@@ -22,7 +22,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := system.SetupLogger(cfg, "", newFlags)
+	logger := system.SetupLogger(cfg, newFlags)
 	logger.UpdateConfigFlags()
 
 	// Only create Cloudflare client if configured
@@ -42,7 +42,7 @@ func main() {
 	}
 
 	// Check if series_data directory exists
-	seriesDataDir := "series_data"
+	seriesDataDir := "series_list"
 	if _, statErr := os.Stat(seriesDataDir); os.IsNotExist(statErr) {
 		logger.Logger.Error("series_data directory doesn't exist", "directory", seriesDataDir)
 		os.Exit(1)
@@ -74,6 +74,6 @@ func main() {
 	// Process each matching file
 	for _, filePath := range matchingFiles {
 		logger.Logger.Info("processing file", "file", filePath)
-		mangaupdates.FilterScanlatorsFromMu(context.Background(), filePath, httpClient)
+		mangaupdates.FilterScanlatorsFromMu(context.Background(), cfg, filePath, httpClient)
 	}
 }

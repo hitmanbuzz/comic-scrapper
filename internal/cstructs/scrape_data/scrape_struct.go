@@ -1,4 +1,4 @@
-package cstructs
+package scrape_data
 
 // NOTE: Source Provider = Scanlator / Translator Group
 
@@ -22,8 +22,10 @@ type MetadataJson struct {
 	Title       string                      `json:"comic_title"`     // Title of the comic
 	AltTitles   []string                    `json:"alt_titles"`      // Alternative Titles of the comic
 	Description string                      `json:"description"`     // Description or synopsis of the comic
+	ComicType   string                      `json:"comic_type"`
 	MuUrl       string                      `json:"mu_series_url"`   // URL for the comic on MU
 	MuSeriesId  int64                       `json:"mu_series_id"`    // Series ID of the comic on MU
+	Categories  []string                    `json:"categories"`
 	Genres      []string                    `json:"genres"`          // Genres of the comic
 	Authors     []string                    `json:"authors"`         // Authors of the comic (Store empty array if not found)
 	ComicStatus string                      `json:"comic_status"`    // Current comic status (ongoing, hiatus, completed)

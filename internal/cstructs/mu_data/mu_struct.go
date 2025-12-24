@@ -1,4 +1,4 @@
-package cstructs
+package mu_data
 
 // --------------------- MU Series Last Updated ---------------------
 type SeriesLastUpdated struct {
