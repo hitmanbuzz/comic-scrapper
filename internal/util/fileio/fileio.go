@@ -30,7 +30,7 @@ func WriteSourceSeries(fullSeries scrape_data.FullSeriesResponse, cfg *config.Co
 	dirPath := fmt.Sprintf("%s/%s", cfg.LocalDir, cfg.SeriesListDir)
 
 	if _, statErr := os.Stat(dirPath); os.IsNotExist(statErr) {
-		mkdirErr := os.Mkdir(dirPath, 0755)
+		mkdirErr := os.MkdirAll(dirPath, 0755)
 		if mkdirErr != nil {
 			return fmt.Errorf("create directory %s: %w", dirPath, mkdirErr)
 		}
@@ -108,7 +108,7 @@ func WriteSeriesData(allSeriesData download_data.DownloadData, cfg *config.Confi
 	dirPath := fmt.Sprintf("%s/%s", cfg.LocalDir, cfg.SeriesDataDir)
 
 	if _, statErr := os.Stat(dirPath); os.IsNotExist(statErr) {
-		mkdirErr := os.Mkdir(dirPath, 0755)
+		mkdirErr := os.MkdirAll(dirPath, 0755)
 		if mkdirErr != nil {
 			return fmt.Errorf("create directory %s: %w", dirPath, mkdirErr)
 		}

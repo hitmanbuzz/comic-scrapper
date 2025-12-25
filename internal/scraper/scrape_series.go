@@ -35,7 +35,7 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, client *httpcli
 			continue
 		}
 
-		jsonFile := fmt.Sprintf("series_list/%s_series.json", src.GetName())
+		jsonFile := fmt.Sprintf("%s/%s/%s_series.json", cfg.LocalDir, cfg.SeriesListDir, src.GetName())
 		seriesData, err := fileio.ReadSourceSeries(jsonFile)
 		if err != nil {
 			return fmt.Errorf("couldn't read source series json file | json file: %s\n", jsonFile)

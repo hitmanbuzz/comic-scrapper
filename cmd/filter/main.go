@@ -42,7 +42,7 @@ func main() {
 	}
 
 	// Check if series_data directory exists
-	seriesDataDir := "series_list"
+	seriesDataDir := fmt.Sprintf("%s/%s", cfg.LocalDir, cfg.SeriesListDir)
 	if _, statErr := os.Stat(seriesDataDir); os.IsNotExist(statErr) {
 		logger.Logger.Error("series_data directory doesn't exist", "directory", seriesDataDir)
 		os.Exit(1)

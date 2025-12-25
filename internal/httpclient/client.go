@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -37,7 +38,11 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudfl
 		},
 		MaxIdleConns:          0,
 		MaxIdleConnsPerHost:   200,
-		ResponseHeaderTimeout: 15 * time.Second,
+		DialContext: (&net.Dialer {
+			Timeout: 10 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ResponseHeaderTimeout: 30 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 10 * time.Second,
 		MaxConnsPerHost:       0,
