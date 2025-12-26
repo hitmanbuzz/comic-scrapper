@@ -11,12 +11,12 @@ import (
 	"log/slog"
 )
 
+// NOTE: Need to have a sources that has to be filtered or not in the config file
+
 // This will filter those comics found in MU (using MuGroupSeries & MuSeriesInfo APIs) from the series.json file
 //
 // I recommend to use this function inside a sync.Group and insert scanlator json file as the paramater everytime
-func FilterScanlatorsFromMu(ctx context.Context, cfg *config.Config, jsonFile string, client *httpclient.HTTPClient) {
-	logger := slog.Default()
-
+func FilterScanlatorsFromMu(ctx context.Context, logger *slog.Logger, cfg *config.Config, jsonFile string, client *httpclient.HTTPClient) {
 	if !util.IsPathExists(jsonFile) {
 		logger.Error("json file doesn't exist", "file", jsonFile)
 		return
@@ -24,21 +24,21 @@ func FilterScanlatorsFromMu(ctx context.Context, cfg *config.Config, jsonFile st
 
 	response, err := fileio.ReadSourceSeries(jsonFile)
 	if err != nil {
+		logger.Warn("error reading json file", "file", jsonFile, "error", err)
 		return
 	}
 
 	// Collect series from all group IDs
 	var allSeries []AllSeriesData
 	for _, groupId := range response.MuGroupIds {
-		logger.Info("fetching series for group", "group", response.GroupName, "group_id", groupId)
-		groupSeries, err := GetAllGroupSeries(ctx, groupId, client)
+		logger.Info("fetching series for group", "group_name", response.GroupName, "group_id", groupId)
+		groupSeries, err := GetAllGroupSeries(ctx, logger, groupId, client)
 		if err != nil {
 			logger.Warn("error getting group series, continuing with partial results", "group_id", groupId, "error", err)
 		}
 		allSeries = append(allSeries, groupSeries...)
 	}
 
-	// total := response.TotalSeries
 	foundCounter := 0
 	counter := 0
 
@@ -47,11 +47,11 @@ func FilterScanlatorsFromMu(ctx context.Context, cfg *config.Config, jsonFile st
 	for i := range response.Series {
 		breakStatus := false
 		for _, mu := range allSeries {
-			// Dumb way but just make it work for now
 			if breakStatus {
 				break
 			}
 
+			// Comparing main title
 			ok, _, matchErr := util.IsComicTitleMatch(response.Series[i].MainTitle, mu.SeriesData.Title)
 
 			if matchErr != nil {
@@ -65,6 +65,8 @@ func FilterScanlatorsFromMu(ctx context.Context, cfg *config.Config, jsonFile st
 				foundCounter++
 				break
 			}
+
+			// Comparing with Alt Titles for better match result
 			for _, t := range mu.SeriesData.AltTitles {
 				ok, _, err = util.IsComicTitleMatch(response.Series[i].MainTitle, t.Title)
 
@@ -87,7 +89,13 @@ func FilterScanlatorsFromMu(ctx context.Context, cfg *config.Config, jsonFile st
 
 	response.FoundSeries = foundCounter
 
-	logger.Info("finished filtering", "group", response.GroupName, "found_series", foundCounter, "total_series", response.TotalSeries)
+	logger.Info(
+		"finished filtering",
+		"group", response.GroupName,
+		"found_series", foundCounter,
+		"not found series", response.TotalSeries - foundCounter,
+		"total_series", response.TotalSeries,
+	)
 	err = fileio.WriteSourceSeries(response, cfg)
 	if err != nil {
 		logger.Error("couldn't write filter data for source series json", "group", response.GroupName, "error", err)
@@ -101,17 +109,14 @@ type AllSeriesData struct {
 }
 
 // This function is just a wrapper in top of `GetSeriesByGroup` function to get all series from the group using their group id
-func GetAllGroupSeries(ctx context.Context, groupId int64, client *httpclient.HTTPClient, opts ...BatchOption) ([]AllSeriesData, error) {
-	logger := slog.Default()
+func GetAllGroupSeries(ctx context.Context, logger *slog.Logger, groupId int64, client *httpclient.HTTPClient, opts ...BatchOption) ([]AllSeriesData, error) {
 	_, groupSeriesData, err := GetSeriesByGroup(ctx, groupId, client)
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting group series: %w", err)
 	}
 
-	logger.Info("starting to process group series", "group_id", groupId, "total_series", len(groupSeriesData.SeriesTitles))
-	
-	allSeries, err := ProcessSeriesTitles(ctx, client, groupSeriesData.SeriesTitles, opts...)
+	allSeries, err := ProcessSeriesTitles(ctx, logger, client, groupSeriesData.SeriesTitles, opts...)
 	if err != nil {
 		return allSeries, fmt.Errorf("error processing group series: %w", err)
 	}

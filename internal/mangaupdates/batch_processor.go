@@ -52,13 +52,6 @@ func WithErrorSleep(duration time.Duration) BatchOption {
 	}
 }
 
-// WithMaxConcurrency sets the maximum number of concurrent goroutines.
-func WithMaxConcurrency(max int) BatchOption {
-	return func(o *BatchOptions) {
-		o.MaxConcurrency = max
-	}
-}
-
 // BatchResult represents the result of processing a batch of series.
 type BatchResult struct {
 	SeriesData []AllSeriesData
@@ -122,8 +115,7 @@ func processBatch(ctx context.Context, client *httpclient.HTTPClient, batch []mu
 }
 
 // ProcessSeriesTitles processes all series titles using batched concurrent processing.
-func ProcessSeriesTitles(ctx context.Context, client *httpclient.HTTPClient, titles []mu_data.TitlesStruct, opts ...BatchOption) ([]AllSeriesData, error) {
-	logger := slog.Default()
+func ProcessSeriesTitles(ctx context.Context, logger *slog.Logger, client *httpclient.HTTPClient, titles []mu_data.TitlesStruct, opts ...BatchOption) ([]AllSeriesData, error) {
 	options := DefaultBatchOptions()
 	for _, opt := range opts {
 		opt(&options)

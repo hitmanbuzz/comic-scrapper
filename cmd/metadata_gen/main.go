@@ -80,6 +80,7 @@ func main() {
         	mData.Categories = append(mData.Categories, cat.Category)
         }
 	    
+        // Path where to store the series thumbnail image
         thumbnailDirPath := fmt.Sprintf("%s/%s/thumbnail", cfg.Bucket, k)
         err = os.MkdirAll(thumbnailDirPath, 0755)
         if err != nil {
@@ -87,6 +88,8 @@ func main() {
             fmt.Printf("Error: %v\n", err)
             continue
         }
+
+        // imgFile = the image file name (eg: thumbnail.jpg)
         imgFile := fmt.Sprintf("thumbnail%s", filepath.Ext(seriesInfo.Image.URL.Thumbnail))
         if !util.IsPathExists(fmt.Sprintf("%s/%s", thumbnailDirPath, imgFile)) {
             err = fileio.DownloadImage(context.TODO(), logger.Logger, httpClient, seriesInfo.Image.URL.Thumbnail, thumbnailDirPath, imgFile)

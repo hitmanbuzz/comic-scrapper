@@ -9,6 +9,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+
+// NOTE: Need to refactor (still usable for now)
+
 type Config struct {
 	// Where to store comic data (chapter, images, metadata, etc)
 	Bucket            string        `yaml:"bucket"`
@@ -22,9 +25,9 @@ type Config struct {
 	BackupDataDir     string        `yaml:"backup_data_dir"`
 	CloudflareURL     string        `yaml:"flaresolverr_url"`
 	UserAgent         string        `yaml:"user_agent"`
-	HTTPProxy         string        `yaml:"http_proxy"`
 	RequestsPerSecond float64       `yaml:"requests_per_second"`
 	RequestTimeout    time.Duration `yaml:"request_timeout"`
+	HTTPProxy         string        `yaml:"http_proxy"`
 	LogLevel          string        `yaml:"log_level"`
 
 	// Enhanced Sources filtering options
@@ -32,21 +35,11 @@ type Config struct {
 	ExcludeSources []string `yaml:"exclude_sources"`
 	IncludeSeries  []string `yaml:"include_series"`
 	ExcludeSeries  []string `yaml:"exclude_series"`
-
-	// Testing options
-	LimitSeries   int  `yaml:"limit_series"`
-	LimitChapters int  `yaml:"limit_chapters"`
-	DryRun        bool `yaml:"dry_run"`
 }
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		RequestsPerSecond: 100,
-		RequestTimeout:    60 * time.Second,
 		LogLevel:          "info",
-		LimitSeries:       0,
-		LimitChapters:     0,
-		DryRun:            false,
 	}
 }
 
@@ -74,18 +67,6 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("bucket path is required")
 	}
 
-	if c.RequestTimeout <= 0 {
-		return fmt.Errorf("request_timeout must be positive")
-	}
-
-	if c.LimitSeries < 0 {
-		return fmt.Errorf("limit_series cannot be negative")
-	}
-
-	if c.LimitChapters < 0 {
-		return fmt.Errorf("limit_chapters cannot be negative")
-	}
-
 	// Validate log level
 	validLogLevels := map[string]bool{
 		"debug": true,
@@ -111,6 +92,8 @@ func (c *Config) HasSeriesFilters() bool {
 	return len(c.IncludeSeries) > 0 || len(c.ExcludeSeries) > 0
 }
 
+// NOTE: Need a refactor
+// 
 // IsSourceIncluded checks if a source should be included based on filters
 func (c *Config) IsSourceIncluded(sourceName string) bool {
 	// If no source filters, include all sources
@@ -140,6 +123,9 @@ func (c *Config) IsSourceIncluded(sourceName string) bool {
 	return true
 }
 
+
+// NOTE: Need a refactor
+// 
 // IsSeriesIncluded checks if a series should be included based on filters
 func (c *Config) IsSeriesIncluded(seriesSlug string) bool {
 	// If no series filters, include all series

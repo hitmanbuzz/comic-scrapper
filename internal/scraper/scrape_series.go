@@ -24,6 +24,9 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, client *httpcli
 
 	sourceList := registry.AddSources(logger)
 
+	// Limit the amount of scrap each time
+	maxBatch := make(chan struct{}, 5)
+
 	for _, src := range sourceList {
 		logger.Info("processing source", "source name", src.GetName())
 
@@ -44,13 +47,16 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, client *httpcli
 		var sourceSeriesData download_data.DownloadData
 		sourceSeriesData.ScanName = src.GetName()
 		sourceSeriesData.ScanURL = src.GetBaseURL()
-		var totalSeries, totalImages int64
+		var totalSeries, totalImages int
 
 		var wg sync.WaitGroup
 		var mu sync.Mutex
 
 		for _, series := range seriesData.Series {
-			// Capture loop variable to avoid closure issues
+			if series.Found == false || series.MuSeriesId == -1 {
+				continue
+			}
+
 			sourceSeries := sources.Series{
 				URL:    series.ComicPageUrl,
 				Title:  series.MainTitle,
@@ -58,8 +64,10 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, client *httpcli
 			}
 
 			wg.Add(1)
+			maxBatch <- struct{}{}
 			go func(s sources.Series, ser scrape_data.ScanSeriesResponse) {
 				defer wg.Done()
+				defer func() { <- maxBatch }()
 
 				logger.Info("starting series", "series url", s.URL)
 
@@ -88,7 +96,9 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, client *httpcli
 				}
 
 				var pg sync.WaitGroup
-				var chapterMu sync.Mutex
+				var pm sync.Mutex
+				
+
 				for _, c := range seriesChapter {
 					pg.Add(1)
 
@@ -120,28 +130,34 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, client *httpcli
 							return
 						}
 
+						logger.Info(
+							"page found",
+							"series url", seriesDownloadData.SeriesURL,
+							"chapter number", chapterData.ChapterNumber,
+							"page count", len(pages),
+						)
+
 						for _, p := range pages {
 							chapterData.Image = append(chapterData.Image, download_data.ImageData{
 								ImagerNumber: p.Number,
 								ImageURL:     p.URL,
 							})
-							time.Sleep(500 * time.Millisecond)
 						}
 
 						chapterData.TotalImages = len(chapterData.Image)
 
-						chapterMu.Lock()
+						pm.Lock()
 						seriesDownloadData.Chapter = append(seriesDownloadData.Chapter, chapterData)
-						mu.Lock()
-						totalImages += int64(chapterData.TotalImages)
-						mu.Unlock()
-						chapterMu.Unlock()
+						totalImages += chapterData.TotalImages
+						pm.Unlock()
+
 					}(c)
-					time.Sleep(500 * time.Millisecond)
+
+					time.Sleep(time.Second)
 				}
 
 				pg.Wait()
-				seriesDownloadData.TotalImages = 0
+
 				for _, ch := range seriesDownloadData.Chapter {
 					seriesDownloadData.TotalImages += ch.TotalImages
 				}
@@ -150,15 +166,14 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, client *httpcli
 				sourceSeriesData.Series = append(sourceSeriesData.Series, seriesDownloadData)
 				totalSeries++
 				mu.Unlock()
-				time.Sleep(5 * time.Second)
+
+				time.Sleep(3 * time.Second)
 			}(sourceSeries, series)
 		}
 		wg.Wait()
 
-		mu.Lock()
-		sourceSeriesData.TotalSeries = int(totalSeries)
-		sourceSeriesData.TotalImages = int(totalImages)
-		mu.Unlock()
+		sourceSeriesData.TotalSeries = totalSeries
+		sourceSeriesData.TotalImages = totalImages
 
 		err = fileio.WriteSeriesData(sourceSeriesData, cfg)
 		if err != nil {

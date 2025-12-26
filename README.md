@@ -9,6 +9,11 @@
 - Go Version >= 1.24
 - Docker (optional, for Cloudflare bypass)
 
+### Working Sources:
+     Asurascans
+     Utoon
+     Madarascans
+
 ### Individual Components:
 > Run from step 1 to last (if wanted to run the whole project)
 

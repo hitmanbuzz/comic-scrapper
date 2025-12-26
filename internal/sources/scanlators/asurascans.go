@@ -28,7 +28,7 @@ func NewAsuraScans(logger *slog.Logger) *AsuraScans {
 }
 
 func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (scrape_data.FullSeriesResponse, error) {
-	a.Logger.Info("fetching series list from AsuraScans")
+	a.Logger.Info("fetching series list", "source", a.GetName())
 
 	var allSeries scrape_data.FullSeriesResponse
 
@@ -169,8 +169,6 @@ func (a *AsuraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter
 		})
 	})
 
-	// Will uncomment out again
-	// a.Logger.Info("parsed chapters", "series",  "count", len(chapters))
 	return chapters, nil
 }
 
@@ -250,7 +248,6 @@ func (a *AsuraScans) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 		}
 	}
 
-	a.Logger.Info("parsed pages", "pages count", len(pages))
 	return pages, nil
 }
 

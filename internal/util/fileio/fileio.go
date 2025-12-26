@@ -19,7 +19,9 @@ import (
 )
 
 // WriteSourceSeries writes series data from a source provider to a JSON file.
-// The file is saved in the series_data directory with the format: {groupname}_series.json
+// 
+// The file is saved in the series_data directory with the format: <scanlator>_series.json
+// 
 // If a file with the same name already exists, it's moved to backup_data with a timestamp.
 func WriteSourceSeries(fullSeries scrape_data.FullSeriesResponse, cfg *config.Config) error {
 	jsonData, err := json.MarshalIndent(fullSeries, "", "  ")
@@ -36,6 +38,7 @@ func WriteSourceSeries(fullSeries scrape_data.FullSeriesResponse, cfg *config.Co
 		}
 	}
 
+	// Cleaning the fileName
 	fileName := fullSeries.GroupName
 	fileName = strings.ToLower(fileName)
 	fileName = strings.ReplaceAll(fileName, "-", "_")
@@ -78,7 +81,7 @@ func WriteSourceSeries(fullSeries scrape_data.FullSeriesResponse, cfg *config.Co
 }
 
 // ReadSourceSeries reads series data from a source provider JSON file.
-// The file should be in the format: {groupname}_series.json
+// The file should be in the format: <scanlator>_series.json
 func ReadSourceSeries(jsonFile string) (scrape_data.FullSeriesResponse, error) {
 	var sourceSeries scrape_data.FullSeriesResponse
 
@@ -99,6 +102,10 @@ func ReadSourceSeries(jsonFile string) (scrape_data.FullSeriesResponse, error) {
 	return sourceSeries, nil
 }
 
+
+// Will create in format: `<scanlator>_series_data.json` based on the data provided on the 1st argument
+//
+// Need config to know where the base directory to store the json file
 func WriteSeriesData(allSeriesData download_data.DownloadData, cfg *config.Config) error {
 	jsonData, err := json.MarshalIndent(allSeriesData, "", "  ")
 	if err != nil {
@@ -114,6 +121,7 @@ func WriteSeriesData(allSeriesData download_data.DownloadData, cfg *config.Confi
 		}
 	}
 
+	// The full path where it will store `<scanlator>_series_data.json`
 	fPath := fmt.Sprintf("%s/%s_series_data.json", dirPath, allSeriesData.ScanName)
 	err = os.WriteFile(fPath, jsonData, 0600)
 	if err != nil {
@@ -125,6 +133,8 @@ func WriteSeriesData(allSeriesData download_data.DownloadData, cfg *config.Confi
 	return nil
 }
 
+
+// Will read `<scanlator>_series_data.json` based on the full path of the series data json file as an argument
 func ReadSeriesData(jsonFile string) (download_data.DownloadData, error) {
 	var sourceDataSeries download_data.DownloadData
 
@@ -145,6 +155,15 @@ func ReadSeriesData(jsonFile string) (download_data.DownloadData, error) {
 	return sourceDataSeries, nil
 }
 
+// Use for downlading images for certain logics
+//
+// Parameter:
+//
+// url = The URL for the image that is going to be download
+//
+// dirPath = The directory path where the image will be downloaded
+//
+// fileName = The image file name (will download the image in this name)
 func DownloadImage(ctx context.Context, logger *slog.Logger, client *httpclient.HTTPClient, url string, dirPath string, fileName string) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -167,6 +186,7 @@ func DownloadImage(ctx context.Context, logger *slog.Logger, client *httpclient.
 		return err
 	}
 
+	// The Full Path of where the image will be downloaded
 	fullPath := fmt.Sprintf("%s/%s", dirPath, fileName)
 	if util.IsPathExists(fullPath) {
 		return fmt.Errorf("file already exist")

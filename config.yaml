@@ -1,4 +1,4 @@
-bucket: '~/comicrawl_data'
+bucket: '/home/hitmanbuzz/comicrawl_data'
 local_dir: './data'
 series_list_dir: 'series_list'
 series_data_dir: 'series_data'
@@ -9,15 +9,13 @@ backup_data_dir: 'backup'
 
 user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 http_proxy: ''
-requests_per_second: 50
-request_timeout: '60s'
 
 log_level: 'info'
 
 include_sources:
-  # - utoon
+  - utoon
   # - flamecomics
-  - asurascans
+  # - asurascans
   # - drakescans
   # - thunderscans
   # - madarascans
@@ -36,8 +34,3 @@ include_sources:
 
 # exclude_series:
 #   - test-series
-
-# Testing options
-# limit_series: 5
-# limit_chapters: 10
-# dry_run: false

@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"math"
 	"os"
@@ -15,6 +16,8 @@ import (
 // NOTE: Add any reusable user-defined function that doesn't rely on any part of the scraper codebase
 
 // -1 return means fail in parsing the slug
+//
+// It is use for conerting MU slug to ID
 func ParseSlugToId(slug string) int64 {
 	id, err := strconv.ParseInt(slug, 36, 64)
 	if err != nil {
@@ -24,6 +27,7 @@ func ParseSlugToId(slug string) int64 {
 	return id
 }
 
+// Convert an array of slugs to an array of ID
 func ParseSlugsToIds(slugs []string) []int64 {
 	ids := make([]int64, 0, len(slugs))
 	for _, slug := range slugs {
@@ -38,8 +42,7 @@ func ParseSlugsToIds(slugs []string) []int64 {
 func StringToFloat(s string) float64 {
 	float64Value, err := strconv.ParseFloat(s, 32)
 	if err != nil {
-		logger := slog.Default()
-		logger.Warn("error parsing string to float", "string", s, "error", err)
+		fmt.Printf("Error parsing string to float | string: %s\n", s)
 		return -69
 	}
 
@@ -56,6 +59,16 @@ func StringToInt64(s string) int64 {
 	}
 
 	return num
+}
+
+// Convert `io.ReadCloser` to `string`
+func BodyToString(body io.ReadCloser) (string, error) {
+	b, err := io.ReadAll(body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
 }
 
 // Check if directory or file exist

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -15,12 +14,10 @@ import (
 	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/config"
 
-	"golang.org/x/time/rate"
 )
 
 type HTTPClient struct {
 	client    *http.Client
-	limiter   *rate.Limiter
 	logger    *slog.Logger
 	userAgent string
 }
@@ -38,13 +35,9 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudfl
 		},
 		MaxIdleConns:          0,
 		MaxIdleConnsPerHost:   200,
-		DialContext: (&net.Dialer {
-			Timeout: 10 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
 		ResponseHeaderTimeout: 30 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 10 * time.Second,
+		TLSHandshakeTimeout:   15 * time.Second,
+		ExpectContinueTimeout: 15 * time.Second,
 		MaxConnsPerHost:       0,
 		IdleConnTimeout:       30 * time.Second,
 		DisableKeepAlives:     false,
@@ -68,11 +61,8 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudfl
 		Transport: transport,
 	}
 
-	limiter := rate.NewLimiter(rate.Limit(cfg.RequestsPerSecond), 1)
-
 	return &HTTPClient{
 		client:    httpClient,
-		limiter:   limiter,
 		logger:    logger,
 		userAgent: cfg.UserAgent,
 	}, nil
@@ -83,12 +73,6 @@ func (h *HTTPClient) Client() *HTTPClient {
 }
 
 func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
-	if !isImageDownload(req.URL.String()) {
-		if err := h.limiter.Wait(req.Context()); err != nil {
-			return nil, fmt.Errorf("rate limiter error: %w", err)
-		}
-	}
-
 	if h.userAgent != "" {
 		req.Header.Set("User-Agent", h.userAgent)
 	}
@@ -111,6 +95,7 @@ func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 			h.logger.Warn("HTTP request failed",
 				"attempt", attempt,
 				"error", err,
+				"status", req.Response.StatusCode,
 				"url", req.URL.String())
 		} else {
 			resp.Body.Close()

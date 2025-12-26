@@ -10,7 +10,6 @@ import (
 )
 
 func CreateContext() *context.Context {
-	// Create context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

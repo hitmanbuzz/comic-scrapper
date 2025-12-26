@@ -48,10 +48,6 @@ func (l *Logging) ConfigLogging() {
 	l.Logger.Info(
 		"configuration",
 		"bucket", l.Cfg.Bucket,
-		"requests_per_second", l.Cfg.RequestsPerSecond,
-		"limit_series", l.Cfg.LimitSeries,
-		"limit_chapters", l.Cfg.LimitChapters,
-		"dry_run", l.Cfg.DryRun,
 	)
 
 	if l.Cfg.HasSourceFilters() {
@@ -67,12 +63,6 @@ func (l *Logging) ConfigLogging() {
 			"exclude_series", l.Cfg.ExcludeSeries,
 		)
 	}
-}
-
-func SetupTestLogger(level slog.Level) *slog.Logger {
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: level,
-	}))
 }
 
 // Override the existing config with the CLI flags
@@ -96,17 +86,5 @@ func (l *Logging) UpdateConfigFlags() {
 		for i := range l.Cfg.ExcludeSeries {
 			l.Cfg.ExcludeSeries[i] = strings.TrimSpace(l.Cfg.ExcludeSeries[i])
 		}
-	}
-
-	if *l.FlagLog.LimitSeriesFlag > 0 {
-		l.Cfg.LimitSeries = *l.FlagLog.LimitSeriesFlag
-	}
-
-	if *l.FlagLog.LimitChaptersFlag > 0 {
-		l.Cfg.LimitChapters = *l.FlagLog.LimitChaptersFlag
-	}
-
-	if *l.FlagLog.DryRunFlag {
-		l.Cfg.DryRun = *l.FlagLog.DryRunFlag
 	}
 }

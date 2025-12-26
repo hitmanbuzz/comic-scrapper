@@ -23,7 +23,7 @@ func main() {
 	logger := system.SetupLogger(cfg, newFlags)
 	logger.UpdateConfigFlags()
 
-	// Only create Cloudflare client if configured
+	// Configuring cloudflare bypass with flareclient
 	var flareClient *cloudflare.Client
 	if cfg.CloudflareURL != "" {
 		flareClient = cloudflare.NewClient(cfg, logger.Logger)

@@ -16,7 +16,6 @@ import (
 	"sync"
 )
 
-var sem = make(chan struct{}, 50)
 
 func RunDownload(
 	ctx context.Context,
@@ -25,6 +24,8 @@ func RunDownload(
 	cfg *config.Config,
 	flareClient *cloudflare.Client,
 ) error {
+	// maxBatch put the amount of process a goroutine can do in one time
+	maxBatch := make(chan struct{}, 50)
 	pattern := regexp.MustCompile(`^.+_series_data\.json$`)
 	var matchingFiles []string
 
@@ -71,9 +72,10 @@ func RunDownload(
 				var cg sync.WaitGroup
 				for _, chapter := range series.Chapter {
 					cg.Add(1)
-					sem <- struct{}{}
+					maxBatch <- struct{}{}
 					go func(c download_data.ChapterData) {
-						defer func() { <-sem }()
+						defer cg.Done()
+						defer func() { <-maxBatch }()
 
 						for _, image := range chapter.Image {
 							dirPath := fmt.Sprintf(

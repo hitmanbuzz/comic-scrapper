@@ -9,6 +9,8 @@ import (
 	"comicrawl/internal/httpclient"
 )
 
+// NOTE: This codebase shouldn't remove unless discuss because it depends on the scanlator source code to which one to use
+
 // HTTPError represents an error from an HTTP request with status code context.
 type HTTPError struct {
 	StatusCode int

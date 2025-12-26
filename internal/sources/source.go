@@ -18,8 +18,11 @@ type Chapter struct {
 	URL       string
 }
 
+// Page = Image
 type Page struct {
+	// Page Number
 	Number int
+	// Page/Image URL
 	URL    string
 }
 
@@ -46,8 +49,11 @@ type Source interface {
 }
 
 type BaseSource struct {
+	// Scanlator Name
 	Name       string
+	// Scanlator Base URL
 	BaseURL    string
+	// Scanlators IDs from MU
 	MuGroupIDs []int64
 	Logger     *slog.Logger
 }

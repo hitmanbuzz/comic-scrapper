@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -29,7 +30,7 @@ func NewUtoon(logger *slog.Logger) *Utoon {
 }
 
 func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (scrape_data.FullSeriesResponse, error) {
-	u.Logger.Info("fetching series list from Utoon")
+	u.Logger.Info("fetching series list", "source", u.GetName())
 
 	var allSeries scrape_data.FullSeriesResponse
 	page := 1
@@ -100,9 +101,8 @@ func (u *Utoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClient
 
 	return u.parseChaptersPage(doc)
 }
-func (u *Utoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
-	u.Logger.Info("fetching pages", "chapter", chapter.Number)
 
+func (u *Utoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -156,7 +156,6 @@ func (u *Utoon) parsePages(doc *goquery.Document) ([]sources.Page, error) {
 		}
 	})
 
-	u.Logger.Info("parsed pages", "count", len(pages))
 	return pages, nil
 }
 
@@ -191,9 +190,9 @@ func (u *Utoon) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter, err
 		chapterUrl, exists := element.Attr("href")
 		if exists {
 			if chapterUrl != "#" {
+				chapterNum := u.extractChapterNumber(chapterUrl)
 				chapters = append(chapters, sources.Chapter{
-					Number:    u.extractChapterNumber(chapterUrl),
-					Title:     "",
+					Number:    chapterNum,
 					URL:       chapterUrl,
 				})
 			}
@@ -242,13 +241,32 @@ func (u *Utoon) extractChapterNumber(chapterUrl string) float32 {
 	// lastSlash = `/` after the chapter number (76)
 	// Between these two is the chapter number
 
+	chapterUrl = strings.TrimSpace(chapterUrl)
 	lastSlash := strings.LastIndex(chapterUrl, "/")
-	lastDash := strings.LastIndex(chapterUrl, "chapter-")
+
+    var lastDash int
+    var incrementer int
+	
+    if strings.Contains(chapterUrl, "chapter-") {
+        lastDash = strings.LastIndex(chapterUrl, "chapter-")
+        incrementer = 8
+    } else if strings.Contains(chapterUrl, "chap-") {
+        lastDash = strings.LastIndex(chapterUrl, "chap-")
+        incrementer = 5
+    }
 
 	// `chapter-` is 7 in length so we will start from index 8 which is the chapter number starting position
-	chapter_num := chapterUrl[lastDash+8 : lastSlash]
-	chapter_num = strings.Replace(chapter_num, "-", ".", 1)
+	chapter_num := chapterUrl[lastDash+incrementer:lastSlash]
+
+	re := regexp.MustCompile(`^\d+(?:-\d+)?`)
+	match := re.FindString(chapter_num)
+	
+	chapter_num = strings.Replace(match, "-", ".", 1)
 	chapter_num_float := util.StringToFloat(chapter_num)
+		
+	if chapter_num_float == -69 {
+		fmt.Printf("FUCKED CHAPTER URL: %s\n", chapterUrl)
+	}
 
 	return float32(chapter_num_float)
 }
@@ -297,7 +315,7 @@ func (u *Utoon) extractSlugTitleFromUrl(url string) (string, string) {
 
 // Extract Image Number from the imageId
 func (u *Utoon) extractImageNumber(imageId string) string {
-	// example: image-2
-	dashIndex := strings.Index(imageId, "-")
-	return imageId[dashIndex+1:]
+	// example: image-2 = 2
+	_, after, _ := strings.Cut(imageId, "-")
+	return after
 }

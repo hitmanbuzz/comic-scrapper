@@ -16,7 +16,9 @@ type SeriesData struct {
     SeriesID int64 `json:"series_id"`
     SeriesName string `json:"series_name"`
     SeriesURL string `json:"series_url"`
+    // Number of chapters the series have
     TotalChapter int `json:"total_chapter"`
+    // Number of images the chapter have
     TotalImages int `json:"total_images"`
     Chapter []ChapterData `json:"chapter"`
 }
@@ -25,6 +27,7 @@ type ChapterData struct {
     ChapterNumber float32 `json:"chapter_number"`
     ChapterURL string `json:"chapter_url"`
     ChapterName string `json:"chapter_name"`
+    // Number of images the chapter have
     TotalImages int `json:"total_images"`
     Image []ImageData `json:"image"`
 }
