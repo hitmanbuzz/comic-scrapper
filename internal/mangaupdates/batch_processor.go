@@ -31,27 +31,6 @@ func DefaultBatchOptions() BatchOptions {
 // BatchOption is a function that modifies BatchOptions.
 type BatchOption func(*BatchOptions)
 
-// WithBatchSize sets the batch size for processing.
-func WithBatchSize(size int) BatchOption {
-	return func(o *BatchOptions) {
-		o.BatchSize = size
-	}
-}
-
-// WithBatchSleep sets the sleep duration between batches.
-func WithBatchSleep(duration time.Duration) BatchOption {
-	return func(o *BatchOptions) {
-		o.BatchSleep = duration
-	}
-}
-
-// WithErrorSleep sets the sleep duration after an error.
-func WithErrorSleep(duration time.Duration) BatchOption {
-	return func(o *BatchOptions) {
-		o.ErrorSleep = duration
-	}
-}
-
 // BatchResult represents the result of processing a batch of series.
 type BatchResult struct {
 	SeriesData []AllSeriesData

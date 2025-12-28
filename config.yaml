@@ -13,9 +13,9 @@ http_proxy: ''
 log_level: 'info'
 
 include_sources:
-  - utoon
+  # - utoon
   # - flamecomics
-  # - asurascans
+  - asurascans
   # - drakescans
   # - thunderscans
   # - madarascans

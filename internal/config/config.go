@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -25,8 +24,6 @@ type Config struct {
 	BackupDataDir     string        `yaml:"backup_data_dir"`
 	CloudflareURL     string        `yaml:"flaresolverr_url"`
 	UserAgent         string        `yaml:"user_agent"`
-	RequestsPerSecond float64       `yaml:"requests_per_second"`
-	RequestTimeout    time.Duration `yaml:"request_timeout"`
 	HTTPProxy         string        `yaml:"http_proxy"`
 	LogLevel          string        `yaml:"log_level"`
 

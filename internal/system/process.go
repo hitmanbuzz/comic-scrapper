@@ -9,13 +9,6 @@ import (
 	"time"
 )
 
-func CreateContext() *context.Context {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	return &ctx
-}
-
 func SetupSignalHandler(cancel context.CancelFunc, logger *slog.Logger, shutdownCh chan<- struct{}) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

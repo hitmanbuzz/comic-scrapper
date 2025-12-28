@@ -61,9 +61,7 @@ type Request struct {
 func NewClient(cfg *config.Config, logger *slog.Logger) *Client {
 	return &Client{
 		baseURL: cfg.CloudflareURL,
-		client: &http.Client{
-			Timeout: cfg.RequestTimeout,
-		},
+		client: &http.Client{},
 		logger: logger,
 	}
 }

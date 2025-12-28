@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -89,14 +88,18 @@ func main() {
             continue
         }
 
+        var imgFullPath string
+
         // imgFile = the image file name (eg: thumbnail.jpg)
         imgFile := fmt.Sprintf("thumbnail%s", filepath.Ext(seriesInfo.Image.URL.Thumbnail))
         if !util.IsPathExists(fmt.Sprintf("%s/%s", thumbnailDirPath, imgFile)) {
-            err = fileio.DownloadImage(context.TODO(), logger.Logger, httpClient, seriesInfo.Image.URL.Thumbnail, thumbnailDirPath, imgFile)
+            err, fullPath := fileio.DownloadImage(context.TODO(), httpClient, seriesInfo.Image.URL.Thumbnail, thumbnailDirPath, imgFile)
             if err != nil {
                 fmt.Printf("Couldn't download image | url: %s\n", seriesInfo.Image.URL.Thumbnail)
                 fmt.Printf("Error: %v\n", err)
             }
+
+            imgFullPath = fullPath
         }
 
         mData.Thumbnail = fmt.Sprintf("%s/%s", thumbnailDirPath, imgFile)
@@ -109,12 +112,20 @@ func main() {
 
         mData.ScrapedData = append(mData.ScrapedData, scrapData)
 
-        err = metadata.GenerateMetadata(mData, cfg.Bucket, k)
+		file_path := fmt.Sprintf("%s/%s/metadata.json", cfg.Bucket, k)
+        err = metadata.GenerateMetadata(mData, file_path)
         if err != nil {
             fmt.Printf("Failed to generate metadata | series id: %s\n", k)
             fmt.Printf("Error: %v\n", err)
             continue
         }
+
+		fmt.Printf("\n[SUCCESSFULLY GENERATED METADATA]\n")
+		fmt.Printf("Series Title: %s\n", mData.Title)
+		fmt.Printf("Series ID: %d\n", mData.MuSeriesId)
+		fmt.Printf("Thumbnail Path: %s\n", imgFullPath)
+		fmt.Printf("Metadata Json Path: %s\n", file_path)
+		fmt.Printf("\n")
 	}
 }
 
@@ -149,7 +160,7 @@ func processSeriesData(s SourceData, bucketDir string, seriesId string) (scrape_
             mu.Lock()
             sData.ChapterData = append(sData.ChapterData, chpData)
             
-            if s.Chapter[i].ChapterNumber < maxChap {
+            if ch.ChapterNumber > maxChap {
                 maxChap = s.Chapter[i].ChapterNumber
             }
             mu.Unlock()
@@ -158,7 +169,6 @@ func processSeriesData(s SourceData, bucketDir string, seriesId string) (scrape_
     }
 
     wg.Wait()
-
     sData.LatestChapter = maxChap
 
     return sData, nil
@@ -192,10 +202,11 @@ func parseChapterNumber(name string) (float32, bool) {
 	num := strings.TrimPrefix(name, "chap_")
 	num = strings.Replace(num, "_", ".", 1)
 
-	f, err := strconv.ParseFloat(num, 32)
-	if err != nil {
-		return 0, false
+	f := util.StringToFloat(num)
+	if f == -69 {
+		return -69, false
 	}
+	
 	return float32(f), true
 }
 
@@ -211,11 +222,12 @@ func parseImageNumber(name string) (int, bool) {
 	}
 
 	num := strings.TrimPrefix(before, "img_")
-	i, err := strconv.Atoi(num)
-	if err != nil {
-		return 0, false
+	i := util.StringToInt64(num)
+	if i == -69 {
+		return -69, false
 	}
-	return i, true
+	
+	return int(i), true
 }
 
 func extractStatus(s string) string {

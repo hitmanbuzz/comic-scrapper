@@ -10,9 +10,7 @@ import (
 
 // GenerateMetadata creates or updates a metadata.json file for a series.
 // If metadata already exists, it merges new data with existing data.
-func GenerateMetadata(data scrape_data.MetadataJson, seriesIdRootDir string, seriesId string) error {
-	file_path := fmt.Sprintf("%s/%s/metadata.json", seriesIdRootDir, seriesId)
-
+func GenerateMetadata(data scrape_data.MetadataJson, file_path string) error {
 	finalData := data
 
 	// If metadata already exists, merge with existing data
@@ -73,11 +71,6 @@ func GenerateMetadata(data scrape_data.MetadataJson, seriesIdRootDir string, ser
 		return fmt.Errorf("write metadata JSON to %s: %w", file_path, err)
 	}
 
-	fmt.Printf("\n[SUCCESS METADATE GENERATED]\n")
-	fmt.Printf("Series Title: %s\n", data.Title)
-	fmt.Printf("Series ID: %s\n", seriesId)
-	fmt.Printf("Metadata Json Path: %s\n", file_path)
-	fmt.Printf("\n")
 	return nil
 }
 

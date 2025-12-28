@@ -24,8 +24,8 @@ func RunDownload(
 	cfg *config.Config,
 	flareClient *cloudflare.Client,
 ) error {
-	// maxBatch put the amount of process a goroutine can do in one time
-	maxBatch := make(chan struct{}, 50)
+	// maxBatch = number of download at one time
+	maxBatch := make(chan struct{}, 30)
 	pattern := regexp.MustCompile(`^.+_series_data\.json$`)
 	var matchingFiles []string
 
@@ -87,11 +87,18 @@ func RunDownload(
 							)
 							imageFile := fmt.Sprintf("img_%d%s", image.ImagerNumber, filepath.Ext(image.ImageURL))
 
-							err := fileio.DownloadImage(ctx, logger, client, image.ImageURL, dirPath, imageFile)
+							err, imgPath := fileio.DownloadImage(ctx, client, image.ImageURL, dirPath, imageFile)
 							if err != nil {
 								logger.Error("failed to download image", "url", image.ImageURL, "error", err)
 								return
 							}
+
+							fmt.Printf("\n[DOWNLOADED]\n")
+							fmt.Printf("Scanlator: %s\n", data.ScanName)
+							fmt.Printf("Series: %s\n", series.SeriesName)
+							fmt.Printf("Chapter: %s\n", c.ChapterName)
+							fmt.Printf("Image: %d\n", image.ImagerNumber)
+							fmt.Printf("Image Path: %s\n", imgPath)
 						}
 					}(chapter)
 				}

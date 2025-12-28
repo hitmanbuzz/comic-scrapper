@@ -14,6 +14,9 @@
      Utoon
      Madarascans
 
+### Not Working:
+     Flaresolverr implementation
+
 ### Individual Components:
 > Run from step 1 to last (if wanted to run the whole project)
 

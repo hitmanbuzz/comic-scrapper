@@ -164,43 +164,44 @@ func ReadSeriesData(jsonFile string) (download_data.DownloadData, error) {
 // dirPath = The directory path where the image will be downloaded
 //
 // fileName = The image file name (will download the image in this name)
-func DownloadImage(ctx context.Context, logger *slog.Logger, client *httpclient.HTTPClient, url string, dirPath string, fileName string) error {
+//
+// Return Error and full path of the image
+func DownloadImage(ctx context.Context, client *httpclient.HTTPClient, url string, dirPath string, fileName string) (error, string) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return err
+		return err, ""
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return err, ""
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %d\n", resp.StatusCode)
+		return fmt.Errorf("bad status: %d\n", resp.StatusCode), ""
 	}
 
 	err = os.MkdirAll(dirPath, 0755)
 	if err != nil {
-		return err
+		return err, ""
 	}
 
 	// The Full Path of where the image will be downloaded
 	fullPath := fmt.Sprintf("%s/%s", dirPath, fileName)
 	if util.IsPathExists(fullPath) {
-		return fmt.Errorf("file already exist")
+		return fmt.Errorf("file already exist"), fullPath
 	}
 	
 	file, err := os.Create(fullPath)
 	if err != nil {
-		return err
+		return err, ""
 	}
 
 	defer file.Close()
 
 	_, err = io.Copy(file, resp.Body)
-	logger.Info("image download", "path", fullPath)
-	return err
+	return err, fullPath
 }
 

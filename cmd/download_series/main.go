@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/config"
@@ -60,11 +61,16 @@ func run() error {
 		return fmt.Errorf("failed to create HTTP client: %w", err)
 	}
 
+	start := time.Now()
+
 	err = downloader.RunDownload(ctx, logger.Logger, httpClient, cfg, flareClient)
 	if err != nil {
 	    return err
 	}
-	
+
 	logger.Logger.Info("scraper completed successfully")
+
+	end := time.Since(start)
+	fmt.Println("Took:", end)
 	return nil
 }
