@@ -1,7 +1,6 @@
 package main
 
 import (
-	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/config"
 	"comicrawl/internal/httpclient"
 	"comicrawl/internal/mangaupdates"
@@ -25,16 +24,21 @@ func main() {
 	logger := system.SetupLogger(cfg, newFlags)
 	logger.UpdateConfigFlags()
 
-	// Configuring cloudflare bypass with flareclient
-	var flareClient *cloudflare.Client
-	if cfg.CloudflareURL != "" {
-		flareClient = cloudflare.NewClient(cfg, logger.Logger)
-		logger.Logger.Info("Cloudflare client initialized", "url", cfg.CloudflareURL)
-	} else {
-		logger.Logger.Info("Cloudflare bypass disabled - proceeding without Cloudflare protection bypass")
+	if validationErr := cfg.Validate(); validationErr != nil {
+		fmt.Printf("invalid configuration: %v\n", validationErr)
+		return
 	}
 
-	httpClient, err := httpclient.NewHTTPClient(cfg, logger.Logger, flareClient)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create shutdown channel for graceful exit
+	shutdownCh := make(chan struct{})
+	system.SetupSignalHandler(cancel, logger.Logger, shutdownCh)
+
+	logger.ConfigLogging()
+
+	httpClient, err := httpclient.NewHTTPClient(cfg, logger.Logger, nil)
 	if err != nil {
 		logger.Logger.Error("failed to create HTTP client", "error", err)
 		os.Exit(1)
@@ -51,7 +55,7 @@ func main() {
 
 	entries, err := os.ReadDir(seriesDataDir)
 	if err != nil {
-		logger.Logger.Error("Error reading directory | Error: %v\n", err)
+		logger.Logger.Error("Error reading directory", "error", err)
 		os.Exit(1)
 	}
 
@@ -69,6 +73,6 @@ func main() {
 
 	for _, filePath := range matchingFiles {
 		logger.Logger.Info("processing file", "file", filePath)
-		mangaupdates.FilterScanlatorsFromMu(context.Background(), logger.Logger, cfg, filePath, httpClient)
+		mangaupdates.FilterScanlatorsFromMu(ctx, logger.Logger, cfg, filePath, httpClient)
 	}
 }

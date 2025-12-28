@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strings"
 	"time"
 
 	"comicrawl/internal/cloudflare"
@@ -33,13 +32,13 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudfl
 			InsecureSkipVerify: false,
 			MinVersion:         tls.VersionTLS12,
 		},
-		MaxIdleConns:          0,
+		MaxIdleConns:          1000,
 		MaxIdleConnsPerHost:   200,
-		ResponseHeaderTimeout: 30 * time.Second,
-		TLSHandshakeTimeout:   15 * time.Second,
-		ExpectContinueTimeout: 15 * time.Second,
 		MaxConnsPerHost:       0,
 		IdleConnTimeout:       30 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+		TLSHandshakeTimeout:   30 * time.Second,
+		ExpectContinueTimeout: 30 * time.Second,
 		DisableKeepAlives:     false,
 		DisableCompression:    false,
 		WriteBufferSize:       32768,
@@ -56,6 +55,7 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudfl
 	}
 
 	httpClient := &http.Client{
+		Timeout:   cfg.RequestTimeout,
 		Jar:       jar,
 		Transport: transport,
 	}
@@ -94,7 +94,6 @@ func (h *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 			h.logger.Warn("HTTP request failed",
 				"attempt", attempt,
 				"error", err,
-				"status", req.Response.StatusCode,
 				"url", req.URL.String())
 		} else {
 			resp.Body.Close()
@@ -130,7 +129,7 @@ func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flar
 		return nil // No Cloudflare bypass configured
 	}
 
-	solution, err := flareClient.GetSession(ctx, domain, proxyURL)
+	solution, err := flareClient.CreateSession(ctx, domain, proxyURL)
 	if err != nil {
 		return fmt.Errorf("failed to get Cloudflare session for %s: %w", domain, err)
 	}
@@ -157,18 +156,4 @@ func (h *HTTPClient) ConfigureForDomain(ctx context.Context, domain string, flar
 		"proxy", proxyURL)
 
 	return nil
-}
-
-func isImageDownload(url string) bool {
-	imageExts := []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
-	for _, ext := range imageExts {
-		if strings.HasSuffix(strings.ToLower(url), ext) {
-			return true
-		}
-	}
-	return strings.Contains(url, "/images/") ||
-		strings.Contains(url, "/img/") ||
-		strings.Contains(url, "image") ||
-		strings.Contains(url, ".jpg?") ||
-		strings.Contains(url, ".png?")
 }

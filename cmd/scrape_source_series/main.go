@@ -48,20 +48,20 @@ func run() error {
 
 	// Only create Cloudflare client if configured
 	var flareClient *cloudflare.Client
-	if cfg.CloudflareURL != "" {
-		flareClient = cloudflare.NewClient(cfg, logger.Logger)
-		logger.Logger.Info("Cloudflare client initialized", "url", cfg.CloudflareURL)
+	if cfg.FlareSolverrURL != "" {
+		flareClient = cloudflare.NewFlareClient(cfg, logger.Logger)
+		logger.Logger.Info("Cloudflare client initialized", "url", cfg.FlareSolverrURL)
 	} else {
 		logger.Logger.Info("Cloudflare bypass disabled - proceeding without Cloudflare protection bypass")
 	}
 
 	// Create a new http client
-	httpClient, err := httpclient.NewHTTPClient(cfg, logger.Logger, flareClient)
+	httpClient, err := httpclient.NewHTTPClient(cfg, logger.Logger, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP client: %w", err)
 	}
 
-	err = scraper.SaveAllSeriesData(ctx, logger.Logger, httpClient, cfg)
+	err = scraper.SaveAllSeriesData(ctx, logger.Logger, flareClient, httpClient, cfg)
 	if err != nil {
 		return err
 	}

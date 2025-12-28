@@ -28,6 +28,13 @@ func main() {
 
 	logger := system.SetupLogger(cfg, newFlags)
 	logger.UpdateConfigFlags()
+
+	if validationErr := cfg.Validate(); validationErr != nil {
+		fmt.Printf("invalid configuration: %v\n", validationErr)
+		return
+	}
+
+	logger.ConfigLogging()
     
     data, err := collectComicData(cfg.Bucket)
 	if err != nil {

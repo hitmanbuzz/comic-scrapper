@@ -7,6 +7,7 @@ import (
 	"comicrawl/internal/registry"
 	"comicrawl/internal/system"
 	"comicrawl/internal/util/fileio"
+	"context"
 	"fmt"
 	"os"
 )
@@ -23,24 +24,36 @@ func main() {
 	logger := system.SetupLogger(cfg, newFlags)
 	logger.UpdateConfigFlags()
 
-	// Configuring cloudflare bypass with flareclient
+	// Validate configuration
+	if validationErr := cfg.Validate(); validationErr != nil {
+		fmt.Printf("invalid configuration: %v\n", validationErr)
+		return
+	}
+
+	// Create context with cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	shutdownCh := make(chan struct{})
+	system.SetupSignalHandler(cancel, logger.Logger, shutdownCh)
+
+	logger.ConfigLogging()
+		
 	var flareClient *cloudflare.Client
-	if cfg.CloudflareURL != "" {
-		flareClient = cloudflare.NewClient(cfg, logger.Logger)
-		logger.Logger.Info("Cloudflare client initialized", "url", cfg.CloudflareURL)
+	if cfg.FlareSolverrURL != "" {
+		flareClient = cloudflare.NewFlareClient(cfg, logger.Logger)
+		logger.Logger.Info("Cloudflare client initialized", "url", cfg.FlareSolverrURL)
 	} else {
 		logger.Logger.Info("Cloudflare bypass disabled - proceeding without Cloudflare protection bypass")
 	}
 
-	// Create a new http client
-	httpClient, err := httpclient.NewHTTPClient(cfg, logger.Logger, flareClient)
+	httpClient, err := httpclient.NewHTTPClient(cfg, logger.Logger, nil)
 	if err != nil {
 		logger.Logger.Error("failed to create HTTP client", "error", err)
 		os.Exit(1)
 	}
 
-	// These part is the main thing, the rest above are just copy-pasta from `cmd/app/main.go`
-	series := registry.AddSourcesSeries(httpClient, logger.Logger)
+	series := registry.AddSourcesSeries(ctx, cfg, httpClient, flareClient, logger.Logger)
 
 	for _, s := range series {
 		if err := fileio.WriteSourceSeries(s, cfg); err != nil {

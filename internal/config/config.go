@@ -4,27 +4,28 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
-
 
 // NOTE: Need to refactor (still usable for now)
 
 type Config struct {
 	// Where to store comic data (chapter, images, metadata, etc)
 	Bucket            string        `yaml:"bucket"`
-	// Local Directory to store scrapper data
+
+	// These 4 are the directories where to store those json file within the scrapper
 	LocalDir          string        `yaml:"local_dir"`
-	// Store inside `LocalDir`
 	SeriesListDir     string        `yaml:"series_list_dir"`
-	// Store inside `LocalDir`
 	SeriesDataDir     string        `yaml:"series_data_dir"`
-	// Store inside `LocalDir`
 	BackupDataDir     string        `yaml:"backup_data_dir"`
-	CloudflareURL     string        `yaml:"flaresolverr_url"`
+
+	// Network stuff
+	FlareSolverrURL   string        `yaml:"flaresolverr_url"`
 	UserAgent         string        `yaml:"user_agent"`
 	HTTPProxy         string        `yaml:"http_proxy"`
+	RequestTimeout    time.Duration `yaml:"request_timeout"`
 	LogLevel          string        `yaml:"log_level"`
 
 	// Enhanced Sources filtering options

@@ -32,12 +32,10 @@ func run() error {
 	logger := system.SetupLogger(cfg, newFlags)
 	logger.UpdateConfigFlags()
 
-	// Validate configuration
 	if validationErr := cfg.Validate(); validationErr != nil {
 		return fmt.Errorf("invalid configuration: %w", validationErr)
 	}
 
-	// Create context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -49,9 +47,9 @@ func run() error {
 
 	// Only create Cloudflare client if configured
 	var flareClient *cloudflare.Client
-	if cfg.CloudflareURL != "" {
-		flareClient = cloudflare.NewClient(cfg, logger.Logger)
-		logger.Logger.Info("Cloudflare client initialized", "url", cfg.CloudflareURL)
+	if cfg.FlareSolverrURL != "" {
+		flareClient = cloudflare.NewFlareClient(cfg, logger.Logger)
+		logger.Logger.Info("Cloudflare client initialized", "url", cfg.FlareSolverrURL)
 	} else {
 		logger.Logger.Info("Cloudflare bypass disabled - proceeding without Cloudflare protection bypass")
 	}

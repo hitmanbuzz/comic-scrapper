@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"comicrawl/internal/cloudflare"
 	"comicrawl/internal/config"
 	"comicrawl/internal/cstructs/download_data"
 	"comicrawl/internal/cstructs/scrape_data"
@@ -19,18 +20,18 @@ import (
 //
 // Will save every series from the same source provider in the same json file
 
-func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, client *httpclient.HTTPClient, cfg *config.Config) error {
+func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, flareclient *cloudflare.Client, client *httpclient.HTTPClient, cfg *config.Config) error {
 	logger.Info("processing all sources")
 
 	sourceList := registry.AddSources(logger)
 
 	// Limit the amount of scrap each time
-	maxBatch := make(chan struct{}, 5)
+	maxBatch := make(chan struct{}, 10)
 
 	for _, src := range sourceList {
 		logger.Info("processing source", "source name", src.GetName())
 
-		if err := client.ConfigureForDomain(ctx, src.GetBaseURL(), nil, cfg.HTTPProxy); err != nil {
+		if err := client.ConfigureForDomain(ctx, src.GetBaseURL(), flareclient, cfg.HTTPProxy); err != nil {
 			logger.Warn("failed to configure HTTP client for source domain",
 				"source", src.GetName(),
 				"domain", src.GetBaseURL(),

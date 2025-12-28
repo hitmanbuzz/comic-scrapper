@@ -4,11 +4,11 @@ series_list_dir: 'series_list'
 series_data_dir: 'series_data'
 backup_data_dir: 'backup'
 
-# Comment out the below flaresolverr field to ignore cloudflare stuff
-# flaresolverr_url: "http://localhost:8191/v1"
+flaresolverr_url: "http://localhost:8191/v1"
 
 user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 http_proxy: ''
+request_timeout: '60s'
 
 log_level: 'info'
 
