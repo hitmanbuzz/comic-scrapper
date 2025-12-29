@@ -121,13 +121,6 @@ func (m *MadaraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapte
 
 		chapterNumber := m.extractChapterNumber(url)
 
-		var titleParts []string
-		s.Find("span, .chapter-title").Each(func(j int, span *goquery.Selection) {
-			if text := span.Text(); text != "" {
-				titleParts = append(titleParts, text)
-			}
-		})
-
 		chapters = append(chapters, sources.Chapter{
 			Number:    chapterNumber,
 			URL:       m.ensureAbsoluteURL(url),
