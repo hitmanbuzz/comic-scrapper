@@ -13,6 +13,8 @@
      Asurascans
      Utoon
      Madarascans
+     Drakescans
+     Webtoon
 
 ### Not Working:
      Flaresolverr implementation

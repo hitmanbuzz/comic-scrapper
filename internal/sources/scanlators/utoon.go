@@ -175,7 +175,6 @@ func (u *Utoon) parseSeriesPage(doc *goquery.Document) []sources.Series {
 			series = append(series, sources.Series{
 				URL:    href,
 				Title:  title,
-				Status: "", // Status not available on list page
 			})
 		}
 	})

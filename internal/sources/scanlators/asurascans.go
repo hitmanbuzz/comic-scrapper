@@ -163,7 +163,7 @@ func (a *AsuraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter
 		chapterTitle := strings.Join(titleParts, " ")
 
 		chapters = append(chapters, sources.Chapter{
-			Number:    float32(util.StringToFloat(chapterNumber)),
+			Number:    util.StringToFloat(chapterNumber),
 			Title:     strings.TrimSpace(chapterTitle),
 			URL:       a.ensureAbsoluteURL(url),
 		})

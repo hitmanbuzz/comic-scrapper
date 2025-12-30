@@ -39,14 +39,16 @@ func ParseSlugsToIds(slugs []string) []int64 {
 }
 
 // -69 result mean it failed to parse
-func StringToFloat(s string) float64 {
+//
+// Convert to float32
+func StringToFloat(s string) float32 {
 	float64Value, err := strconv.ParseFloat(s, 32)
 	if err != nil {
 		fmt.Printf("Error parsing string to float | string: %s\n", s)
 		return -69
 	}
 
-	return float64Value
+	return float32(float64Value)
 }
 
 // -69 result mean it failed to parse
@@ -136,13 +138,13 @@ func IsComicTitleMatch(title1, title2 string) (bool, float32, error) {
 	if strings.HasPrefix(norm1, clean2) || strings.HasPrefix(norm2, clean1) {
 		minLen := min(len(clean1), len(clean2))
 		maxLen := max(len(norm1), len(norm2))
-		if float32(minLen)/float32(maxLen) >= 0.8 {
-			return true, 0.95, nil
+		if float32(minLen)/float32(maxLen) >= 0.9 {
+			return true, 0.85, nil
 		}
 	}
 
 	diceScore := SorensenDiceCoefficient(norm1, norm2)
-	if diceScore >= 0.75 {
+	if diceScore >= 0.85 {
 		return true, diceScore, nil
 	}
 
@@ -156,7 +158,7 @@ func IsComicTitleMatch(title1, title2 string) (bool, float32, error) {
 		return false, 0, err
 	}
 
-	return jaroScore >= 0.88, jaroScore, nil
+	return jaroScore >= 0.85, jaroScore, nil
 }
 
 // SorensenDiceCoefficient calculates similarity based on bigram (2-character pair) overlap.

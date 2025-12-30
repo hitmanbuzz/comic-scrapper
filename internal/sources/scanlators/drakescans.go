@@ -176,7 +176,7 @@ func (d *DrakeScans) extractChapterNumber(text string) float32 {
 
     match := result.FindStringSubmatch(text)
     if len(match) > 1 {
-        return float32(util.StringToFloat(strings.TrimSpace(match[1])))
+        return util.StringToFloat(strings.TrimSpace(match[1]))
     }
 
 	return 0

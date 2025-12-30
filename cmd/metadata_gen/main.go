@@ -214,7 +214,7 @@ func parseChapterNumber(name string) (float32, bool) {
 		return -69, false
 	}
 	
-	return float32(f), true
+	return f, true
 }
 
 // eg: img_14.webp = 14
