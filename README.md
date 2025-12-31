@@ -15,6 +15,7 @@
      Madarascans
      Drakescans
      Webtoon
+     Flamecomics
 
 ### Not Working:
      Flaresolverr implementation
