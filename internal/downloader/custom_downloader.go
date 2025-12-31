@@ -93,12 +93,14 @@ func RunDownload(
 								return
 							}
 
+							// This is just for pretty output (not for production use case)
 							fmt.Printf("\n[DOWNLOADED]\n")
 							fmt.Printf("Scanlator: %s\n", data.ScanName)
 							fmt.Printf("Series: %s\n", series.SeriesName)
-							fmt.Printf("Chapter: %s\n", c.ChapterName)
+							fmt.Printf("Chapter: %f\n", c.ChapterNumber)
 							fmt.Printf("Image: %d\n", image.ImagerNumber)
-							fmt.Printf("Image Path: %s\n", imgPath)
+							fmt.Printf("Image Path: %s", imgPath)
+							fmt.Printf("\n")
 						}
 					}(chapter)
 				}

@@ -106,7 +106,6 @@ func (w *Webtoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient)
 
 	allSeries.TotalSeries = len(allSeries.Series)
 
-	w.Logger.Info("fetched series from Webtoon", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 
@@ -165,8 +164,6 @@ func (w *Webtoon) FetchChapters(ctx context.Context, client *httpclient.HTTPClie
 }
 
 func (w *Webtoon) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
-	w.Logger.Info("fetching pages", "chapter", chapter.Number)
-
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)

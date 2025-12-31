@@ -17,7 +17,7 @@ import (
 
 type FlameComics struct {
 	*sources.BaseSource
-	dataToken string
+	buildID string
 }
 
 func NewFlameComics(logger *slog.Logger) *FlameComics {
@@ -59,30 +59,29 @@ type FlameComicsChapterResponse struct {
 }
 
 // Extract BuildID from homepage
-func (f *FlameComics) fetchBuildID(ctx context.Context, client *httpclient.HTTPClient) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", f.GetBaseURL()+"/", nil)
+func (f *FlameComics) fetchBuildID(ctx context.Context, client *httpclient.HTTPClient, url string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to fetch homepage: %w", err)
+		return "", fmt.Errorf("failed to fetch homepage: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	re := regexp.MustCompile(`"buildId":"([^"]+)"`)
 	if matches := re.FindSubmatch(body); len(matches) >= 2 {
-		f.dataToken = string(matches[1])
-		f.Logger.Debug("extracted buildId", "buildId", f.dataToken)
-		return nil
+		id := string(matches[1])
+		return id, nil
 	}
-	return fmt.Errorf("could not find buildId in homepage")
+	return "", fmt.Errorf("could not find buildId in homepage")
 }
 
 func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (scrape_data.FullSeriesResponse, error) {
@@ -90,9 +89,6 @@ func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPCli
 
 	var allSeries scrape_data.FullSeriesResponse
 
-	if err := f.fetchBuildID(ctx, client); err != nil {
-		return allSeries, err
-	}
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/api/series", f.GetBaseURL()), nil)
 	if err != nil {
 		return allSeries, fmt.Errorf("failed to create request: %w", err)
@@ -131,15 +127,25 @@ func (f *FlameComics) ListSeries(ctx context.Context, client *httpclient.HTTPCli
 }
 
 func (f *FlameComics) FetchChapters(ctx context.Context, client *httpclient.HTTPClient, series sources.Series) ([]sources.Chapter, error) {
+	if f.buildID == "" {
+		buildID, err := f.fetchBuildID(ctx, client, series.URL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch build id for series: %s", series.URL)
+		}
+
+		f.buildID = buildID
+	}
+	
 	seriesID, err := f.extractSeriesID(series.URL)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/_next/data/%s/series/%02d.json", f.GetBaseURL(), f.dataToken, seriesID), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/_next/data/%s/series/%02d.json", f.GetBaseURL(), f.buildID, seriesID), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+
 	req.Header.Set("Origin", f.GetBaseURL())
 	req.Header.Set("Referer", f.GetBaseURL()+"/")
 
@@ -189,7 +195,7 @@ func (f *FlameComics) parseChapters(flameChapters []FlameComicsChapter, seriesID
 			chapterNum = strconv.Itoa(ch.ChapterID)
 		}
 
-		chapterURL := fmt.Sprintf("%s/_next/data/%s/series/%02d/%s.json", f.GetBaseURL(), f.dataToken, seriesID, ch.Token)
+		chapterURL := fmt.Sprintf("%s/_next/data/%s/series/%02d/%s.json", f.GetBaseURL(), f.buildID, seriesID, ch.Token)
 		chapters = append(chapters, sources.Chapter{
 			Number: util.StringToFloat(chapterNum),
 			Title:  ch.Title,

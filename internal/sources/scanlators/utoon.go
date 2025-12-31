@@ -74,7 +74,6 @@ func (u *Utoon) ListSeries(ctx context.Context, client *httpclient.HTTPClient) (
 	allSeries.MuGroupIds = util.ParseSlugsToIds(util.Utoon)
 	allSeries.TotalSeries = len(allSeries.Series)
 
-	u.Logger.Info("fetched series from Utoon", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 

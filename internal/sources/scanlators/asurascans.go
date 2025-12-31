@@ -68,7 +68,6 @@ func (a *AsuraScans) ListSeries(ctx context.Context, client *httpclient.HTTPClie
 		page++
 	}
 
-	a.Logger.Info("fetched series from AsuraScans", "count", len(allSeries.Series))
 	return allSeries, nil
 }
 
@@ -173,8 +172,6 @@ func (a *AsuraScans) parseChaptersPage(doc *goquery.Document) ([]sources.Chapter
 }
 
 func (a *AsuraScans) FetchPages(ctx context.Context, client *httpclient.HTTPClient, chapter sources.Chapter) ([]sources.Page, error) {
-	a.Logger.Info("fetching pages", "chapter", chapter.Number)
-
 	req, err := http.NewRequestWithContext(ctx, "GET", chapter.URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)

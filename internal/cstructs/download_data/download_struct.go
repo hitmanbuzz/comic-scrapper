@@ -8,7 +8,7 @@ type DownloadData struct {
     // Number of series scrape
     TotalSeries int `json:"total_series"`
     // Number of pages(images) throughout all the series
-    TotalImages int `json:"total_images"`
+    TotalImages int64 `json:"total_images"`
     Series []SeriesData `json:"series"`
 }
 
@@ -19,7 +19,7 @@ type SeriesData struct {
     // Number of chapters the series have
     TotalChapter int `json:"total_chapter"`
     // Number of images the chapter have
-    TotalImages int `json:"total_images"`
+    TotalImages int64 `json:"total_images"`
     Chapter []ChapterData `json:"chapter"`
 }
 
@@ -28,7 +28,7 @@ type ChapterData struct {
     ChapterURL string `json:"chapter_url"`
     ChapterName string `json:"chapter_name"`
     // Number of images the chapter have
-    TotalImages int `json:"total_images"`
+    TotalImages int64 `json:"total_images"`
     Image []ImageData `json:"image"`
 }
 

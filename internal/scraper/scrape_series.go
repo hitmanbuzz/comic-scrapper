@@ -48,7 +48,8 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, flareclient *cl
 		var sourceSeriesData download_data.DownloadData
 		sourceSeriesData.ScanName = src.GetName()
 		sourceSeriesData.ScanURL = src.GetBaseURL()
-		var totalSeries, totalImages int
+		var totalImages int64
+		var totalSeries int
 
 		var wg sync.WaitGroup
 		var mu sync.Mutex
@@ -145,7 +146,7 @@ func SaveAllSeriesData(ctx context.Context, logger *slog.Logger, flareclient *cl
 							})
 						}
 
-						chapterData.TotalImages = len(chapterData.Image)
+						chapterData.TotalImages = int64(len(chapterData.Image))
 
 						pm.Lock()
 						seriesDownloadData.Chapter = append(seriesDownloadData.Chapter, chapterData)

@@ -98,11 +98,11 @@ func main() {
         var imgFullPath string
 
         // imgFile = the image file name (eg: thumbnail.jpg)
-        imgFile := fmt.Sprintf("thumbnail%s", filepath.Ext(seriesInfo.Image.URL.Thumbnail))
+        imgFile := fmt.Sprintf("thumbnail%s", filepath.Ext(seriesInfo.Image.URL.Original))
         if !util.IsPathExists(fmt.Sprintf("%s/%s", thumbnailDirPath, imgFile)) {
-            err, fullPath := fileio.DownloadImage(context.TODO(), httpClient, seriesInfo.Image.URL.Thumbnail, thumbnailDirPath, imgFile)
+            err, fullPath := fileio.DownloadImage(context.TODO(), httpClient, seriesInfo.Image.URL.Original, thumbnailDirPath, imgFile)
             if err != nil {
-                fmt.Printf("Couldn't download image | url: %s\n", seriesInfo.Image.URL.Thumbnail)
+                fmt.Printf("Couldn't download image | url: %s\n", seriesInfo.Image.URL.Original)
                 fmt.Printf("Error: %v\n", err)
             }
 
