@@ -70,7 +70,7 @@ func RunDownload(
 			go func(s download_data.SeriesData) {
 				defer wg.Done()
 				var cg sync.WaitGroup
-				for _, chapter := range series.Chapter {
+				for _, chapter := range s.Chapter {
 					cg.Add(1)
 					maxBatch <- struct{}{}
 					go func(c download_data.ChapterData) {
@@ -81,7 +81,7 @@ func RunDownload(
 							dirPath := fmt.Sprintf(
 								"%s/%d/%s/chap_%s",
 								cfg.Bucket,
-								series.SeriesID,
+								s.SeriesID,
 								data.ScanName,
 								util.ChapterFloatToString(float64(c.ChapterNumber)),
 							)
@@ -95,12 +95,14 @@ func RunDownload(
 
 							// This is just for pretty output (not for production use case)
 							fmt.Printf("\n[DOWNLOADED]\n")
-							fmt.Printf("Scanlator: %s\n", data.ScanName)
-							fmt.Printf("Series: %s\n", series.SeriesName)
-							fmt.Printf("Chapter: %f\n", c.ChapterNumber)
-							fmt.Printf("Image: %d\n", image.ImagerNumber)
-							fmt.Printf("Image Path: %s", imgPath)
-							fmt.Printf("\n")
+							fmt.Printf(
+								"Scanlator: %s | Series: %s | Chapter: %f | Image: %d | Image Path: %s\n",
+								data.ScanName,
+								s.SeriesName,
+								c.ChapterNumber,
+								image.ImagerNumber,
+								imgPath,
+							)
 						}
 					}(chapter)
 				}

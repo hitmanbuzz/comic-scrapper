@@ -1,4 +1,4 @@
-bucket: '/home/hitmanbuzz/comicrawl_data'
+bucket: '/mnt/01DAB122F4AE9EE0/comic_scrapped'
 local_dir: './data'
 series_list_dir: 'series_list'
 series_data_dir: 'series_data'
@@ -15,8 +15,8 @@ log_level: 'info'
 include_sources:
   # - utoon
   # - flamecomics
-  - asurascans
-  # - drakescans
+  # - asurascans
+  - drakescans
   # - thunderscans
   # - madarascans
   # - hivescans

@@ -150,7 +150,7 @@ func (m *MadaraScans) FetchPages(ctx context.Context, client *httpclient.HTTPCli
 }
 
 func (m *MadaraScans) parsePages(body io.ReadCloser) ([]sources.Page, error) {
-    searchKeyword := `madarascans\.com\\/wp-content\\/uploads\\/[^"]+`   
+    searchKeyword := `madarascans\.com\\/wp-content\\/uploads\\/manga\\/[^"]+`   
 
     var page []sources.Page
     

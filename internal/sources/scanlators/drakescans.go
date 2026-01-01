@@ -148,7 +148,7 @@ func (d *DrakeScans) FetchPages(ctx context.Context, client *httpclient.HTTPClie
 }
 
 func (d *DrakeScans) parsePages(body io.ReadCloser) ([]sources.Page, error) {
-    searchKeyword := `drakecomic\.org\\/wp-content\\/uploads\\/[^"]+`   
+    searchKeyword := `drakecomic\.org\\/wp-content\\/uploads\\/manga\\/[^"]+`   
 
     var page []sources.Page
     

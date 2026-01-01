@@ -15,49 +15,7 @@ func GenerateMetadata(data scrape_data.MetadataJson, file_path string) error {
 
 	// If metadata already exists, merge with existing data
 	if util.IsPathExists(file_path) {
-		existingData, err := ReadMetadata(file_path)
-		if err != nil {
-			return fmt.Errorf("fetch metadata from %s: %w", file_path, err)
-		}
-
-		finalData = existingData
-
-		for _, newSourceProvider := range data.ScrapedData {
-			// Check if this SourceProvider already exists
-			found := false
-			for i, existingSourceProvider := range finalData.ScrapedData {
-				if existingSourceProvider.Name == newSourceProvider.Name {
-					// SourceProvider exists - update it
-					found = true
-
-					// Update TotalChapters
-					finalData.ScrapedData[i].TotalChapters = newSourceProvider.TotalChapters
-
-					// Update LatestChapter
-					finalData.ScrapedData[i].LatestChapter = newSourceProvider.LatestChapter
-
-					// Merge ChapterData (only add new chapters, no duplicates)
-					existingChapterNumbers := make(map[float32]bool)
-					for _, existingChapter := range existingSourceProvider.ChapterData {
-						existingChapterNumbers[existingChapter.ChapterNumber] = true
-					}
-
-					// Add only new chapters that don't exist
-					for _, newChapter := range newSourceProvider.ChapterData {
-						if !existingChapterNumbers[newChapter.ChapterNumber] {
-							finalData.ScrapedData[i].ChapterData = append(finalData.ScrapedData[i].ChapterData, newChapter)
-						}
-					}
-
-					break
-				}
-			}
-
-			// If SourceProvider doesn't exist, add it as new
-			if !found {
-				finalData.ScrapedData = append(finalData.ScrapedData, newSourceProvider)
-			}
-		}
+		return fmt.Errorf("file already exist")
 	}
 
 	jsonData, err := json.MarshalIndent(finalData, "", "  ")

@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"io"
-	"log/slog"
 	"math"
 	"os"
 	"regexp"
@@ -44,7 +43,6 @@ func ParseSlugsToIds(slugs []string) []int64 {
 func StringToFloat(s string) float32 {
 	float64Value, err := strconv.ParseFloat(s, 32)
 	if err != nil {
-		fmt.Printf("Error parsing string to float | string: %s\n", s)
 		return -69
 	}
 
@@ -55,8 +53,6 @@ func StringToFloat(s string) float32 {
 func StringToInt64(s string) int64 {
 	num, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		logger := slog.Default()
-		logger.Warn("error parsing string to int64", "string", s, "error", err)
 		return -69
 	}
 

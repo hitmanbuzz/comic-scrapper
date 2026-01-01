@@ -98,11 +98,11 @@ func main() {
         var imgFullPath string
 
         // imgFile = the image file name (eg: thumbnail.jpg)
-        imgFile := fmt.Sprintf("thumbnail%s", filepath.Ext(seriesInfo.Image.URL.Original))
+        imgFile := fmt.Sprintf("thumbnail%s", filepath.Ext(seriesInfo.Image.URL.Thumbnail))
         if !util.IsPathExists(fmt.Sprintf("%s/%s", thumbnailDirPath, imgFile)) {
-            err, fullPath := fileio.DownloadImage(context.TODO(), httpClient, seriesInfo.Image.URL.Original, thumbnailDirPath, imgFile)
+            err, fullPath := fileio.DownloadImage(context.TODO(), httpClient, seriesInfo.Image.URL.Thumbnail, thumbnailDirPath, imgFile)
             if err != nil {
-                fmt.Printf("Couldn't download image | url: %s\n", seriesInfo.Image.URL.Original)
+                fmt.Printf("Couldn't download image | url: %s\n", seriesInfo.Image.URL.Thumbnail)
                 fmt.Printf("Error: %v\n", err)
             }
 
@@ -151,7 +151,7 @@ func processSeriesData(s SourceData, bucketDir string, seriesId string) (scrape_
     var mu sync.Mutex
     
     maxChap := s.Chapter[0].ChapterNumber
-    for i := 1; i < len(s.Chapter); i++ {
+    for i := 0; i < len(s.Chapter); i++ {
         wg.Add(1)
         go func(ch ChapterData) {
             defer wg.Done()
