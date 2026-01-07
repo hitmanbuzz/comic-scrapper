@@ -52,8 +52,7 @@ func main() {
 	for k, v := range data {
         seriesInfo, err := mangaupdates.GetSeriesInfo(context.TODO(), util.StringToInt64(k), httpClient)
         if err != nil {
-            fmt.Printf("Failed to get series info | series id: %s\n", k)
-            fmt.Printf("Error: %v\n", err)
+        	logger.Logger.Error("failed to get series info", "series_id", k, "error", err)
             continue
         }
 	    
@@ -90,30 +89,24 @@ func main() {
         thumbnailDirPath := fmt.Sprintf("%s/%s/thumbnail", cfg.Bucket, k)
         err = os.MkdirAll(thumbnailDirPath, 0755)
         if err != nil {
-            fmt.Printf("failed to create thumbnail dir | series id : %s\n", k)
-            fmt.Printf("Error: %v\n", err)
+        	logger.Logger.Error("failed to create thumbnail dir", "series_id", k, "error", err)
             continue
         }
 
-        var imgFullPath string
-
         // imgFile = the image file name (eg: thumbnail.jpg)
         imgFile := fmt.Sprintf("thumbnail%s", filepath.Ext(seriesInfo.Image.URL.Thumbnail))
+        imgFullPath := fmt.Sprintf("%s/%s", thumbnailDirPath, imgFile)
         if !util.IsPathExists(fmt.Sprintf("%s/%s", thumbnailDirPath, imgFile)) {
-            err, fullPath := fileio.DownloadImage(context.TODO(), httpClient, seriesInfo.Image.URL.Thumbnail, thumbnailDirPath, imgFile)
+            err := fileio.DownloadImage(context.TODO(), httpClient, seriesInfo.Image.URL.Thumbnail, thumbnailDirPath, imgFile)
             if err != nil {
-                fmt.Printf("Couldn't download image | url: %s\n", seriesInfo.Image.URL.Thumbnail)
-                fmt.Printf("Error: %v\n", err)
+            	logger.Logger.Error("failed to download image", "series_id", k, "url", seriesInfo.Image.URL.Thumbnail, "error", err)
             }
-
-            imgFullPath = fullPath
         }
 
-        mData.Thumbnail = fmt.Sprintf("%s/%s", thumbnailDirPath, imgFile)
+        mData.Thumbnail = imgFullPath
         scrapData, err := processSeriesData(v, cfg.Bucket, k)
         if err != nil {
-            fmt.Printf("failed to process series data")
-            fmt.Printf("Error: %v\n", err)
+        	logger.Logger.Error("failed to process series data", "series_id", k, "error", err)
             continue
         }
 
@@ -122,18 +115,18 @@ func main() {
 		file_path := fmt.Sprintf("%s/%s/metadata.json", cfg.Bucket, k)
         err = metadata.GenerateMetadata(mData, file_path)
         if err != nil {
-            fmt.Printf("Failed to generate metadata | series id: %s\n", k)
-            fmt.Printf("Error: %v\n", err)
+        	logger.Logger.Error("failed to generate metadata", "series_id", k, "error", err)
             continue
         }
 
-		fmt.Printf("\n[SUCCESSFULLY GENERATED METADATA]\n")
-		fmt.Printf("Series Title: %s\n", mData.Title)
-		fmt.Printf("Series ID: %d\n", mData.MuSeriesId)
-		fmt.Printf("Thumbnail Path: %s\n", imgFullPath)
-		fmt.Printf("Metadata Json Path: %s\n", file_path)
-		fmt.Printf("\n")
+        logger.Logger.Info(
+        	"metadata generated",
+        	"series_id", mData.MuSeriesId,
+        	"metadata_path", file_path,
+        )
 	}
+
+	logger.Logger.Info("sucessfully generated all metadata")
 }
 
 func processSeriesData(s SourceData, bucketDir string, seriesId string) (scrape_data.SourceProviderScrapedData, error) {
