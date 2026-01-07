@@ -55,7 +55,7 @@ func NewHTTPClient(cfg *config.Config, logger *slog.Logger, flareClient *cloudfl
 	}
 
 	httpClient := &http.Client{
-		Timeout:   cfg.RequestTimeout,
+		Timeout:   180 * time.Second,
 		Jar:       jar,
 		Transport: transport,
 	}

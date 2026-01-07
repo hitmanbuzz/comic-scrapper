@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sync"
+	"sync/atomic"
 )
 
 
@@ -25,7 +26,7 @@ func RunDownload(
 	flareClient *cloudflare.Client,
 ) error {
 	// maxBatch = number of download at one time
-	maxBatch := make(chan struct{}, 30)
+	maxBatch := make(chan struct{}, 15)
 	pattern := regexp.MustCompile(`^.+_series_data\.json$`)
 	var matchingFiles []string
 
@@ -48,6 +49,8 @@ func RunDownload(
 		logger.Error("no files matching pattern '*_series_data.json' found", "directory", seriesDataDir)
 		os.Exit(1)
 	}
+
+	var skipCounter atomic.Int64
 
 	for _, jsonFile := range matchingFiles {
 		data, err := fileio.ReadSeriesData(jsonFile)
@@ -86,22 +89,27 @@ func RunDownload(
 								util.ChapterFloatToString(float64(c.ChapterNumber)),
 							)
 							imageFile := fmt.Sprintf("img_%d%s", image.ImagerNumber, filepath.Ext(image.ImageURL))
+							fullPath := fmt.Sprintf("%s/%s", dirPath, imageFile)
+							if util.IsPathExists(fullPath) {
+								logger.Info("skipped", "file already exist", fullPath)
+								skipCounter.Add(1)
+								continue
+							}
 
-							err, imgPath := fileio.DownloadImage(ctx, client, image.ImageURL, dirPath, imageFile)
+							err := fileio.DownloadImage(ctx, client, image.ImageURL, dirPath, imageFile)
 							if err != nil {
 								logger.Error("failed to download image", "url", image.ImageURL, "error", err)
-								return
+								continue
 							}
 
 							// This is just for pretty output (not for production use case)
-							fmt.Printf("\n[DOWNLOADED]\n")
-							fmt.Printf(
-								"Scanlator: %s | Series: %s | Chapter: %f | Image: %d | Image Path: %s\n",
-								data.ScanName,
-								s.SeriesName,
-								c.ChapterNumber,
-								image.ImagerNumber,
-								imgPath,
+							logger.Info(
+								"downloaded",
+								"scan", data.ScanName,
+								"series", s.SeriesName,
+								"chapter", c.ChapterNumber,
+								"image", image.ImagerNumber,
+								"img_path", fullPath,
 							)
 						}
 					}(chapter)
@@ -113,6 +121,8 @@ func RunDownload(
 
 		wg.Wait()
 	}
+
+	fmt.Println("Skipped Counter:", skipCounter.Load())
 
 	return nil
 }
