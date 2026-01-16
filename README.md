@@ -16,6 +16,7 @@
      Drakescans
      Webtoon
      Flamecomics
+     Rizzfables
 
 ### Not Working:
      Flaresolverr implementation
